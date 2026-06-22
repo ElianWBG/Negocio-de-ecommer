@@ -144,6 +144,9 @@
             <a href="{% url 'storefront:my_orders' %}">
               <i class="bi bi-bag-check"></i> Mis pedidos
             </a>
+            <a href="{% url 'storefront:change_password' %}">
+              <i class="bi bi-key"></i> Cambiar contraseña
+            </a>
             <div class="divider"></div>
             <form method="post" action="{% url 'storefront:customer_logout' %}">
               {% csrf_token %}

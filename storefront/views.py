@@ -350,6 +350,42 @@ def my_orders(request):
     })
 
 
+def change_password(request):
+    """Permite al cliente cambiar su contraseña desde el perfil."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:change_password')
+        return redirect('storefront:customer_login')
+
+    if request.method == 'POST':
+        current = request.POST.get('current_password', '')
+        new1 = request.POST.get('new_password1', '')
+        new2 = request.POST.get('new_password2', '')
+        errors = []
+
+        if not request.user.check_password(current):
+            errors.append('La contraseña actual no es correcta.')
+        if len(new1) < 8:
+            errors.append('La nueva contraseña debe tener al menos 8 caracteres.')
+        if new1 != new2:
+            errors.append('Las contraseñas nuevas no coinciden.')
+
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+        else:
+            request.user.set_password(new1)
+            request.user.save()
+            # Mantener la sesión activa después del cambio
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, request.user)
+            messages.success(request, '¡Contraseña actualizada correctamente!')
+            return redirect('storefront:change_password')
+
+    return render(request, 'storefront/change_password.html', {
+        'cart_count': sum(_get_cart(request).values()),
+    })
+
+
 # ---------------------------------------------------------------------
 # Pago con tarjeta (PayPhone)
 # ---------------------------------------------------------------------

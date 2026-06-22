@@ -3,67 +3,121 @@
 
 {% block extra_css %}
 <style>
-  .back-link { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); text-decoration: none; font-size: .875rem; margin-bottom: 1.5rem; transition: color var(--transition); }
-  .back-link:hover { color: var(--text); }
-  .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
-  .product-img-wrap { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
-  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-  .product-img-wrap .no-img { font-size: 4rem; color: var(--border); }
-  .product-info h1 { font-family: var(--font-head); font-size: 2.2rem; font-weight: 600; line-height: 1.2; margin-bottom: .5rem; }
-  .product-meta { color: var(--muted); font-size: .875rem; margin-bottom: 1.25rem; }
-  .product-price { font-size: 2rem; font-weight: 700; color: var(--rust); margin-bottom: 1rem; }
-  .product-desc { color: var(--muted); line-height: 1.7; margin-bottom: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem; }
-  .stock-info { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.25rem; font-size: .875rem; }
-  .stock-info.in { color: #1a5c35; } .stock-info.out { color: #7a1a0d; }
-  .qty-row { display: flex; gap: .75rem; align-items: center; margin-bottom: 1.5rem; }
-  .qty-input { width: 90px; padding: .65rem .9rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: var(--font-body); text-align: center; }
-  .qty-input:focus { outline: none; border-color: var(--rust); }
-  @media (max-width: 700px) {
-    .product-layout { grid-template-columns: 1fr; gap: 1.5rem; }
-    .product-info h1 { font-size: 1.7rem; }
+  .breadcrumb { display:flex; align-items:center; gap:.4rem; font-size:.8rem; color:var(--muted); margin-bottom:1.5rem; flex-wrap:wrap; }
+  .breadcrumb a { color:var(--muted); text-decoration:none; transition:color var(--transition); }
+  .breadcrumb a:hover { color:var(--rust); }
+  .breadcrumb .sep { color:var(--border); }
+
+  .product-layout { display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:start; }
+
+  .product-img-wrap { background:var(--sand-dark); border-radius:var(--radius); overflow:hidden; aspect-ratio:1; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); position:relative; }
+  .product-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; }
+  .product-img-wrap:hover img { transform:scale(1.04); }
+  .product-img-wrap .no-img { display:flex; flex-direction:column; align-items:center; gap:.75rem; }
+  .product-img-wrap .no-img i { font-size:3.5rem; color:var(--border); }
+  .product-img-wrap .no-img span { font-size:.8rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
+
+  .product-badges { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .product-badge { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; padding:.3rem .75rem; border-radius:20px; background:var(--sand-dark); color:var(--muted); border:1px solid var(--border); }
+
+  .product-name { font-family:var(--font-head); font-size:2.2rem; font-weight:600; line-height:1.2; margin-bottom:.75rem; }
+  .product-price { font-size:2rem; font-weight:700; color:var(--rust); margin-bottom:1.25rem; }
+
+  .stock-strip { display:flex; align-items:center; gap:.5rem; font-size:.875rem; padding:.65rem 1rem; border-radius:8px; margin-bottom:1.5rem; }
+  .stock-strip.in { background:#edfaf3; color:#1a5c35; border:1px solid #b2e8cc; }
+  .stock-strip.out { background:#fef2f0; color:#7a1a0d; border:1px solid #f5b8ad; }
+
+  .qty-section { margin-bottom:1.5rem; }
+  .qty-label { font-size:.85rem; font-weight:600; margin-bottom:.5rem; color:var(--text); }
+  .qty-controls { display:flex; align-items:center; gap:0; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; width:fit-content; }
+  .qty-btn { width:40px; height:42px; display:flex; align-items:center; justify-content:center; background:var(--sand); border:none; cursor:pointer; font-size:1.1rem; color:var(--text); transition:background var(--transition); flex-shrink:0; }
+  .qty-btn:hover { background:var(--sand-dark); }
+  .qty-display { width:52px; height:42px; border:none; border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); text-align:center; font-family:var(--font-body); font-size:1rem; font-weight:600; background:var(--surface); color:var(--text); }
+  .qty-display:focus { outline:none; }
+
+  .product-desc { color:var(--muted); line-height:1.75; padding-top:1.25rem; border-top:1px solid var(--border); margin-top:1.5rem; }
+  .product-desc h4 { font-family:var(--font-head); font-size:1rem; color:var(--text); margin-bottom:.5rem; }
+
+  @media(max-width:700px) {
+    .product-layout { grid-template-columns:1fr; gap:1.5rem; }
+    .product-name { font-size:1.75rem; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<a href="{% url 'storefront:catalog_list' %}" class="back-link">
-  <i class="bi bi-arrow-left"></i> Volver al catálogo
-</a>
+<nav class="breadcrumb">
+  <a href="{% url 'storefront:catalog_list' %}">Catálogo</a>
+  <span class="sep">›</span>
+  <a href="{% url 'storefront:catalog_list' %}?group={{ product.group.pk }}">{{ product.group.name }}</a>
+  <span class="sep">›</span>
+  <span>{{ product.name }}</span>
+</nav>
 
 <div class="product-layout">
   <div class="product-img-wrap">
     {% if product.image %}
       <img src="{{ product.image.url }}" alt="{{ product.name }}">
     {% else %}
-      <div class="no-img"><i class="bi bi-image"></i></div>
+      <div class="no-img">
+        <i class="bi bi-image"></i>
+        <span>Sin imagen</span>
+      </div>
     {% endif %}
   </div>
 
   <div class="product-info">
-    <p class="product-meta">{{ product.brand.name }} · {{ product.group.name }}</p>
-    <h1>{{ product.name }}</h1>
+    <div class="product-badges">
+      <span class="product-badge">{{ product.brand.name }}</span>
+      <span class="product-badge">{{ product.group.name }}</span>
+    </div>
+    <h1 class="product-name">{{ product.name }}</h1>
     <p class="product-price">${{ product.unit_price }}</p>
 
     {% if product.stock > 0 %}
-      <p class="stock-info in"><i class="bi bi-check-circle-fill"></i> {{ product.stock }} unidades disponibles</p>
+      <div class="stock-strip in">
+        <i class="bi bi-check-circle-fill"></i>
+        <span><strong>{{ product.stock }}</strong> unidades disponibles</span>
+      </div>
+
       <form method="post" action="{% url 'storefront:cart_add' product.pk %}">
         {% csrf_token %}
-        <div class="qty-row">
-          <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="qty-input">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="bi bi-bag-plus"></i> Agregar al carrito
-          </button>
+        <div class="qty-section">
+          <p class="qty-label">Cantidad</p>
+          <div class="qty-controls">
+            <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ product.stock }}" class="qty-display" readonly>
+            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
         </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+          <i class="bi bi-bag-plus"></i> Agregar al carrito
+        </button>
       </form>
     {% else %}
-      <p class="stock-info out"><i class="bi bi-x-circle-fill"></i> Agotado por el momento</p>
+      <div class="stock-strip out">
+        <i class="bi bi-x-circle-fill"></i>
+        <span>Agotado por el momento</span>
+      </div>
     {% endif %}
 
     {% if product.description %}
     <div class="product-desc">
+      <h4>Descripción</h4>
       <p>{{ product.description }}</p>
     </div>
     {% endif %}
   </div>
 </div>
+
+<script>
+function changeQty(delta) {
+  const input = document.getElementById('qty');
+  const max = parseInt(input.getAttribute('max'));
+  let val = parseInt(input.value) + delta;
+  if (val < 1) val = 1;
+  if (val > max) val = max;
+  input.value = val;
+}
+</script>
 {% endblock %}

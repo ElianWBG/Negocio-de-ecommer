@@ -1910,3 +1910,343 @@ def customer_import_template(request):
     response['Content-Disposition'] = 'attachment; filename="plantilla_clientes.xlsx"'
     wb.save(response)
     return response
+
+
+# ─────────────────────────────────────────────
+# Reportes
+# ─────────────────────────────────────────────
+
+def _get_report_dates(request):
+    """Extrae fecha_desde y fecha_hasta del request (GET o POST).
+    Por defecto: el mes actual."""
+    from datetime import date
+    today = date.today()
+    default_from = today.replace(day=1).isoformat()
+    default_to   = today.isoformat()
+    date_from_str = request.GET.get('date_from', default_from)
+    date_to_str   = request.GET.get('date_to',   default_to)
+    try:
+        from datetime import datetime
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        date_to   = datetime.strptime(date_to_str,   '%Y-%m-%d').date()
+    except ValueError:
+        from datetime import date
+        date_from = date.today().replace(day=1)
+        date_to   = date.today()
+    return date_from, date_to
+
+
+def _sales_queryset(date_from, date_to):
+    from datetime import timedelta
+    return (
+        Invoice.objects
+        .filter(
+            invoice_date__date__gte=date_from,
+            invoice_date__date__lte=date_to,
+            is_active=True,
+        )
+        .select_related('customer')
+        .prefetch_related('details__product')
+        .order_by('-invoice_date')
+    )
+
+
+def _sales_summary(invoices):
+    from decimal import Decimal
+    subtotal = sum(inv.subtotal for inv in invoices)
+    tax      = sum(inv.tax for inv in invoices)
+    total    = sum(inv.total for inv in invoices)
+    count    = len(invoices)
+
+    # Top 5 productos más vendidos
+    product_totals = {}
+    for inv in invoices:
+        for d in inv.details.all():
+            key = d.product.name
+            if key not in product_totals:
+                product_totals[key] = {'qty': 0, 'total': Decimal('0')}
+            product_totals[key]['qty']   += d.quantity
+            product_totals[key]['total'] += d.subtotal
+
+    top_products = sorted(
+        product_totals.items(), key=lambda x: x[1]['total'], reverse=True
+    )[:5]
+
+    return {
+        'count': count,
+        'subtotal': subtotal,
+        'tax': tax,
+        'total': total,
+        'top_products': top_products,
+    }
+
+
+@login_required
+def report_sales(request):
+    date_from, date_to = _get_report_dates(request)
+    invoices = list(_sales_queryset(date_from, date_to))
+    summary  = _sales_summary(invoices)
+    return render(request, 'billing/report_sales.html', {
+        'invoices':  invoices,
+        'summary':   summary,
+        'date_from': date_from,
+        'date_to':   date_to,
+    })
+
+
+@login_required
+def report_sales_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+
+    date_from, date_to = _get_report_dates(request)
+    invoices = list(_sales_queryset(date_from, date_to))
+    summary  = _sales_summary(invoices)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Ventas'
+
+    # Título
+    ws.merge_cells('A1:G1')
+    ws['A1'] = f'Reporte de Ventas — {date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}'
+    ws['A1'].font = Font(bold=True, size=13, name='Arial', color='FFFFFF')
+    ws['A1'].fill = PatternFill('solid', start_color='231A10')
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 28
+
+    # Resumen
+    ws['A3'] = 'Resumen'
+    ws['A3'].font = Font(bold=True, name='Arial', size=11)
+    summary_data = [
+        ('Total facturas', summary['count']),
+        ('Subtotal', f"${summary['subtotal']}"),
+        ('IVA (15%)', f"${summary['tax']}"),
+        ('Total general', f"${summary['total']}"),
+    ]
+    for i, (label, value) in enumerate(summary_data, 4):
+        ws.cell(row=i, column=1, value=label).font = Font(name='Arial', size=10, bold=True)
+        cell = ws.cell(row=i, column=2, value=value)
+        cell.font = Font(name='Arial', size=10, color='B5441B')
+
+    # Encabezados detalle
+    headers = ['#', 'Fecha', 'Cliente', 'Cédula', 'Subtotal', 'IVA', 'Total']
+    row_start = 10
+    header_fill = PatternFill('solid', start_color='231A10')
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=row_start, column=col, value=h)
+        cell.font = Font(bold=True, color='FFFFFF', name='Arial', size=10)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    # Filas
+    alt_fill = PatternFill('solid', start_color='F8F3EE')
+    for i, inv in enumerate(invoices, row_start + 1):
+        fill = alt_fill if i % 2 == 0 else None
+        data = [
+            inv.id,
+            inv.invoice_date.strftime('%d/%m/%Y %H:%M'),
+            inv.customer.full_name,
+            inv.customer.dni,
+            float(inv.subtotal),
+            float(inv.tax),
+            float(inv.total),
+        ]
+        for col, value in enumerate(data, 1):
+            cell = ws.cell(row=i, column=col, value=value)
+            cell.font = Font(name='Arial', size=10)
+            if fill:
+                cell.fill = fill
+
+    # Anchos
+    for col, width in enumerate([8, 18, 28, 14, 12, 12, 12], 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="ventas_{date_from}_{date_to}.xlsx"'
+    )
+    wb.save(response)
+    return response
+
+
+@login_required
+def report_sales_pdf(request):
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from django.http import HttpResponse
+    import io
+
+    date_from, date_to = _get_report_dates(request)
+    invoices = list(_sales_queryset(date_from, date_to))
+    summary  = _sales_summary(invoices)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            leftMargin=1.5*cm, rightMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    espresso = colors.HexColor('#231A10')
+    rust     = colors.HexColor('#B5441B')
+
+    elements = []
+    title_style = ParagraphStyle('title', parent=styles['Title'],
+                                 textColor=espresso, fontSize=16, spaceAfter=4)
+    sub_style   = ParagraphStyle('sub', parent=styles['Normal'],
+                                 textColor=colors.grey, fontSize=10, spaceAfter=12)
+
+    elements.append(Paragraph('Reporte de Ventas', title_style))
+    elements.append(Paragraph(
+        f'{date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}', sub_style
+    ))
+
+    # Resumen
+    summary_data = [
+        ['Facturas', str(summary['count']),
+         'Subtotal', f"${summary['subtotal']}",
+         'IVA', f"${summary['tax']}",
+         'Total', f"${summary['total']}"],
+    ]
+    t_sum = Table(summary_data, colWidths=[3*cm, 2*cm, 2.5*cm, 3*cm, 2*cm, 2.5*cm, 2.5*cm, 3*cm])
+    t_sum.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), espresso),
+        ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+        ('FONTNAME',   (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE',   (0, 0), (-1, -1), 10),
+        ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
+        ('ROWBACKGROUNDS', (0, 0), (-1, -1), [espresso]),
+        ('TEXTCOLOR', (1, 0), (1, 0), colors.HexColor('#F8F3EE')),
+        ('TEXTCOLOR', (3, 0), (3, 0), rust),
+        ('TEXTCOLOR', (5, 0), (5, 0), colors.HexColor('#F8F3EE')),
+        ('TEXTCOLOR', (7, 0), (7, 0), rust),
+    ]))
+    elements.append(t_sum)
+    elements.append(Spacer(1, 0.5*cm))
+
+    # Detalle
+    header = ['#', 'Fecha', 'Cliente', 'Cédula', 'Subtotal', 'IVA', 'Total']
+    rows = [header]
+    for inv in invoices:
+        rows.append([
+            str(inv.id),
+            inv.invoice_date.strftime('%d/%m/%Y'),
+            inv.customer.full_name,
+            inv.customer.dni,
+            f'${inv.subtotal}',
+            f'${inv.tax}',
+            f'${inv.total}',
+        ])
+
+    col_widths = [1.5*cm, 3*cm, 7*cm, 3.5*cm, 3*cm, 3*cm, 3*cm]
+    t = Table(rows, colWidths=col_widths, repeatRows=1)
+    row_colors = [colors.HexColor('#F8F3EE'), colors.white]
+    t.setStyle(TableStyle([
+        ('BACKGROUND',  (0, 0), (-1, 0), espresso),
+        ('TEXTCOLOR',   (0, 0), (-1, 0), colors.white),
+        ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME',    (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE',    (0, 0), (-1, -1), 9),
+        ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN',       (2, 1), (2, -1), 'LEFT'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), row_colors),
+        ('GRID',        (0, 0), (-1, -1), 0.3, colors.HexColor('#DDD3C5')),
+        ('TEXTCOLOR',   (-1, 1), (-1, -1), rust),
+        ('FONTNAME',    (-1, 1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    elements.append(t)
+
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="ventas_{date_from}_{date_to}.pdf"'
+    )
+    return response
+
+
+@login_required
+def report_stock(request):
+    query = request.GET.get('q', '').strip()
+    low_only = request.GET.get('low', '') == '1'
+    threshold = 5
+
+    products = Product.objects.filter(is_active=True).select_related('brand', 'group').order_by('stock')
+    if query:
+        products = products.filter(name__icontains=query)
+    if low_only:
+        products = products.filter(stock__lte=threshold)
+
+    return render(request, 'billing/report_stock.html', {
+        'products':  products,
+        'query':     query,
+        'low_only':  low_only,
+        'threshold': threshold,
+        'total_low': Product.objects.filter(is_active=True, stock__lte=threshold).count(),
+    })
+
+
+@login_required
+def report_stock_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from django.http import HttpResponse
+    from datetime import date
+
+    query    = request.GET.get('q', '').strip()
+    low_only = request.GET.get('low', '') == '1'
+    threshold = 5
+
+    products = Product.objects.filter(is_active=True).select_related('brand', 'group').order_by('stock')
+    if query:
+        products = products.filter(name__icontains=query)
+    if low_only:
+        products = products.filter(stock__lte=threshold)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Stock'
+
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f'Reporte de Stock — {date.today().strftime("%d/%m/%Y")}'
+    ws['A1'].font = Font(bold=True, size=13, name='Arial', color='FFFFFF')
+    ws['A1'].fill = PatternFill('solid', start_color='231A10')
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 28
+
+    headers = ['Producto', 'Marca', 'Categoría', 'Precio', 'Stock', 'Estado']
+    header_fill = PatternFill('solid', start_color='231A10')
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=2, column=col, value=h)
+        cell.font = Font(bold=True, color='FFFFFF', name='Arial', size=10)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    red_fill  = PatternFill('solid', start_color='FEF2F0')
+    alt_fill  = PatternFill('solid', start_color='F8F3EE')
+    for i, p in enumerate(products, 3):
+        is_low = p.stock <= threshold
+        row_fill = red_fill if is_low else (alt_fill if i % 2 == 0 else None)
+        data = [p.name, p.brand.name, p.group.name, float(p.unit_price), p.stock,
+                'Stock bajo' if p.stock == 0 else ('Poco stock' if is_low else 'OK')]
+        for col, value in enumerate(data, 1):
+            cell = ws.cell(row=i, column=col, value=value)
+            cell.font = Font(name='Arial', size=10,
+                           color='C0392B' if is_low else '000000')
+            if row_fill:
+                cell.fill = row_fill
+
+    for col, width in enumerate([30, 18, 18, 12, 10, 14], 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="stock_{date.today()}.xlsx"'
+    wb.save(response)
+    return response

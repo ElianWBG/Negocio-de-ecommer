@@ -1,0 +1,133 @@
+{% extends 'billing/base.html' %}
+{% block title %}Reporte de ventas{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+  <h2 style="margin:0;">Reporte de ventas</h2>
+  <div style="display:flex;gap:.5rem;">
+    <a href="{% url 'billing:report_stock' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-boxes"></i> Ver stock
+    </a>
+    <a href="{% url 'billing:report_sales_excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+       class="btn btn-success btn-sm">
+      <i class="bi bi-file-earmark-excel"></i> Excel
+    </a>
+    <a href="{% url 'billing:report_sales_pdf' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+       class="btn btn-danger btn-sm">
+      <i class="bi bi-file-earmark-pdf"></i> PDF
+    </a>
+  </div>
+</div>
+
+<!-- Filtro de fechas -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label mb-1" style="font-size:.875rem;font-weight:600;">Desde</label>
+        <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <label class="form-label mb-1" style="font-size:.875rem;font-weight:600;">Hasta</label>
+        <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tarjetas resumen -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;">
+  <div class="card text-center">
+    <div class="card-body py-3">
+      <p style="color:#6c757d;font-size:.8rem;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em;">Facturas</p>
+      <p style="font-size:2rem;font-weight:700;margin:0;color:#231A10;">{{ summary.count }}</p>
+    </div>
+  </div>
+  <div class="card text-center">
+    <div class="card-body py-3">
+      <p style="color:#6c757d;font-size:.8rem;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em;">Subtotal</p>
+      <p style="font-size:2rem;font-weight:700;margin:0;color:#231A10;">${{ summary.subtotal }}</p>
+    </div>
+  </div>
+  <div class="card text-center">
+    <div class="card-body py-3">
+      <p style="color:#6c757d;font-size:.8rem;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em;">IVA (15%)</p>
+      <p style="font-size:2rem;font-weight:700;margin:0;color:#231A10;">${{ summary.tax }}</p>
+    </div>
+  </div>
+  <div class="card text-center" style="border-color:#B5441B;">
+    <div class="card-body py-3">
+      <p style="color:#6c757d;font-size:.8rem;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em;">Total</p>
+      <p style="font-size:2rem;font-weight:700;margin:0;color:#B5441B;">${{ summary.total }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Top productos -->
+{% if summary.top_products %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Top productos del período</h5>
+    <table class="table table-sm">
+      <thead><tr><th>Producto</th><th class="text-end">Unidades vendidas</th><th class="text-end">Total</th></tr></thead>
+      <tbody>
+        {% for name, data in summary.top_products %}
+        <tr>
+          <td>{{ name }}</td>
+          <td class="text-end">{{ data.qty }}</td>
+          <td class="text-end" style="color:#B5441B;font-weight:600;">${{ data.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Detalle facturas -->
+{% if invoices %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead style="background:#f8f9fa;">
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Cédula</th>
+          <th class="text-end">Subtotal</th>
+          <th class="text-end">IVA</th>
+          <th class="text-end">Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td>{{ inv.id }}</td>
+          <td style="font-size:.875rem;">{{ inv.invoice_date|date:"d/m/Y H:i" }}</td>
+          <td>{{ inv.customer.full_name }}</td>
+          <td style="color:#6c757d;font-size:.875rem;">{{ inv.customer.dni }}</td>
+          <td class="text-end">${{ inv.subtotal }}</td>
+          <td class="text-end">${{ inv.tax }}</td>
+          <td class="text-end" style="font-weight:700;color:#B5441B;">${{ inv.total }}</td>
+          <td>
+            <a href="{% url 'billing:invoice_detail' inv.pk %}" class="btn btn-outline-secondary btn-sm py-0">Ver</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-receipt" style="font-size:2.5rem;"></i>
+  <p class="mt-2">No hay ventas en el período seleccionado.</p>
+</div>
+{% endif %}
+
+{% endblock %}

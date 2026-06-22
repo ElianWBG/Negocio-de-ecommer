@@ -60,4 +60,11 @@ urlpatterns = [
     # API
     path('api/product-info/<int:pk>/', views.api_product_info, name='api_product_info'),
 
+    # Reportes
+    path('reportes/ventas/', views.report_sales, name='report_sales'),
+    path('reportes/ventas/excel/', views.report_sales_excel, name='report_sales_excel'),
+    path('reportes/ventas/pdf/', views.report_sales_pdf, name='report_sales_pdf'),
+    path('reportes/stock/', views.report_stock, name='report_stock'),
+    path('reportes/stock/excel/', views.report_stock_excel, name='report_stock_excel'),
+
 ]

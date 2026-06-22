@@ -1,35 +1,69 @@
 {% extends 'storefront/base_public.html' %}
 {% block title %}Confirmar compra{% endblock %}
+
 {% block extra_css %}
 <style>
-  .checkout-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start; }
-  .section-title { font-family: var(--font-head); font-size: 1.4rem; margin-bottom: 1.25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--border); }
-  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .order-summary h3 { font-family: var(--font-head); font-size: 1.3rem; margin-bottom: 1rem; }
-  .order-item { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid var(--sand-dark); font-size: .9rem; }
-  .order-item:last-of-type { border-bottom: none; }
-  .order-item .name { color: var(--text); }
-  .order-item .price { font-weight: 600; }
-  .order-total { display: flex; justify-content: space-between; padding-top: .85rem; margin-top: .5rem; border-top: 2px solid var(--border); font-weight: 700; font-size: 1.05rem; }
-  .order-total span:last-child { color: var(--rust); }
-  @media (max-width: 768px) {
-    .checkout-layout { grid-template-columns: 1fr; }
-    .form-row-2 { grid-template-columns: 1fr; }
+  .steps { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:2rem; }
+  .step { display:flex; align-items:center; gap:.5rem; font-size:.8rem; font-weight:600; color:var(--muted); }
+  .step.active { color:var(--rust); }
+  .step.done { color:var(--text); }
+  .step-num { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; transition:all var(--transition); }
+  .step.active .step-num { border-color:var(--rust); background:var(--rust); color:#fff; }
+  .step.done .step-num { border-color:var(--text); background:var(--text); color:#fff; }
+  .step-line { width:40px; height:2px; background:var(--border); margin:0 .25rem; }
+  .step-line.done { background:var(--text); }
+
+  .checkout-layout { display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start; }
+  .section-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.25rem; }
+  .section-card h3 { font-family:var(--font-head); font-size:1.2rem; margin-bottom:1.25rem; padding-bottom:.75rem; border-bottom:1px solid var(--sand-dark); }
+  .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+
+  .order-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; position:sticky; top:80px; }
+  .order-card h3 { font-family:var(--font-head); font-size:1.2rem; margin-bottom:1rem; }
+  .order-thumb { width:40px; height:40px; border-radius:6px; overflow:hidden; background:var(--sand-dark); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .order-thumb img { width:100%; height:100%; object-fit:cover; }
+  .order-item { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; border-bottom:1px solid var(--sand-dark); }
+  .order-item:last-of-type { border-bottom:none; }
+  .order-item-info { flex:1; min-width:0; }
+  .order-item-name { font-size:.875rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .order-item-qty { font-size:.775rem; color:var(--muted); }
+  .order-item-price { font-weight:700; font-size:.9rem; flex-shrink:0; }
+  .order-total { display:flex; justify-content:space-between; margin-top:.85rem; padding-top:.85rem; border-top:2px solid var(--border); font-weight:700; font-size:1.05rem; }
+  .order-total span:last-child { color:var(--rust); }
+
+  @media(max-width:768px) {
+    .checkout-layout { grid-template-columns:1fr; }
+    .form-row-2 { grid-template-columns:1fr; }
+    .order-card { position:static; }
   }
 </style>
 {% endblock %}
+
 {% block content %}
-<div class="page-header">
-  <h1>Confirmar compra</h1>
-  <p>Revisa tus datos antes de enviar la solicitud.</p>
+<!-- Indicador de pasos -->
+<div class="steps">
+  <div class="step done">
+    <div class="step-num"><i class="bi bi-check" style="font-size:.75rem;"></i></div>
+    <span>Carrito</span>
+  </div>
+  <div class="step-line done"></div>
+  <div class="step active">
+    <div class="step-num">2</div>
+    <span>Tus datos</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <span>Pago</span>
+  </div>
 </div>
 
 <div class="checkout-layout">
   <div>
     <form method="post" novalidate>
       {% csrf_token %}
-      <div class="card card-body" style="margin-bottom:1.25rem;">
-        <p class="section-title">Tus datos</p>
+      <div class="section-card">
+        <h3>Datos de contacto</h3>
         <div class="form-group">
           <label class="form-label">Cédula / RUC</label>
           {{ form.dni }}
@@ -60,10 +94,11 @@
           <label class="form-label">Dirección de entrega</label>
           {{ form.address }}
         </div>
-        <div class="form-group">
-          <label class="form-label">Notas adicionales <span style="color:var(--muted);font-weight:400;">(opcional)</span></label>
-          <textarea name="notes" class="form-control" placeholder="Ej: horario de entrega, instrucciones especiales..."></textarea>
-        </div>
+      </div>
+      <div class="section-card">
+        <h3>Notas adicionales <span style="font-family:var(--font-body);font-size:.875rem;font-weight:400;color:var(--muted);">(opcional)</span></h3>
+        <textarea name="notes" class="form-control" rows="2"
+          placeholder="Horario de entrega, instrucciones especiales..."></textarea>
       </div>
       <button type="submit" class="btn btn-primary btn-lg btn-full">
         Continuar al pago <i class="bi bi-arrow-right"></i>
@@ -71,21 +106,28 @@
     </form>
   </div>
 
-  <div class="card card-body order-summary" style="position:sticky;top:80px;">
+  <div class="order-card">
     <h3>Tu pedido</h3>
     {% for item in items %}
     <div class="order-item">
-      <span class="name">{{ item.product.name }} <span style="color:var(--muted);">x{{ item.quantity }}</span></span>
-      <span class="price">${{ item.subtotal }}</span>
+      <div class="order-thumb">
+        {% if item.product.image %}
+          <img src="{{ item.product.image.url }}" alt="">
+        {% else %}
+          <i class="bi bi-image" style="font-size:.875rem;color:var(--border);"></i>
+        {% endif %}
+      </div>
+      <div class="order-item-info">
+        <p class="order-item-name">{{ item.product.name }}</p>
+        <p class="order-item-qty">×{{ item.quantity }}</p>
+      </div>
+      <span class="order-item-price">${{ item.subtotal }}</span>
     </div>
     {% endfor %}
     <div class="order-total">
       <span>Total estimado</span>
       <span>${{ total }}</span>
     </div>
-    <p style="color:var(--muted);font-size:.8rem;margin-top:1rem;text-align:center;">
-      El IVA (15%) se calculará al confirmar el pago.
-    </p>
   </div>
 </div>
 {% endblock %}

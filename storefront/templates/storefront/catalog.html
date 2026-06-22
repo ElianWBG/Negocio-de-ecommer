@@ -3,73 +3,94 @@
 
 {% block extra_css %}
 <style>
-  .hero-strip { background: var(--espresso); color: #fff; border-radius: var(--radius); padding: 2.5rem 2rem; margin-bottom: 2.5rem; text-align: center; }
-  .hero-strip h1 { font-family: var(--font-head); font-size: 2.8rem; font-weight: 600; letter-spacing: .01em; margin-bottom: .5rem; }
-  .hero-strip p { color: rgba(255,255,255,.65); margin-bottom: 1.5rem; font-size: .95rem; }
-  .search-bar { display: flex; gap: .5rem; max-width: 560px; margin: 0 auto; }
-  .search-bar input { flex: 1; padding: .75rem 1.1rem; border: none; border-radius: 8px; font-family: var(--font-body); font-size: .95rem; background: rgba(255,255,255,.12); color: #fff; }
-  .search-bar input::placeholder { color: rgba(255,255,255,.45); }
-  .search-bar input:focus { outline: none; background: rgba(255,255,255,.18); }
-  .search-bar select { padding: .75rem 1rem; border: none; border-radius: 8px; background: rgba(255,255,255,.12); color: #fff; font-family: var(--font-body); font-size: .9rem; cursor: pointer; }
-  .search-bar select option { background: var(--espresso); }
-  .search-bar button { padding: .75rem 1.3rem; background: var(--rust); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-body); transition: background var(--transition); white-space: nowrap; }
-  .search-bar button:hover { background: var(--rust-dark); }
+  .hero-strip { background:var(--espresso); border-radius:var(--radius); padding:2.5rem 2rem; margin-bottom:2rem; text-align:center; }
+  .hero-strip h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:600; color:#fff; letter-spacing:.01em; margin-bottom:.4rem; }
+  .hero-strip p { color:rgba(255,255,255,.6); margin-bottom:1.5rem; font-size:.95rem; }
+  .search-bar { display:flex; gap:.5rem; max-width:560px; margin:0 auto; }
+  .search-bar input { flex:1; padding:.75rem 1.1rem; border:none; border-radius:8px; font-family:var(--font-body); font-size:.95rem; background:rgba(255,255,255,.12); color:#fff; }
+  .search-bar input::placeholder { color:rgba(255,255,255,.4); }
+  .search-bar input:focus { outline:none; background:rgba(255,255,255,.18); }
+  .search-bar button { padding:.75rem 1.3rem; background:var(--rust); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-family:var(--font-body); transition:background var(--transition); white-space:nowrap; }
+  .search-bar button:hover { background:var(--rust-dark); }
 
-  .filters-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-  .filters-row p { color: var(--muted); font-size: .875rem; }
+  .cat-pills { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem; margin-bottom:1.5rem; scrollbar-width:none; }
+  .cat-pills::-webkit-scrollbar { display:none; }
+  .cat-pill { display:inline-flex; align-items:center; padding:.4rem 1rem; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.85rem; font-weight:500; white-space:nowrap; cursor:pointer; text-decoration:none; transition:all var(--transition); }
+  .cat-pill:hover { border-color:var(--rust); color:var(--rust); }
+  .cat-pill.active { background:var(--espresso); border-color:var(--espresso); color:#fff; }
 
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
+  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
+  .toolbar p { color:var(--muted); font-size:.875rem; }
 
-  .product-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: transform var(--transition), box-shadow var(--transition); display: flex; flex-direction: column; position: relative; }
-  .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-  .product-card:hover .card-cta { opacity: 1; transform: translateY(0); }
+  .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1.25rem; }
 
-  .product-img { height: 210px; overflow: hidden; background: var(--sand); position: relative; }
-  .product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
-  .product-card:hover .product-img img { transform: scale(1.04); }
-  .product-img .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--border); font-size: 2.5rem; }
-  .stock-badge { position: absolute; top: .75rem; left: .75rem; }
+  .product-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; transition:transform var(--transition), box-shadow var(--transition); display:flex; flex-direction:column; position:relative; }
+  .product-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); }
+  .product-card:hover .card-overlay { opacity:1; }
 
-  .card-info { padding: 1rem 1rem .75rem; flex: 1; }
-  .card-brand { font-size: .75rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .3rem; }
-  .card-name { font-family: var(--font-head); font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: .4rem; line-height: 1.3; }
-  .card-price { font-size: 1.15rem; font-weight: 700; color: var(--rust); }
+  .product-img { height:210px; overflow:hidden; background:var(--sand-dark); position:relative; flex-shrink:0; }
+  .product-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; }
+  .product-card:hover .product-img img { transform:scale(1.06); }
+  .product-img .no-img { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:.5rem; }
+  .product-img .no-img i { font-size:2rem; color:var(--border); }
+  .product-img .no-img span { font-size:.75rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
+  .stock-badge { position:absolute; top:.65rem; left:.65rem; z-index:1; }
 
-  .card-cta { padding: .75rem 1rem; border-top: 1px solid var(--sand-dark); opacity: 0; transform: translateY(6px); transition: opacity var(--transition), transform var(--transition); }
-  .card-cta a { display: flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; padding: .6rem; background: var(--espresso); color: #fff; border-radius: 7px; text-decoration: none; font-size: .85rem; font-weight: 600; transition: background var(--transition); }
-  .card-cta a:hover { background: var(--rust); }
+  .card-overlay { position:absolute; inset:0; background:rgba(35,26,16,.45); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition); }
+  .card-overlay a { background:#fff; color:var(--espresso); border-radius:8px; padding:.6rem 1.25rem; font-weight:700; font-size:.85rem; text-decoration:none; transition:background var(--transition), color var(--transition); }
+  .card-overlay a:hover { background:var(--rust); color:#fff; }
 
-  @media (max-width: 480px) {
-    .hero-strip h1 { font-size: 2rem; }
-    .search-bar { flex-direction: column; }
-    .product-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
-    .product-img { height: 150px; }
-    .card-cta { opacity: 1; transform: none; }
+  .card-info { padding:1rem; flex:1; display:flex; flex-direction:column; }
+  .card-brand { font-size:.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin-bottom:.3rem; }
+  .card-name { font-family:var(--font-head); font-size:1.1rem; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:auto; }
+  .card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:.75rem; padding-top:.75rem; border-top:1px solid var(--sand-dark); }
+  .card-price { font-size:1.15rem; font-weight:700; color:var(--rust); }
+  .card-action { display:inline-flex; align-items:center; gap:.3rem; font-size:.8rem; font-weight:600; color:var(--espresso); text-decoration:none; padding:.35rem .75rem; border:1.5px solid var(--border); border-radius:6px; transition:all var(--transition); }
+  .card-action:hover { background:var(--espresso); color:#fff; border-color:var(--espresso); }
+
+  @media(max-width:480px) {
+    .hero-strip h1 { font-size:1.9rem; }
+    .search-bar { flex-direction:column; }
+    .product-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; }
+    .product-img { height:150px; }
+    .card-overlay { opacity:1; background:rgba(35,26,16,.3); }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="hero-strip">
-  <h1>Encuentra lo que necesitas</h1>
-  <p>Explora nuestro catálogo y haz tu pedido en minutos</p>
+  <h1>Encuentra lo que buscas</h1>
+  <p>Explora nuestro catálogo y solicita tu pedido en minutos</p>
   <form method="get" class="search-bar">
+    {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
     <input type="text" name="q" value="{{ query }}" placeholder="Buscar producto...">
-    <select name="group">
-      <option value="">Categorías</option>
-      {% for g in groups %}
-      <option value="{{ g.id }}" {% if selected_group == g.id|stringformat:"s" %}selected{% endif %}>{{ g.name }}</option>
-      {% endfor %}
-    </select>
     <button type="submit"><i class="bi bi-search"></i> Buscar</button>
   </form>
 </div>
 
-<div class="filters-row">
-  <p>{{ products|length }} producto{% if products|length != 1 %}s{% endif %}{% if query %} para "{{ query }}"{% endif %}</p>
+<!-- Filtros por categoría como pills -->
+<div class="cat-pills">
+  <a href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}"
+     class="cat-pill {% if not selected_group %}active{% endif %}">
+    Todos
+  </a>
+  {% for g in groups %}
+  <a href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}"
+     class="cat-pill {% if selected_group == g.id|stringformat:'s' %}active{% endif %}">
+    {{ g.name }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="toolbar">
+  <p>
+    {{ products|length }} producto{% if products|length != 1 %}s{% endif %}
+    {% if query %} para "<strong>{{ query }}</strong>"{% endif %}
+  </p>
   {% if query or selected_group %}
   <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-sm">
-    <i class="bi bi-x"></i> Limpiar filtros
+    <i class="bi bi-x"></i> Limpiar
   </a>
   {% endif %}
 </div>
@@ -82,7 +103,10 @@
       {% if product.image %}
         <img src="{{ product.image.url }}" alt="{{ product.name }}">
       {% else %}
-        <div class="no-img"><i class="bi bi-image"></i></div>
+        <div class="no-img">
+          <i class="bi bi-image"></i>
+          <span>{{ product.group.name }}</span>
+        </div>
       {% endif %}
       <div class="stock-badge">
         {% if product.stock > 0 %}
@@ -91,16 +115,19 @@
           <span class="badge badge-danger">Agotado</span>
         {% endif %}
       </div>
+      <div class="card-overlay">
+        <a href="{% url 'storefront:product_detail' product.pk %}">Ver detalle</a>
+      </div>
     </div>
     <div class="card-info">
-      <p class="card-brand">{{ product.brand.name }} · {{ product.group.name }}</p>
+      <p class="card-brand">{{ product.brand.name }}</p>
       <h2 class="card-name">{{ product.name }}</h2>
-      <p class="card-price">${{ product.unit_price }}</p>
-    </div>
-    <div class="card-cta">
-      <a href="{% url 'storefront:product_detail' product.pk %}">
-        <i class="bi bi-eye"></i> Ver detalle
-      </a>
+      <div class="card-footer">
+        <span class="card-price">${{ product.unit_price }}</span>
+        <a href="{% url 'storefront:product_detail' product.pk %}" class="card-action">
+          <i class="bi bi-eye"></i> Ver
+        </a>
+      </div>
     </div>
   </article>
   {% endfor %}
@@ -109,8 +136,8 @@
 <div class="empty-state">
   <i class="bi bi-search"></i>
   <h3>Sin resultados</h3>
-  <p>No encontramos productos con esos criterios. Intenta con otra búsqueda.</p>
-  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver todo el catálogo</a>
+  <p>No encontramos productos con esos criterios. Prueba con otra búsqueda.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver todo</a>
 </div>
 {% endif %}
 {% endblock %}

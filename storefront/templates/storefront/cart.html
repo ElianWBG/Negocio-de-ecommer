@@ -3,83 +3,94 @@
 
 {% block extra_css %}
 <style>
-  .cart-layout { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start; }
-  .cart-table { width: 100%; border-collapse: collapse; }
-  .cart-table th { text-align: left; padding: .6rem 1rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 2px solid var(--border); }
-  .cart-table td { padding: 1rem; border-bottom: 1px solid var(--sand-dark); vertical-align: middle; }
-  .cart-table tr:last-child td { border-bottom: none; }
-  .item-name { font-family: var(--font-head); font-size: 1.05rem; font-weight: 600; }
-  .item-brand { font-size: .8rem; color: var(--muted); }
-  .item-price { color: var(--muted); font-size: .9rem; }
-  .item-subtotal { font-weight: 700; color: var(--text); }
-  .remove-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: .3rem; border-radius: 6px; transition: color var(--transition), background var(--transition); }
-  .remove-btn:hover { color: #c0392b; background: #fef2f0; }
-  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; position: sticky; top: 80px; }
-  .summary-card h3 { font-family: var(--font-head); font-size: 1.3rem; margin-bottom: 1rem; }
-  .summary-row { display: flex; justify-content: space-between; padding: .5rem 0; font-size: .9rem; }
-  .summary-row.total { font-weight: 700; font-size: 1.1rem; border-top: 2px solid var(--border); margin-top: .5rem; padding-top: .85rem; }
-  .summary-row.total span:last-child { color: var(--rust); }
-  @media (max-width: 768px) {
-    .cart-layout { grid-template-columns: 1fr; }
-    .summary-card { position: static; }
+  .cart-layout { display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start; }
+  .cart-item { display:grid; grid-template-columns:72px 1fr auto; gap:1rem; align-items:center; padding:1rem 1.25rem; border-bottom:1px solid var(--sand-dark); }
+  .cart-item:last-child { border-bottom:none; }
+  .item-thumb { width:72px; height:72px; border-radius:8px; overflow:hidden; background:var(--sand-dark); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .item-thumb img { width:100%; height:100%; object-fit:cover; }
+  .item-thumb i { font-size:1.5rem; color:var(--border); }
+  .item-name { font-family:var(--font-head); font-size:1.05rem; font-weight:600; margin-bottom:.2rem; }
+  .item-meta { font-size:.8rem; color:var(--muted); }
+  .item-price { font-size:.875rem; color:var(--muted); margin-top:.25rem; }
+  .item-controls { display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
+  .item-subtotal { font-weight:700; font-size:1rem; color:var(--text); }
+  .qty-mini { display:flex; align-items:center; border:1.5px solid var(--border); border-radius:6px; overflow:hidden; }
+  .qty-mini-btn { width:32px; height:32px; background:var(--sand); border:none; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; transition:background var(--transition); }
+  .qty-mini-btn:hover { background:var(--sand-dark); }
+  .qty-mini-val { width:36px; height:32px; border:none; border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); text-align:center; font-size:.875rem; font-weight:600; background:var(--surface); line-height:32px; }
+  .remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.8rem; padding:0; display:flex; align-items:center; gap:.25rem; transition:color var(--transition); }
+  .remove-btn:hover { color:#c0392b; }
+
+  .summary-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; position:sticky; top:80px; }
+  .summary-card h3 { font-family:var(--font-head); font-size:1.3rem; margin-bottom:1rem; }
+  .summary-row { display:flex; justify-content:space-between; padding:.45rem 0; font-size:.9rem; }
+  .summary-total { display:flex; justify-content:space-between; padding:.85rem 0 0; margin-top:.5rem; border-top:2px solid var(--border); font-weight:700; font-size:1.1rem; }
+  .summary-total span:last-child { color:var(--rust); }
+  .summary-note { font-size:.78rem; color:var(--muted); text-align:center; margin-top:.75rem; }
+
+  @media(max-width:768px) {
+    .cart-layout { grid-template-columns:1fr; }
+    .summary-card { position:static; }
+    .cart-item { grid-template-columns:56px 1fr auto; }
+    .item-thumb { width:56px; height:56px; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1><i class="bi bi-bag" style="font-size:1.6rem;vertical-align:middle;margin-right:.3rem;"></i> Tu carrito</h1>
+  <h1><i class="bi bi-bag" style="vertical-align:middle;margin-right:.3rem;"></i>Tu carrito</h1>
 </div>
 
 {% if items %}
 <div class="cart-layout">
   <div class="card">
-    <table class="cart-table">
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Precio</th>
-          <th>Cantidad</th>
-          <th>Subtotal</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        <tr>
-          <td>
-            <p class="item-name">{{ item.product.name }}</p>
-            <p class="item-brand">{{ item.product.brand.name }} · {{ item.product.group.name }}</p>
-          </td>
-          <td class="item-price">${{ item.product.unit_price }}</td>
-          <td>{{ item.quantity }}</td>
-          <td class="item-subtotal">${{ item.subtotal }}</td>
-          <td>
-            <form method="post" action="{% url 'storefront:cart_remove' item.product.pk %}">
-              {% csrf_token %}
-              <button type="submit" class="remove-btn" title="Quitar"><i class="bi bi-trash"></i></button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% for item in items %}
+    <div class="cart-item">
+      <div class="item-thumb">
+        {% if item.product.image %}
+          <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+        {% else %}
+          <i class="bi bi-image"></i>
+        {% endif %}
+      </div>
+      <div>
+        <p class="item-name">{{ item.product.name }}</p>
+        <p class="item-meta">{{ item.product.brand.name }} · {{ item.product.group.name }}</p>
+        <p class="item-price">${{ item.product.unit_price }} por unidad</p>
+      </div>
+      <div class="item-controls">
+        <span class="item-subtotal">${{ item.subtotal }}</span>
+        <div class="qty-mini">
+          <span class="qty-mini-btn">{{ item.quantity }}</span>
+          <span class="qty-mini-val">{{ item.quantity }}</span>
+        </div>
+        <form method="post" action="{% url 'storefront:cart_remove' item.product.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="remove-btn">
+            <i class="bi bi-trash"></i> Quitar
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
   </div>
 
   <div class="summary-card">
     <h3>Resumen</h3>
     {% for item in items %}
     <div class="summary-row">
-      <span>{{ item.product.name }} x{{ item.quantity }}</span>
+      <span style="color:var(--muted);">{{ item.product.name }} ×{{ item.quantity }}</span>
       <span>${{ item.subtotal }}</span>
     </div>
     {% endfor %}
-    <div class="summary-row total">
+    <div class="summary-total">
       <span>Total estimado</span>
       <span>${{ total }}</span>
     </div>
-    <a href="{% url 'storefront:checkout' %}" class="btn btn-primary btn-full" style="margin-top:1.25rem;">
-      Continuar con la compra <i class="bi bi-arrow-right"></i>
+    <p class="summary-note">IVA (15%) incluido al confirmar el pago</p>
+    <a href="{% url 'storefront:checkout' %}" class="btn btn-primary btn-full" style="margin-top:1rem;">
+      Continuar <i class="bi bi-arrow-right"></i>
     </a>
     <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-full" style="margin-top:.6rem;">
       <i class="bi bi-arrow-left"></i> Seguir comprando
