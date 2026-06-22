@@ -3,53 +3,249 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Ventas{% endblock %}</title>
+  <title>{% block title %}Panel{% endblock %} — Sistema de ventas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-w: 220px;
+      --sidebar-bg: #1A1209;
+      --sidebar-hover: rgba(255,255,255,.06);
+      --sidebar-active: #B5441B;
+      --topbar-h: 56px;
+      --rust: #B5441B;
+      --sand: #F8F3EE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #F1EEE9; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
+      background: var(--sidebar-bg);
+      display: flex; flex-direction: column;
+      z-index: 200; overflow-y: auto;
+      transition: transform .25s ease;
+    }
+    .sidebar-logo {
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .sidebar-logo a {
+      font-size: 1.1rem; font-weight: 700; color: #fff;
+      text-decoration: none; letter-spacing: .01em;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sidebar-logo .dot { color: var(--rust); }
+    .sidebar-logo .version { font-size: .7rem; color: rgba(255,255,255,.3); margin-top: .15rem; }
+
+    .sidebar-section { padding: .75rem .75rem .25rem; }
+    .sidebar-section-label {
+      font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.3);
+      padding: 0 .5rem .4rem;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .55rem .75rem; border-radius: 7px;
+      color: rgba(255,255,255,.65); text-decoration: none;
+      font-size: .875rem; font-weight: 500;
+      transition: background .15s, color .15s;
+      margin-bottom: 2px;
+    }
+    .sidebar-link i { font-size: 1rem; width: 18px; flex-shrink: 0; }
+    .sidebar-link:hover { background: var(--sidebar-hover); color: #fff; }
+    .sidebar-link.active { background: var(--rust); color: #fff; }
+    .sidebar-link .badge-pill {
+      margin-left: auto; background: rgba(255,255,255,.15);
+      color: #fff; font-size: .65rem; font-weight: 700;
+      padding: .15rem .5rem; border-radius: 20px;
+    }
+    .sidebar-link.active .badge-pill { background: rgba(255,255,255,.25); }
+
+    .sidebar-bottom {
+      margin-top: auto; padding: .75rem;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .5rem .6rem; border-radius: 7px;
+      margin-bottom: .4rem;
+    }
+    .sidebar-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--rust); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .sidebar-username { font-size: .8rem; color: rgba(255,255,255,.75); font-weight: 500; }
+    .sidebar-email { font-size: .7rem; color: rgba(255,255,255,.35); }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: fixed; top: 0; left: var(--sidebar-w); right: 0;
+      height: var(--topbar-h); background: #fff;
+      border-bottom: 1px solid #E8E3DC;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem; z-index: 100;
+    }
+    .topbar-title {
+      font-size: 1rem; font-weight: 600; color: #1A1209;
+    }
+    .topbar-actions { display: flex; align-items: center; gap: .5rem; }
+    .topbar-btn {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .4rem .85rem; border-radius: 7px;
+      font-size: .8rem; font-weight: 600; text-decoration: none;
+      border: 1.5px solid #E8E3DC; color: #5a5248;
+      background: #fff; transition: all .15s;
+    }
+    .topbar-btn:hover { background: var(--sand); border-color: #ccc; color: #1A1209; }
+    .topbar-btn.primary { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .topbar-btn.primary:hover { background: #9E3D15; border-color: #9E3D15; }
+    .hamburger {
+      display: none; background: none; border: none;
+      cursor: pointer; padding: .3rem; border-radius: 6px;
+      color: #1A1209; font-size: 1.25rem;
+    }
+
+    /* ── MAIN ── */
+    .main-wrap {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--topbar-h);
+      padding: 1.75rem;
+      min-height: calc(100vh - var(--topbar-h));
+    }
+
+    /* ── ALERTS ── */
+    .alert { border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; }
+
+    /* ── OVERLAY (mobile) ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 150;
+    }
+
+    @media(max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .topbar { left: 0; }
+      .main-wrap { margin-left: 0; }
+      .hamburger { display: flex; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
-<!-- Barra de navegación -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="{% url 'billing:home' %}">Sistemas de Ventas</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="nav">
-      <ul class="navbar-nav me-auto">
-        {% if user.is_authenticated %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:home' %}"><i class="bi bi-speedometer2"></i> Inicio</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:brand_list' %}">Marcas</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:productgroup_list' %}">Grupos</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:supplier_list' %}">Proveedores</a></li> 
-        <li class="nav-item"><a class="nav-link" href="{% url 'purchasing:purchase_list' %}">Compras</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:product_list' %}">Productos</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:customer_list' %}">Clientes</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:invoice_list' %}">Facturas</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'storefront:purchase_request_list' %}"><i class="bi bi-bell"></i> Solicitudes</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:report_sales' %}"><i class="bi bi-bar-chart"></i> Reportes</a></li>
-        {% endif %}
-      </ul>
-      <ul class="navbar-nav">
-        {% if user.is_authenticated %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'storefront:catalog_list' %}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Ver tienda</a></li>
-        <li class="nav-item"><span class="nav-link text-light">{{ user.username }}</span></li>
-        <li class="nav-item">
-          <form method="post" action="{% url 'logout' %}" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="nav-link btn btn-link text-light" style="text-decoration:none;">Logout</button>
-          </form>
-        </li>
-        {% else %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'billing:signup' %}">Registarse</a></li>
-        {% endif %}
-      </ul>
-    </div>
+
+<!-- Overlay móvil -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="{% url 'billing:home' %}">
+      <i class="bi bi-shop"></i>
+      <span>Sistema<span class="dot">.</span>Ventas</span>
+    </a>
+    <div class="version">Panel de administración</div>
   </div>
-</nav>
-<!-- Contenido principal -->
-<div class="container mt-4">
+
+  {% if user.is_authenticated %}
+  <div class="sidebar-section">
+    <a href="{% url 'billing:home' %}" class="sidebar-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Inicio
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Catálogo</div>
+    <a href="{% url 'billing:product_list' %}" class="sidebar-link {% if 'product' in request.path and 'invoice' not in request.path %}active{% endif %}">
+      <i class="bi bi-box-seam"></i> Productos
+    </a>
+    <a href="{% url 'billing:productgroup_list' %}" class="sidebar-link {% if 'groups' in request.path %}active{% endif %}">
+      <i class="bi bi-folder2"></i> Categorías
+    </a>
+    <a href="{% url 'billing:brand_list' %}" class="sidebar-link {% if 'brands' in request.path %}active{% endif %}">
+      <i class="bi bi-tag"></i> Marcas
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Ventas</div>
+    <a href="{% url 'storefront:purchase_request_list' %}" class="sidebar-link {% if 'solicitudes' in request.path %}active{% endif %}">
+      <i class="bi bi-bell"></i> Solicitudes
+    </a>
+    <a href="{% url 'billing:invoice_list' %}" class="sidebar-link {% if 'invoices' in request.path %}active{% endif %}">
+      <i class="bi bi-receipt"></i> Facturas
+    </a>
+    <a href="{% url 'billing:customer_list' %}" class="sidebar-link {% if 'customers' in request.path %}active{% endif %}">
+      <i class="bi bi-people"></i> Clientes
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Compras</div>
+    <a href="{% url 'purchasing:purchase_list' %}" class="sidebar-link {% if 'purchases' in request.path %}active{% endif %}">
+      <i class="bi bi-cart4"></i> Compras
+    </a>
+    <a href="{% url 'billing:supplier_list' %}" class="sidebar-link {% if 'suppliers' in request.path %}active{% endif %}">
+      <i class="bi bi-truck"></i> Proveedores
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Análisis</div>
+    <a href="{% url 'billing:report_sales' %}" class="sidebar-link {% if 'reportes/ventas' in request.path %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i> Ventas
+    </a>
+    <a href="{% url 'billing:report_stock' %}" class="sidebar-link {% if 'reportes/stock' in request.path %}active{% endif %}">
+      <i class="bi bi-boxes"></i> Stock
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="sidebar-bottom">
+    {% if user.is_authenticated %}
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">{{ user.username|first|upper }}</div>
+      <div>
+        <div class="sidebar-username">{{ user.username }}</div>
+        <div class="sidebar-email">{{ user.email|truncatechars:22 }}</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="sidebar-link" style="width:100%;border:none;cursor:pointer;background:none;">
+        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <i class="bi bi-list"></i>
+    </button>
+    <span class="topbar-title">{% block topbar_title %}Panel{% endblock %}</span>
+  </div>
+  <div class="topbar-actions">
+    <a href="{% url 'billing:report_sales' %}" class="topbar-btn">
+      <i class="bi bi-bar-chart"></i> Reportes
+    </a>
+    <a href="{% url 'storefront:catalog_list' %}" target="_blank" class="topbar-btn primary">
+      <i class="bi bi-box-arrow-up-right"></i> Ver tienda
+    </a>
+  </div>
+</header>
+
+<!-- CONTENIDO -->
+<main class="main-wrap">
   {% if messages %}
     {% for m in messages %}
     <div class="alert alert-{{ m.tags }} alert-dismissible fade show">
@@ -57,11 +253,20 @@
     </div>
     {% endfor %}
   {% endif %}
-  {% block content %}
-    
-  
-  {% endblock %}
-</div>
+  {% block content %}{% endblock %}
+</main>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>
