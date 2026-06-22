@@ -1,0 +1,426 @@
+{% extends 'billing/base.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar Producto{% else %}Crear Producto{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        {% if form.instance.pk %}
+          ✏️ Editar Producto: {{ form.instance.name }}
+        {% else %}
+          ➕ Crear Nuevo Producto
+        {% endif %}
+      </h1>
+      <p class="text-muted small mb-0">Completa los detalles del producto para {% if form.instance.pk %}actualizarlo{% else %}registrarlo{% endif %} en el sistema.</p>
+    </div>
+    <a href="{% url 'billing:product_list' %}" class="btn btn-outline-secondary">
+      ⬅️ Volver al listado
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="productForm" novalidate>
+    {% csrf_token %}
+    
+    <!-- Checkbox oculto para limpiar imagen -->
+    <input type="checkbox" name="image-clear" id="image-clear_id" class="d-none">
+
+    <div class="row g-4">
+      <!-- COLUMNA IZQUIERDA - Información del Producto -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4 h-100">
+          <div class="card-header bg-dark text-white border-0 py-3 d-flex align-items-center">
+            <h5 class="mb-0 fs-6">📋 Información del Producto</h5>
+          </div>
+          <div class="card-body p-4">
+            
+            <div class="row g-3">
+              <!-- Código del producto (Auto/Readonly) -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold text-secondary mb-1">Código de Producto (ID)</label>
+                <div>
+                  {% if form.instance.pk %}
+                    <input type="text" class="form-control bg-light" value="#{{ form.instance.pk }}" readonly disabled>
+                  {% else %}
+                    <span class="badge bg-secondary px-3 py-2 fs-6 d-inline-block">Autogenerado al guardar</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Nombre -->
+              <div class="col-md-12">
+                <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.name.label }}
+                  <span class="text-danger" title="Requerido">*</span>
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                  <div class="text-danger small mt-1">{{ form.name.errors|striptags }}</div>
+                {% endif %}
+                {% if form.name.help_text %}
+                  <small class="text-muted d-block mt-1">{{ form.name.help_text|safe }}</small>
+                {% endif %}
+              </div>
+
+              <!-- Descripción -->
+              <div class="col-md-12">
+                <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.description.label }}
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                  <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+                {% endif %}
+                {% if form.description.help_text %}
+                  <small class="text-muted d-block mt-1">{{ form.description.help_text|safe }}</small>
+                {% endif %}
+              </div>
+
+              <!-- Marca y Grupo/Categoría -->
+              <div class="col-md-6">
+                <label for="{{ form.brand.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.brand.label }}
+                  <span class="text-danger">*</span>
+                </label>
+                {{ form.brand }}
+                {% if form.brand.errors %}
+                  <div class="text-danger small mt-1">{{ form.brand.errors|striptags }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6">
+                <label for="{{ form.group.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.group.label }}
+                  <span class="text-danger">*</span>
+                </label>
+                {{ form.group }}
+                {% if form.group.errors %}
+                  <div class="text-danger small mt-1">{{ form.group.errors|striptags }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Proveedores -->
+              <div class="col-md-12">
+                <label for="{{ form.suppliers.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.suppliers.label }}
+                </label>
+                {{ form.suppliers }}
+                {% if form.suppliers.errors %}
+                  <div class="text-danger small mt-1">{{ form.suppliers.errors|striptags }}</div>
+                {% endif %}
+                {% if form.suppliers.help_text %}
+                  <small class="text-muted d-block mt-1">{{ form.suppliers.help_text|safe }}</small>
+                {% endif %}
+              </div>
+
+              <!-- Precio Unitario y Stock -->
+              <div class="col-md-6">
+                <label for="{{ form.unit_price.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.unit_price.label }}
+                  <span class="text-danger">*</span>
+                </label>
+                {{ form.unit_price }}
+                <div class="invalid-feedback">El precio unitario debe ser mayor que cero.</div>
+                {% if form.unit_price.errors %}
+                  <div class="text-danger small mt-1">{{ form.unit_price.errors|striptags }}</div>
+                {% endif %}
+                {% if form.unit_price.help_text %}
+                  <small class="text-muted d-block mt-1">{{ form.unit_price.help_text|safe }}</small>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label for="{{ form.stock.id_for_label }}" class="form-label fw-semibold text-secondary mb-1">
+                  {{ form.stock.label }}
+                  <span class="text-danger">*</span>
+                </label>
+                {{ form.stock }}
+                {% if form.stock.errors %}
+                  <div class="text-danger small mt-1">{{ form.stock.errors|striptags }}</div>
+                {% endif %}
+                {% if form.stock.help_text %}
+                  <small class="text-muted d-block mt-1">{{ form.stock.help_text|safe }}</small>
+                {% endif %}
+              </div>
+
+              <!-- Estado -->
+              <div class="col-md-12 mt-4">
+                <div class="form-check form-switch">
+                  {{ form.is_active }}
+                  <label class="form-check-label fw-semibold text-secondary" for="{{ form.is_active.id_for_label }}">
+                    {{ form.is_active.label }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA - Imagen y Resumen -->
+      <div class="col-lg-4">
+        
+        <!-- Card de Imagen -->
+        <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+          <div class="card-header bg-light border-0 py-3">
+            <h5 class="mb-0 fs-6">🖼️ Imagen del Producto</h5>
+          </div>
+          <div class="card-body text-center p-4">
+            
+            <!-- Zona de Vista Previa y Drop -->
+            <div id="dropZone" class="border border-2 border-dashed border-secondary rounded-3 p-2 bg-light mb-3 position-relative d-flex align-items-center justify-content-center"
+                 style="cursor: pointer; min-height: 250px; transition: all 0.2s ease;">
+              
+              <!-- Si tiene imagen -->
+              {% if form.instance.image %}
+                <img src="{{ form.instance.image.url }}" alt="{{ form.instance.name }}" 
+                     id="imagePreview" class="img-fluid rounded" 
+                     style="max-height: 240px; object-fit: contain;">
+                
+                <div id="noImagePlaceholder" class="text-muted p-3 d-none">
+                  <span style="font-size: 2.5rem;">📷</span>
+                  <p class="mb-0 mt-2 small">Arrastra una imagen aquí</p>
+                  <span class="text-secondary" style="font-size: 0.75rem;">o haz clic para buscar</span>
+                </div>
+              {% else %}
+                <img id="imagePreview" class="img-fluid rounded d-none" 
+                     style="max-height: 240px; object-fit: contain;">
+                
+                <div id="noImagePlaceholder" class="text-muted p-3">
+                  <span style="font-size: 2.5rem;">📷</span>
+                  <p class="mb-0 mt-2 small">Arrastra una imagen aquí</p>
+                  <span class="text-secondary" style="font-size: 0.75rem;">o haz clic para buscar</span>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Selector de archivo e Input File (Oculto) -->
+            <button type="button" class="btn btn-sm btn-outline-primary w-100 mb-2" id="selectImageTrigger">
+              📁 Seleccionar Imagen
+            </button>
+            <div class="d-none">
+              {{ form.image }}
+            </div>
+            
+            <!-- Botón de Limpiar Imagen -->
+            <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1 {% if not form.instance.image %}d-none{% endif %}" id="clearImageBtn">
+              🗑️ Eliminar imagen
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Card de Balance Calculado -->
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
+          <div class="card-header bg-dark border-0 py-3 text-center border-bottom border-secondary">
+            <h5 class="mb-0 fs-6 text-info">📊 Balance de Inventario</h5>
+          </div>
+          <div class="card-body text-center py-4">
+            <div class="display-6 fw-bold text-success mb-2" id="displayBalance">
+              $0.00
+            </div>
+            <p class="text-muted small mb-0">Valor estimado total en bodega</p>
+            
+            <div class="mt-4 text-start bg-secondary bg-opacity-25 rounded p-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">Precio Unitario:</span>
+                <span id="displayPrice" class="fw-bold text-info small">$0.00</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="text-muted small">Stock actual:</span>
+                <span id="displayStock" class="fw-bold text-info small">0 unidades</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="d-flex flex-column gap-2">
+          <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+            {% if form.instance.pk %}✅ Guardar Cambios{% else %}➕ Registrar Producto{% endif %}
+          </button>
+          <a href="{% url 'billing:product_list' %}" class="btn btn-outline-secondary btn-lg w-100">
+            ❌ Cancelar
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</div>
+
+<style>
+  #dropZone.dragover {
+    background-color: rgba(13, 110, 253, 0.08) !important;
+    border-color: #0d6efd !important;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  }
+  .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const priceInput = document.getElementById('id_unit_price');
+  const stockInput = document.getElementById('id_stock');
+  const imageInput = document.getElementById('id_image');
+  const imageClearCheckbox = document.getElementById('image-clear_id');
+  const imagePreview = document.getElementById('imagePreview');
+  const noImagePlaceholder = document.getElementById('noImagePlaceholder');
+  const displayBalance = document.getElementById('displayBalance');
+  const displayPrice = document.getElementById('displayPrice');
+  const displayStock = document.getElementById('displayStock');
+  const clearImageBtn = document.getElementById('clearImageBtn');
+  const form = document.getElementById('productForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const dropZone = document.getElementById('dropZone');
+
+  // ===== VALIDACIÓN INTERACTIVA Y CÁLCULO DE BALANCE =====
+  function updateAndValidate() {
+    const priceValue = priceInput.value.trim();
+    const stockValue = stockInput.value.trim();
+    
+    const price = parseFloat(priceValue) || 0;
+    const stock = parseInt(stockValue) || 0;
+    const balance = price * stock;
+
+    // Formateo monetario
+    const formattedPrice = '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formattedBalance = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    displayPrice.textContent = formattedPrice;
+    displayStock.textContent = stock + ' unidades';
+    displayBalance.textContent = formattedBalance;
+
+    // Resaltado visual del balance
+    if (balance > 0) {
+      displayBalance.classList.remove('text-danger');
+      displayBalance.classList.add('text-success');
+    } else {
+      displayBalance.classList.remove('text-success');
+      displayBalance.classList.add('text-danger');
+    }
+
+    // Validación interactiva del precio
+    let isPriceValid = true;
+    if (priceValue === '' || isNaN(price) || price <= 0) {
+      priceInput.classList.add('is-invalid');
+      isPriceValid = false;
+    } else {
+      priceInput.classList.remove('is-invalid');
+    }
+
+    // Gestionar el botón de envío
+    submitBtn.disabled = !isPriceValid;
+  }
+
+  // Escuchadores de eventos para respuesta instantánea
+  priceInput?.addEventListener('input', updateAndValidate);
+  stockInput?.addEventListener('input', updateAndValidate);
+
+  // Ejecución inicial
+  updateAndValidate();
+
+  // ===== SELECCIÓN Y VISTA PREVIA DE IMAGEN =====
+  function handleImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    // Validación de tamaño (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen no debe superar 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      imagePreview.src = e.target.result;
+      imagePreview.classList.remove('d-none');
+      if (noImagePlaceholder) noImagePlaceholder.classList.add('d-none');
+      if (clearImageBtn) clearImageBtn.classList.remove('d-none');
+      
+      // Asegurarse de que el checkbox de borrado del servidor esté desactivado
+      if (imageClearCheckbox) imageClearCheckbox.checked = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Activar selección de archivos al hacer clic en el botón custom o zona drop
+  const triggerBtn = document.getElementById('selectImageTrigger');
+  if (triggerBtn && imageInput) {
+    triggerBtn.addEventListener('click', function() {
+      imageInput.click();
+    });
+  }
+
+  if (dropZone && imageInput) {
+    dropZone.addEventListener('click', function(e) {
+      // Prevenir clics repetidos si se hace clic en la imagen dentro de la zona
+      if (e.target !== clearImageBtn) {
+        imageInput.click();
+      }
+    });
+  }
+
+  imageInput?.addEventListener('change', function() {
+    if (this.files.length > 0) {
+      handleImageFile(this.files[0]);
+    }
+  });
+
+  // Drag and Drop
+  if (dropZone) {
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function() {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        imageInput.files = files;
+        handleImageFile(files[0]);
+      }
+    });
+  }
+
+  // Eliminar Imagen
+  clearImageBtn?.addEventListener('click', function(e) {
+    e.stopPropagation(); // Evitar disparar el click del dropZone
+    
+    // Resetear el input file
+    if (imageInput) imageInput.value = '';
+    
+    // Ocultar vista previa
+    if (imagePreview) {
+      imagePreview.src = '';
+      imagePreview.classList.add('d-none');
+    }
+    
+    // Mostrar placeholder
+    if (noImagePlaceholder) noImagePlaceholder.classList.remove('d-none');
+    
+    // Marcar checkbox oculto de Django para borrar imagen en base de datos
+    if (imageClearCheckbox) imageClearCheckbox.checked = true;
+    
+    // Ocultar este botón
+    clearImageBtn.classList.add('d-none');
+  });
+});
+</script>
+{% endblock %}

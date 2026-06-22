@@ -1,0 +1,97 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Tu carrito{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cart-layout { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start; }
+  .cart-table { width: 100%; border-collapse: collapse; }
+  .cart-table th { text-align: left; padding: .6rem 1rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 2px solid var(--border); }
+  .cart-table td { padding: 1rem; border-bottom: 1px solid var(--sand-dark); vertical-align: middle; }
+  .cart-table tr:last-child td { border-bottom: none; }
+  .item-name { font-family: var(--font-head); font-size: 1.05rem; font-weight: 600; }
+  .item-brand { font-size: .8rem; color: var(--muted); }
+  .item-price { color: var(--muted); font-size: .9rem; }
+  .item-subtotal { font-weight: 700; color: var(--text); }
+  .remove-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: .3rem; border-radius: 6px; transition: color var(--transition), background var(--transition); }
+  .remove-btn:hover { color: #c0392b; background: #fef2f0; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; position: sticky; top: 80px; }
+  .summary-card h3 { font-family: var(--font-head); font-size: 1.3rem; margin-bottom: 1rem; }
+  .summary-row { display: flex; justify-content: space-between; padding: .5rem 0; font-size: .9rem; }
+  .summary-row.total { font-weight: 700; font-size: 1.1rem; border-top: 2px solid var(--border); margin-top: .5rem; padding-top: .85rem; }
+  .summary-row.total span:last-child { color: var(--rust); }
+  @media (max-width: 768px) {
+    .cart-layout { grid-template-columns: 1fr; }
+    .summary-card { position: static; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-bag" style="font-size:1.6rem;vertical-align:middle;margin-right:.3rem;"></i> Tu carrito</h1>
+</div>
+
+{% if items %}
+<div class="cart-layout">
+  <div class="card">
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <p class="item-name">{{ item.product.name }}</p>
+            <p class="item-brand">{{ item.product.brand.name }} · {{ item.product.group.name }}</p>
+          </td>
+          <td class="item-price">${{ item.product.unit_price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td class="item-subtotal">${{ item.subtotal }}</td>
+          <td>
+            <form method="post" action="{% url 'storefront:cart_remove' item.product.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="remove-btn" title="Quitar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="summary-card">
+    <h3>Resumen</h3>
+    {% for item in items %}
+    <div class="summary-row">
+      <span>{{ item.product.name }} x{{ item.quantity }}</span>
+      <span>${{ item.subtotal }}</span>
+    </div>
+    {% endfor %}
+    <div class="summary-row total">
+      <span>Total estimado</span>
+      <span>${{ total }}</span>
+    </div>
+    <a href="{% url 'storefront:checkout' %}" class="btn btn-primary btn-full" style="margin-top:1.25rem;">
+      Continuar con la compra <i class="bi bi-arrow-right"></i>
+    </a>
+    <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-full" style="margin-top:.6rem;">
+      <i class="bi bi-arrow-left"></i> Seguir comprando
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-bag"></i>
+  <h3>Tu carrito está vacío</h3>
+  <p>Agrega productos desde el catálogo para empezar tu compra.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver catálogo</a>
+</div>
+{% endif %}
+{% endblock %}

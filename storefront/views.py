@@ -1,0 +1,474 @@
+import secrets
+import uuid
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
+
+from billing.models import Product, ProductGroup, Customer
+from . import payphone
+from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm
+from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
+from .services import confirm_purchase_request, InsufficientStockError
+CART_SESSION_KEY = 'storefront_cart'
+
+
+# ---------------------------------------------------------------------
+# Helpers del carrito
+# ---------------------------------------------------------------------
+
+def _get_cart(request):
+    return request.session.setdefault(CART_SESSION_KEY, {})
+
+
+def _cart_items(request):
+    cart = _get_cart(request)
+    if not cart:
+        return [], Decimal('0')
+    products = Product.objects.filter(pk__in=cart.keys(), is_active=True)
+    products_by_id = {str(p.pk): p for p in products}
+    items = []
+    total = Decimal('0')
+    for product_id, quantity in cart.items():
+        product = products_by_id.get(product_id)
+        if not product:
+            continue
+        subtotal = product.unit_price * quantity
+        total += subtotal
+        items.append({'product': product, 'quantity': quantity, 'subtotal': subtotal})
+    return items, total
+
+
+def _is_customer(user):
+    """True si el usuario autenticado es un cliente (tiene perfil Customer)."""
+    return user.is_authenticated and hasattr(user, 'customer_profile')
+
+
+# ---------------------------------------------------------------------
+# Registro, verificación de email y login de clientes
+# ---------------------------------------------------------------------
+
+def customer_register(request):
+    if _is_customer(request.user):
+        return redirect('storefront:catalog_list')
+
+    if request.method == 'POST':
+        form = CustomerRegistrationForm(request.POST)
+        if form.is_valid():
+            d = form.cleaned_data
+            # Crear el usuario de Django (inactivo hasta verificar el email)
+            user = User.objects.create_user(
+                username=d['email'],
+                email=d['email'],
+                password=d['password1'],
+                first_name=d['first_name'],
+                last_name=d['last_name'],
+                is_active=False,
+            )
+            # Crear o vincular el Customer
+            customer, _ = Customer.objects.update_or_create(
+                dni=d['dni'],
+                defaults={
+                    'first_name': d['first_name'],
+                    'last_name': d['last_name'],
+                    'email': d['email'],
+                    'phone': d.get('phone', ''),
+                    'address': d.get('address', ''),
+                    'user': user,
+                }
+            )
+            # Generar token de verificación
+            token = secrets.token_hex(32)
+            EmailVerificationToken.objects.create(user=user, token=token)
+
+            # Enviar email de verificación
+            verify_url = request.build_absolute_uri(
+                reverse('storefront:verify_email', args=[token])
+            )
+            send_mail(
+                subject='Verifica tu correo — Nuestra tienda',
+                message=(
+                    f'Hola {d["first_name"]},\n\n'
+                    f'Gracias por registrarte. Haz clic en el siguiente enlace para '
+                    f'verificar tu correo y activar tu cuenta:\n\n{verify_url}\n\n'
+                    f'El enlace expira en 24 horas.\n\n'
+                    f'Si no creaste esta cuenta, ignora este mensaje.'
+                ),
+                from_email=None,
+                recipient_list=[d['email']],
+                fail_silently=False,
+            )
+            return redirect('storefront:verify_email_sent')
+    else:
+        form = CustomerRegistrationForm()
+
+    return render(request, 'storefront/register.html', {'form': form})
+
+
+def verify_email_sent(request):
+    return render(request, 'storefront/verify_email_sent.html')
+
+
+def verify_email(request, token):
+    try:
+        verification = EmailVerificationToken.objects.select_related('user').get(token=token)
+    except EmailVerificationToken.DoesNotExist:
+        return render(request, 'storefront/verify_email_invalid.html')
+
+    if verification.is_expired:
+        verification.delete()
+        return render(request, 'storefront/verify_email_invalid.html', {'expired': True})
+
+    user = verification.user
+    user.is_active = True
+    user.save()
+    verification.delete()
+
+    login(request, user)
+    messages.success(request, f'¡Bienvenido, {user.first_name}! Tu cuenta está activa.')
+    next_url = request.session.pop('next_after_login', None)
+    return redirect(next_url or 'storefront:catalog_list')
+
+
+def customer_login(request):
+    if _is_customer(request.user):
+        return redirect('storefront:catalog_list')
+
+    if request.method == 'POST':
+        form = CustomerLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password']
+            try:
+                username = User.objects.get(email=email).username
+            except User.DoesNotExist:
+                username = None
+
+            user = authenticate(request, username=username, password=password) if username else None
+
+            if user is None:
+                form.add_error(None, 'Correo o contraseña incorrectos.')
+            elif not user.is_active:
+                form.add_error(None, 'Tu cuenta no está verificada. Revisa tu correo.')
+            elif not hasattr(user, 'customer_profile'):
+                form.add_error(None, 'Esta cuenta no es de cliente. Usa el panel de administración.')
+            else:
+                login(request, user)
+                next_url = request.session.pop('next_after_login', None)
+                return redirect(next_url or 'storefront:catalog_list')
+    else:
+        form = CustomerLoginForm()
+
+    return render(request, 'storefront/login.html', {'form': form})
+
+
+def customer_logout(request):
+    if request.method == 'POST':
+        logout(request)
+    return redirect('storefront:catalog_list')
+
+
+# ---------------------------------------------------------------------
+# Catálogo público
+# ---------------------------------------------------------------------
+
+def catalog_list(request):
+    products = Product.objects.filter(is_active=True).select_related('brand', 'group')
+    query = request.GET.get('q', '').strip()
+    if query:
+        products = products.filter(name__icontains=query)
+    group_id = request.GET.get('group', '').strip()
+    if group_id:
+        products = products.filter(group_id=group_id)
+    cart_count = sum(_get_cart(request).values())
+    return render(request, 'storefront/catalog.html', {
+        'products': products,
+        'groups': ProductGroup.objects.filter(is_active=True),
+        'query': query,
+        'selected_group': group_id,
+        'cart_count': cart_count,
+    })
+
+
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+    cart_count = sum(_get_cart(request).values())
+    return render(request, 'storefront/product_detail.html', {
+        'product': product, 'cart_count': cart_count,
+    })
+
+
+# ---------------------------------------------------------------------
+# Carrito (sin login requerido)
+# ---------------------------------------------------------------------
+
+def cart_add(request, pk):
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except ValueError:
+            quantity = 1
+        quantity = max(1, quantity)
+        cart = _get_cart(request)
+        current = cart.get(str(product.pk), 0)
+        new_quantity = current + quantity
+        if new_quantity > product.stock:
+            messages.warning(request, f'Solo hay {product.stock} unidades de "{product.name}".')
+            new_quantity = product.stock
+        if new_quantity > 0:
+            cart[str(product.pk)] = new_quantity
+        request.session.modified = True
+        messages.success(request, f'"{product.name}" agregado al carrito.')
+    return redirect('storefront:cart_view')
+
+
+def cart_remove(request, pk):
+    cart = _get_cart(request)
+    cart.pop(str(pk), None)
+    request.session.modified = True
+    return redirect('storefront:cart_view')
+
+
+def cart_view(request):
+    items, total = _cart_items(request)
+    return render(request, 'storefront/cart.html', {'items': items, 'total': total})
+
+
+# ---------------------------------------------------------------------
+# Checkout (requiere login de cliente)
+# ---------------------------------------------------------------------
+
+def checkout(request):
+    # Si no está autenticado como cliente, guardamos la intención y lo
+    # mandamos a login.
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:checkout')
+        messages.info(request, 'Inicia sesión o regístrate para continuar con tu compra.')
+        return redirect('storefront:customer_login')
+
+    items, total = _cart_items(request)
+    if not items:
+        messages.info(request, 'Tu carrito está vacío.')
+        return redirect('storefront:catalog_list')
+
+    customer = request.user.customer_profile
+
+    if request.method == 'POST':
+        form = CustomerRequestForm(request.POST, instance=customer)
+        if form.is_valid():
+            customer = form.save()
+            purchase_request = PurchaseRequest.objects.create(
+                customer=customer,
+                notes=request.POST.get('notes', '').strip(),
+            )
+            for item in items:
+                PurchaseRequestDetail.objects.create(
+                    request=purchase_request,
+                    product=item['product'],
+                    quantity=item['quantity'],
+                    unit_price=item['product'].unit_price,
+                )
+            request.session[CART_SESSION_KEY] = {}
+            request.session.modified = True
+
+            # Notificación al proveedor
+            _notify_provider_new_order(request, purchase_request)
+
+            return redirect('storefront:payment_choice', pk=purchase_request.pk)
+    else:
+        form = CustomerRequestForm(instance=customer)
+
+    return render(request, 'storefront/checkout.html', {
+        'form': form, 'items': items, 'total': total,
+    })
+
+
+def request_success(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk)
+    return render(request, 'storefront/request_success.html', {'purchase_request': purchase_request})
+
+
+def _notify_provider_new_order(request, purchase_request):
+    """Envía un email al proveedor cuando llega una solicitud nueva.
+    Si ADMIN_NOTIFICATION_EMAIL no está configurado, no hace nada."""
+    from django.conf import settings
+    recipient = getattr(settings, 'ADMIN_NOTIFICATION_EMAIL', '')
+    if not recipient:
+        return
+    panel_url = request.build_absolute_uri(
+        reverse('storefront:purchase_request_detail', args=[purchase_request.pk])
+    )
+    items_text = '\n'.join(
+        f'  - {d.product.name} x{d.quantity} = ${d.subtotal}'
+        for d in purchase_request.details.all()
+    )
+    try:
+        send_mail(
+            subject=f'[Tienda] Nueva solicitud #{purchase_request.id} de {purchase_request.customer.full_name}',
+            message=(
+                f'Llegó una nueva solicitud de compra.\n\n'
+                f'Cliente : {purchase_request.customer.full_name}\n'
+                f'Email   : {purchase_request.customer.email or "—"}\n'
+                f'Teléfono: {purchase_request.customer.phone or "—"}\n\n'
+                f'Productos:\n{items_text}\n\n'
+                f'Total estimado: ${purchase_request.total_estimado}\n\n'
+                f'Ver en el panel: {panel_url}'
+            ),
+            from_email=None,
+            recipient_list=[recipient],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------
+# Cliente: mis pedidos
+# ---------------------------------------------------------------------
+
+def my_orders(request):
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:my_orders')
+        return redirect('storefront:customer_login')
+    customer = request.user.customer_profile
+    requests_qs = (
+        PurchaseRequest.objects
+        .filter(customer=customer)
+        .prefetch_related('details__product')
+        .order_by('-created_at')
+    )
+    return render(request, 'storefront/my_orders.html', {
+        'requests': requests_qs,
+        'cart_count': sum(_get_cart(request).values()),
+    })
+
+
+# ---------------------------------------------------------------------
+# Pago con tarjeta (PayPhone)
+# ---------------------------------------------------------------------
+
+def payment_choice(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    return render(request, 'storefront/payment_choice.html', {'purchase_request': purchase_request})
+
+
+def pay_manual(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if request.method == 'POST':
+        purchase_request.payment_method = 'manual'
+        purchase_request.save()
+    return redirect('storefront:request_success', pk=purchase_request.pk)
+
+
+def pay_with_card(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if request.method != 'POST':
+        return redirect('storefront:payment_choice', pk=purchase_request.pk)
+
+    client_tx_id = purchase_request.payphone_client_transaction_id or uuid.uuid4().hex[:12]
+    purchase_request.payphone_client_transaction_id = client_tx_id
+    purchase_request.payment_method = 'tarjeta'
+    purchase_request.save()
+
+    amount_cents = int(round(purchase_request.total_estimado * 100))
+    response_url = request.build_absolute_uri(reverse('storefront:payphone_response'))
+    cancellation_url = request.build_absolute_uri(reverse('storefront:payment_choice', args=[purchase_request.pk]))
+
+    try:
+        result = payphone.prepare_payment(
+            amount_cents=amount_cents,
+            client_transaction_id=client_tx_id,
+            reference=f'Solicitud #{purchase_request.id}',
+            response_url=response_url,
+            cancellation_url=cancellation_url,
+        )
+    except payphone.PayphoneError as e:
+        messages.error(request, f'No se pudo iniciar el pago: {e}')
+        return redirect('storefront:payment_choice', pk=purchase_request.pk)
+
+    return redirect(result['payWithCard'])
+
+
+def payphone_response(request):
+    transaction_id = request.GET.get('id')
+    client_tx_id = request.GET.get('clientTransactionId')
+    purchase_request = get_object_or_404(PurchaseRequest, payphone_client_transaction_id=client_tx_id)
+
+    if purchase_request.status == 'confirmada':
+        return render(request, 'storefront/payment_success.html', {'purchase_request': purchase_request})
+
+    try:
+        result = payphone.confirm_payment(transaction_id=transaction_id, client_transaction_id=client_tx_id)
+    except payphone.PayphoneError as e:
+        messages.error(request, f'No se pudo verificar el pago: {e}')
+        return render(request, 'storefront/payment_error.html', {'purchase_request': purchase_request})
+
+    if result.get('statusCode') == payphone.STATUS_APPROVED:
+        purchase_request.payphone_transaction_id = result.get('transactionId')
+        try:
+            confirm_purchase_request(purchase_request)
+        except InsufficientStockError as e:
+            purchase_request.notes = (purchase_request.notes or '') + f'\n[ATENCIÓN] {e}'
+            purchase_request.save()
+            return render(request, 'storefront/payment_error.html', {'purchase_request': purchase_request, 'stock_issue': True})
+        return render(request, 'storefront/payment_success.html', {'purchase_request': purchase_request})
+    else:
+        purchase_request.status = 'rechazada'
+        purchase_request.notes = (purchase_request.notes or '') + f'\nPago no aprobado: {result.get("transactionStatus")}'
+        purchase_request.reviewed_at = timezone.now()
+        purchase_request.save()
+        return render(request, 'storefront/payment_error.html', {'purchase_request': purchase_request})
+
+
+# ---------------------------------------------------------------------
+# Panel interno (requiere login de staff)
+# ---------------------------------------------------------------------
+
+@login_required
+def purchase_request_list(request):
+    status = request.GET.get('status', 'pendiente')
+    requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details')
+    if status in dict(PurchaseRequest.STATUS_CHOICES):
+        requests_qs = requests_qs.filter(status=status)
+    return render(request, 'storefront/purchase_request_list.html', {
+        'requests': requests_qs, 'status': status, 'status_choices': PurchaseRequest.STATUS_CHOICES,
+    })
+
+
+@login_required
+def purchase_request_detail(request, pk):
+    purchase_request = get_object_or_404(
+        PurchaseRequest.objects.select_related('customer').prefetch_related('details__product'), pk=pk
+    )
+    return render(request, 'storefront/purchase_request_detail.html', {'purchase_request': purchase_request})
+
+
+@login_required
+def purchase_request_confirm(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if request.method == 'POST':
+        try:
+            invoice = confirm_purchase_request(purchase_request)
+        except InsufficientStockError as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f'Solicitud #{purchase_request.id} confirmada. Factura #{invoice.id} creada.')
+    return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
+
+
+@login_required
+def purchase_request_reject(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if request.method == 'POST':
+        purchase_request.status = 'rechazada'
+        purchase_request.reviewed_at = timezone.now()
+        purchase_request.save()
+        messages.success(request, f'Solicitud #{purchase_request.id} rechazada.')
+    return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)

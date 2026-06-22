@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Tienda{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --espresso:   #231A10;
+      --rust:       #B5441B;
+      --rust-dark:  #8F3515;
+      --sand:       #F8F3EE;
+      --sand-dark:  #EDE4D8;
+      --border:     #DDD3C5;
+      --text:       #1A1209;
+      --muted:      #8B7355;
+      --surface:    #FFFFFF;
+      --radius:     10px;
+      --shadow:     0 4px 24px rgba(35,26,16,.08);
+      --shadow-lg:  0 12px 40px rgba(35,26,16,.14);
+      --font-head:  'Cormorant Garamond', Georgia, serif;
+      --font-body:  'DM Sans', system-ui, sans-serif;
+      --transition: .22s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--sand); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+    /* ── NAVBAR ── */
+    .site-nav { background: var(--espresso); padding: 0 1.5rem; position: sticky; top: 0; z-index: 100; }
+    .site-nav .inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
+    .site-logo { font-family: var(--font-head); font-size: 1.6rem; font-weight: 600; color: #fff; text-decoration: none; letter-spacing: .02em; white-space: nowrap; }
+    .site-logo span { color: var(--rust); }
+    .nav-links { display: flex; align-items: center; gap: .25rem; }
+    .nav-link { color: rgba(255,255,255,.75); text-decoration: none; padding: .4rem .75rem; border-radius: 6px; font-size: .875rem; font-weight: 500; transition: color var(--transition), background var(--transition); display: flex; align-items: center; gap: .35rem; }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .nav-link .badge { background: var(--rust); color: #fff; border-radius: 20px; padding: 1px 7px; font-size: .7rem; font-weight: 600; }
+    .nav-btn { background: var(--rust); color: #fff !important; border-radius: 6px; padding: .4rem .9rem !important; font-weight: 600 !important; transition: background var(--transition) !important; }
+    .nav-btn:hover { background: var(--rust-dark) !important; }
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); min-width: 200px; overflow: hidden; }
+    .nav-dropdown:hover .nav-dropdown-menu, .nav-dropdown:focus-within .nav-dropdown-menu { display: block; }
+    .nav-dropdown-menu a, .nav-dropdown-menu button { display: block; width: 100%; text-align: left; padding: .65rem 1rem; color: var(--text); background: none; border: none; cursor: pointer; font-family: var(--font-body); font-size: .875rem; text-decoration: none; transition: background var(--transition); }
+    .nav-dropdown-menu a:hover, .nav-dropdown-menu button:hover { background: var(--sand); }
+    .nav-dropdown-menu .divider { border-top: 1px solid var(--border); margin: .25rem 0; }
+    .nav-dropdown-menu .user-info { padding: .65rem 1rem; color: var(--muted); font-size: .8rem; }
+
+    /* ── CONTAINER ── */
+    .page-wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── ALERTS ── */
+    .alert { border-radius: var(--radius); padding: .85rem 1.1rem; margin-bottom: 1.25rem; font-size: .9rem; display: flex; align-items: flex-start; gap: .6rem; border: 1px solid transparent; }
+    .alert-success { background: #edfaf3; border-color: #b2e8cc; color: #1a5c35; }
+    .alert-warning { background: #fff9ed; border-color: #f5d78e; color: #7a4f00; }
+    .alert-danger  { background: #fef2f0; border-color: #f5b8ad; color: #7a1a0d; }
+    .alert-info    { background: #f0f6ff; border-color: #b3cffd; color: #1a3d7a; }
+    .alert .close-btn { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 1rem; opacity: .5; padding: 0; line-height: 1; }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .65rem 1.3rem; border-radius: 8px; font-family: var(--font-body); font-size: .875rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; text-decoration: none; transition: all var(--transition); white-space: nowrap; }
+    .btn-primary { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .btn-primary:hover { background: var(--rust-dark); border-color: var(--rust-dark); }
+    .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+    .btn-outline:hover { background: var(--sand-dark); border-color: var(--text); }
+    .btn-dark { background: var(--espresso); color: #fff; border-color: var(--espresso); }
+    .btn-dark:hover { background: #1a1209; }
+    .btn-danger { background: #c0392b; color: #fff; border-color: #c0392b; }
+    .btn-sm { padding: .4rem .85rem; font-size: .8rem; }
+    .btn-lg { padding: .85rem 1.75rem; font-size: 1rem; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ── CARDS ── */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .card-body { padding: 1.25rem; }
+
+    /* ── FORMS ── */
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { display: block; font-weight: 600; font-size: .85rem; margin-bottom: .4rem; color: var(--text); }
+    .form-control { width: 100%; padding: .65rem .9rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: .9rem; background: var(--surface); color: var(--text); transition: border-color var(--transition), box-shadow var(--transition); }
+    .form-control:focus { outline: none; border-color: var(--rust); box-shadow: 0 0 0 3px rgba(181,68,27,.12); }
+    .form-control[readonly] { background: var(--sand); color: var(--muted); cursor: default; }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+    .field-error { color: #c0392b; font-size: .8rem; margin-top: .3rem; }
+    .form-hint { color: var(--muted); font-size: .8rem; margin-top: .3rem; }
+
+    /* ── BADGE ── */
+    .badge { display: inline-block; padding: .25rem .65rem; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-success { background: #edfaf3; color: #1a5c35; border: 1px solid #b2e8cc; }
+    .badge-danger  { background: #fef2f0; color: #7a1a0d; border: 1px solid #f5b8ad; }
+    .badge-warning { background: #fff9ed; color: #7a4f00; border: 1px solid #f5d78e; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-family: var(--font-head); font-size: 2rem; font-weight: 600; }
+    .page-header p  { color: var(--muted); margin-top: .3rem; }
+
+    /* ── DIVIDER ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 4rem 2rem; }
+    .empty-state i { font-size: 3rem; color: var(--border); }
+    .empty-state h3 { font-family: var(--font-head); font-size: 1.4rem; margin: 1rem 0 .5rem; }
+    .empty-state p  { color: var(--muted); max-width: 320px; margin: 0 auto 1.5rem; }
+
+    /* ── SUCCESS / INFO CENTERED ── */
+    .result-center { text-align: center; padding: 4rem 1rem; }
+    .result-center .icon { font-size: 4rem; margin-bottom: 1rem; }
+    .result-center h2 { font-family: var(--font-head); font-size: 2rem; margin-bottom: .75rem; }
+    .result-center p  { color: var(--muted); max-width: 440px; margin: 0 auto 1.5rem; }
+
+    @media (max-width: 640px) {
+      .site-nav .inner { height: 56px; }
+      .site-logo { font-size: 1.3rem; }
+      .nav-link span.label { display: none; }
+      .page-wrap { padding: 1.25rem 1rem; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="inner">
+    <a class="site-logo" href="{% url 'storefront:catalog_list' %}">Nuestra<span>Tienda</span></a>
+    <div class="nav-links">
+      <a class="nav-link" href="{% url 'storefront:cart_view' %}">
+        <i class="bi bi-bag"></i>
+        <span class="label">Carrito</span>
+        {% if cart_count %}<span class="badge">{{ cart_count }}</span>{% endif %}
+      </a>
+
+      {% if user.is_authenticated and user.customer_profile %}
+        <div class="nav-dropdown">
+          <a class="nav-link" href="#" tabindex="0">
+            <i class="bi bi-person-circle"></i>
+            <span class="label">{{ user.first_name }}</span>
+            <i class="bi bi-chevron-down" style="font-size:.7rem;"></i>
+          </a>
+          <div class="nav-dropdown-menu">
+            <div class="user-info">{{ user.email }}</div>
+            <div class="divider"></div>
+            <a href="{% url 'storefront:my_orders' %}">
+              <i class="bi bi-bag-check"></i> Mis pedidos
+            </a>
+            <div class="divider"></div>
+            <form method="post" action="{% url 'storefront:customer_logout' %}">
+              {% csrf_token %}
+              <button type="submit">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <a class="nav-link" href="{% url 'storefront:customer_login' %}">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span class="label">Entrar</span>
+        </a>
+        <a class="nav-link nav-btn" href="{% url 'storefront:customer_register' %}">Registrarse</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  {% if messages %}
+    {% for m in messages %}
+    <div class="alert alert-{{ m.tags }}">
+      <i class="bi bi-{% if m.tags == 'success' %}check-circle{% elif m.tags == 'warning' %}exclamation-triangle{% elif m.tags == 'danger' %}x-circle{% else %}info-circle{% endif %}"></i>
+      {{ m }}
+      <button class="close-btn" onclick="this.parentElement.remove()">✕</button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

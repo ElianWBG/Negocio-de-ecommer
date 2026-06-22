@@ -1,0 +1,30 @@
+# Entorno virtual
+ent_sales_a2/
+venv/
+env/
+.venv/
+
+# Variables de entorno (credenciales, nunca se sube)
+.env
+
+# Base de datos local
+*.sqlite3
+db.sqlite3
+
+# Archivos subidos por usuarios (imágenes de producto, etc.)
+/media/
+
+# Archivos estáticos recolectados para producción
+/staticfiles/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Editor / sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Enlace inválido{% endblock %}
+{% block content %}
+<div class="result-center">
+  <div class="icon" style="color:#c0392b;">✕</div>
+  {% if expired %}
+  <h2>El enlace expiró</h2>
+  <p>El enlace de verificación tiene una validez de 24 horas. Regístrate de nuevo para recibir uno nuevo.</p>
+  {% else %}
+  <h2>Enlace inválido</h2>
+  <p>Este enlace no es válido o ya fue usado.</p>
+  {% endif %}
+  <a href="{% url 'storefront:customer_register' %}" class="btn btn-dark btn-lg">Registrarme de nuevo</a>
+</div>
+{% endblock %}

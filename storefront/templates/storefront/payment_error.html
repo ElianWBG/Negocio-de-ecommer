@@ -1,0 +1,15 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Pago no completado{% endblock %}
+{% block content %}
+<div class="result-center">
+  <div class="icon" style="color:#c0392b;">✕</div>
+  {% if stock_issue %}
+  <h2>Pago recibido, pero hay un problema</h2>
+  <p>El negocio fue notificado y se pondrá en contacto contigo lo antes posible para resolverlo.</p>
+  {% else %}
+  <h2>El pago no se completó</h2>
+  <p>Tu tarjeta fue rechazada o cancelaste el proceso. No se realizó ningún cobro.</p>
+  <a href="{% url 'storefront:payment_choice' purchase_request.pk %}" class="btn btn-primary btn-lg">Intentar de nuevo</a>
+  {% endif %}
+</div>
+{% endblock %}

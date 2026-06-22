@@ -1,0 +1,10 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Solicitud enviada{% endblock %}
+{% block content %}
+<div class="result-center">
+  <div class="icon" style="color:#1a5c35;">✓</div>
+  <h2>¡Solicitud #{{ purchase_request.id }} enviada!</h2>
+  <p>Gracias, {{ purchase_request.customer.first_name }}. El negocio revisará tu solicitud y se pondrá en contacto contigo pronto.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark btn-lg">Volver al catálogo</a>
+</div>
+{% endblock %}

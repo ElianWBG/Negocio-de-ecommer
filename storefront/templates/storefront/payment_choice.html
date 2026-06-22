@@ -1,0 +1,67 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}¿Cómo quieres pagar?{% endblock %}
+{% block extra_css %}
+<style>
+  .payment-wrap { max-width: 760px; margin: 0 auto; }
+  .order-recap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; }
+  .order-recap h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: 1rem; }
+  .recap-row { display: flex; justify-content: space-between; padding: .45rem 0; font-size: .9rem; border-bottom: 1px solid var(--sand-dark); }
+  .recap-row:last-of-type { border-bottom: none; }
+  .recap-totals { margin-top: .75rem; padding-top: .75rem; border-top: 2px solid var(--border); }
+  .recap-totals .row { display: flex; justify-content: space-between; font-size: .9rem; padding: .2rem 0; }
+  .recap-totals .total { font-weight: 700; font-size: 1.1rem; color: var(--rust); }
+  .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .pay-option { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 1.75rem; display: flex; flex-direction: column; transition: border-color var(--transition), box-shadow var(--transition); }
+  .pay-option.featured { border-color: var(--rust); }
+  .pay-option .icon { font-size: 2rem; margin-bottom: .75rem; }
+  .pay-option h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: .5rem; }
+  .pay-option p { color: var(--muted); font-size: .875rem; flex: 1; margin-bottom: 1.25rem; line-height: 1.6; }
+  @media (max-width: 560px) { .payment-options { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="payment-wrap">
+  <div class="page-header">
+    <h1>Solicitud #{{ purchase_request.id }} registrada</h1>
+    <p>Elige cómo quieres continuar con tu compra.</p>
+  </div>
+
+  <div class="order-recap">
+    <h3>Resumen de tu pedido</h3>
+    {% for d in purchase_request.details.all %}
+    <div class="recap-row">
+      <span>{{ d.product.name }} x {{ d.quantity }}</span>
+      <span>${{ d.subtotal }}</span>
+    </div>
+    {% endfor %}
+    <div class="recap-totals">
+      <div class="row"><span>Subtotal</span><span>${{ purchase_request.subtotal_estimado }}</span></div>
+      <div class="row"><span>IVA (15%)</span><span>${{ purchase_request.tax_estimado }}</span></div>
+      <div class="row total"><span>Total</span><span>${{ purchase_request.total_estimado }}</span></div>
+    </div>
+  </div>
+
+  <div class="payment-options">
+    <div class="pay-option featured">
+      <div class="icon" style="color:var(--rust);">💳</div>
+      <h3>Pagar ahora con tarjeta</h3>
+      <p>Serás redirigido a PayPhone de forma segura. Tu compra se confirma al instante y el stock se reserva inmediatamente.</p>
+      <form method="post" action="{% url 'storefront:pay_with_card' purchase_request.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-full">
+          Pagar ${{ purchase_request.total_estimado }}
+        </button>
+      </form>
+    </div>
+    <div class="pay-option">
+      <div class="icon" style="color:var(--muted);">💬</div>
+      <h3>Solicitar sin pagar ahora</h3>
+      <p>El negocio revisará tu solicitud y se pondrá en contacto contigo para coordinar el pago y la entrega.</p>
+      <form method="post" action="{% url 'storefront:pay_manual' purchase_request.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline btn-full">Enviar solicitud</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

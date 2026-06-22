@@ -1,0 +1,23 @@
+{% extends 'billing/base.html' %}
+{% block title %}Eliminar proveedor{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-md-8">
+    <div class="card shadow-sm border-danger">
+      <div class="card-header bg-danger text-white py-3">
+        <h4 class="mb-0">Confirmar eliminación</h4>
+      </div>
+      <div class="card-body p-4">
+        <p class="mb-4">¿Estás seguro de eliminar al proveedor <strong>{{ object }}</strong>? Esta acción no se puede deshacer.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger px-4">Sí, eliminar</button>
+            <a href="{% url 'billing:supplier_list' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Verifica tu correo{% endblock %}
+{% block content %}
+<div class="result-center">
+  <div class="icon" style="color:var(--rust);">📧</div>
+  <h2>Revisa tu correo</h2>
+  <p>Te enviamos un enlace para activar tu cuenta. Haz clic en él para continuar. El enlace expira en 24 horas.</p>
+  <p style="color:var(--muted);font-size:.85rem;">¿No lo ves? Revisa la carpeta de spam.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-lg" style="margin-top:.75rem;">Volver al catálogo</a>
+</div>
+{% endblock %}

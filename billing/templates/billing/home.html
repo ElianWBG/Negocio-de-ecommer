@@ -1,0 +1,335 @@
+{% extends 'billing/base.html' %}
+{% block title %}Inicio - Panel principal{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-0"><i class="bi bi-speedometer2"></i> Panel principal</h2>
+    <small class="text-muted">Resumen general del sistema · {% now "d/m/Y" %}</small>
+  </div>
+</div>
+
+<!-- ===== TARJETAS RESUMEN (clic = ir al módulo) ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:product_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-primary-subtle text-primary"><i class="bi bi-box-seam"></i></div>
+        <div>
+          <div class="text-muted small">Productos</div>
+          <div class="h4 mb-0 fw-bold">{{ total_products }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:productgroup_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-info-subtle text-info"><i class="bi bi-tags"></i></div>
+        <div>
+          <div class="text-muted small">Categorías</div>
+          <div class="h4 mb-0 fw-bold">{{ total_categories }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:brand_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-warning-subtle text-warning"><i class="bi bi-award"></i></div>
+        <div>
+          <div class="text-muted small">Marcas</div>
+          <div class="h4 mb-0 fw-bold">{{ total_brands }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:supplier_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-secondary-subtle text-secondary"><i class="bi bi-truck"></i></div>
+        <div>
+          <div class="text-muted small">Proveedores</div>
+          <div class="h4 mb-0 fw-bold">{{ total_suppliers }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:customer_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-success-subtle text-success"><i class="bi bi-people"></i></div>
+        <div>
+          <div class="text-muted small">Clientes</div>
+          <div class="h4 mb-0 fw-bold">{{ total_customers }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="/admin/auth/user/" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-dark-subtle text-dark"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <div class="text-muted small">Usuarios</div>
+          <div class="h4 mb-0 fw-bold">{{ total_users }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:invoice_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-primary-subtle text-primary"><i class="bi bi-receipt"></i></div>
+        <div>
+          <div class="text-muted small">Ventas</div>
+          <div class="h4 mb-0 fw-bold">{{ total_sales }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:invoice_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-success-subtle text-success"><i class="bi bi-cash-coin"></i></div>
+        <div>
+          <div class="text-muted small">Ingresos totales</div>
+          <div class="h4 mb-0 fw-bold">${{ total_income|floatformat:2 }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'billing:product_list' %}?stock_max=10" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="text-muted small">Stock bajo</div>
+          <div class="h4 mb-0 fw-bold">{{ low_stock_count }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-3">
+    <a href="{% url 'purchasing:purchase_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="dash-icon bg-secondary-subtle text-secondary"><i class="bi bi-cart"></i></div>
+        <div>
+          <div class="text-muted small">Compras</div>
+          <div class="h4 mb-0 fw-bold">{{ total_purchases }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ===== ALERTAS DEL SISTEMA ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="alert alert-warning border-0 shadow-sm mb-0 h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong><i class="bi bi-exclamation-triangle-fill"></i> Stock bajo</strong>
+          <div class="small mt-1">{{ low_stock_count }} producto(s) con 10 o menos unidades.</div>
+        </div>
+      </div>
+      <a href="{% url 'billing:product_list' %}?stock_max=10" class="small">Ver productos →</a>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="alert alert-danger border-0 shadow-sm mb-0 h-100">
+      <strong><i class="bi bi-x-octagon-fill"></i> Agotados</strong>
+      <div class="small mt-1">{{ out_of_stock_count }} producto(s) sin existencias.</div>
+      <a href="{% url 'billing:product_list' %}?stock_max=0" class="small">Ver productos →</a>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="alert alert-success border-0 shadow-sm mb-0 h-100">
+      <strong><i class="bi bi-graph-up-arrow"></i> Ventas de hoy</strong>
+      <div class="small mt-1">{{ sales_today_count }} factura(s) · ${{ sales_today_total|floatformat:2 }}</div>
+      <a href="{% url 'billing:invoice_list' %}" class="small">Ver facturas →</a>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="alert alert-info border-0 shadow-sm mb-0 h-100">
+      <strong><i class="bi bi-person-plus-fill"></i> Nuevos clientes</strong>
+      <div class="small mt-1">{{ new_customers_week }} registrado(s) en los últimos 7 días.</div>
+      <a href="{% url 'billing:customer_list' %}" class="small">Ver clientes →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GRÁFICOS ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-bar-chart-line"></i> Ventas por mes</strong></div>
+      <div class="card-body"><canvas id="chartSalesByMonth" height="110"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-pie-chart"></i> Distribución de categorías</strong></div>
+      <div class="card-body"><canvas id="chartCategories" height="110"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-trophy"></i> Productos más vendidos</strong></div>
+      <div class="card-body"><canvas id="chartTopProducts" height="110"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <strong><i class="bi bi-clipboard-data"></i> Estado del stock</strong>
+        <span class="text-muted small d-block">Compras vs Ventas se habilitará cuando exista el módulo de Compras.</span>
+      </div>
+      <div class="card-body"><canvas id="chartStockStatus" height="110"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACTIVIDAD RECIENTE ===== -->
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-receipt-cutoff"></i> Últimas ventas</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for inv in recent_sales %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Factura #{{ inv.id }}</div>
+            <small class="text-muted">{{ inv.customer }} · {{ inv.invoice_date|date:"d/m/Y H:i" }}</small>
+          </div>
+          <span class="badge bg-success">${{ inv.total|floatformat:2 }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted small">Sin ventas registradas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-box-seam"></i> Productos agregados</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for p in recent_products %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ p.name }}</div>
+            <small class="text-muted">{{ p.brand.name }} · {{ p.created_at|date:"d/m/Y" }}</small>
+          </div>
+          <span class="badge bg-primary">${{ p.unit_price }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted small">Sin productos registrados.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-3"><strong><i class="bi bi-person-check"></i> Usuarios registrados</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for u in recent_users %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ u.username }}</div>
+            <small class="text-muted">{{ u.date_joined|date:"d/m/Y" }}</small>
+          </div>
+          {% if u.is_staff %}<span class="badge bg-dark">Staff</span>{% else %}<span class="badge bg-secondary">Usuario</span>{% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted small">Sin usuarios registrados.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dash-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .dash-card {
+    border-radius: 14px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  a.dash-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.08) !important;
+  }
+  .dash-card-disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .card { border-radius: 14px; }
+</style>
+
+{{ month_labels|json_script:"monthLabels" }}
+{{ month_totals|json_script:"monthTotals" }}
+{{ top_products_labels|json_script:"topProductsLabels" }}
+{{ top_products_data|json_script:"topProductsData" }}
+{{ category_labels|json_script:"categoryLabels" }}
+{{ category_data|json_script:"categoryData" }}
+{{ stock_status_labels|json_script:"stockStatusLabels" }}
+{{ stock_status_data|json_script:"stockStatusData" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const get = (id) => JSON.parse(document.getElementById(id).textContent);
+  const palette = ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6f42c1', '#fd7e14', '#20c997', '#6c757d'];
+
+  new Chart(document.getElementById('chartSalesByMonth'), {
+    type: 'bar',
+    data: {
+      labels: get('monthLabels'),
+      datasets: [{
+        label: 'Ventas ($)',
+        data: get('monthTotals'),
+        backgroundColor: '#0d6efd',
+        borderRadius: 6,
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('chartCategories'), {
+    type: 'doughnut',
+    data: {
+      labels: get('categoryLabels'),
+      datasets: [{ data: get('categoryData'), backgroundColor: palette }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  new Chart(document.getElementById('chartTopProducts'), {
+    type: 'bar',
+    data: {
+      labels: get('topProductsLabels'),
+      datasets: [{
+        label: 'Unidades vendidas',
+        data: get('topProductsData'),
+        backgroundColor: '#198754',
+        borderRadius: 6,
+      }]
+    },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('chartStockStatus'), {
+    type: 'pie',
+    data: {
+      labels: get('stockStatusLabels'),
+      datasets: [{ data: get('stockStatusData'), backgroundColor: ['#198754', '#ffc107', '#dc3545'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+});
+</script>
+
+{% endblock %}

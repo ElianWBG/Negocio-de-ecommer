@@ -1,0 +1,523 @@
+{% extends 'billing/base.html' %}
+{% block title %}{{ product.name }} - Detalle del Producto{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+  <a href="{% url 'billing:product_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+</div>
+
+<div class="card shadow-lg border-0 mb-4">
+  <div class="card-body p-4">
+    <div class="row g-4">
+      <!-- Columna izquierda: Imagen -->
+      <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+          <!-- Contenedor de imagen con efecto hover -->
+          <div id="imageContainer" class="position-relative mb-4" style="cursor: pointer;">
+            {% if product.image %}
+              <img id="productImage" src="{{ product.image.url }}" alt="{{ product.name }}" 
+                   class="img-fluid rounded-3 shadow-sm mb-4 image-hover" 
+                   style="max-width: 100%; height: auto; transition: all 0.3s ease;">
+              <div class="image-overlay position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex align-items-center justify-content-center" 
+                   style="background-color: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s ease; display: none;">
+                <div class="text-center text-white">
+                  <div style="font-size: 2rem; margin-bottom: 0.5rem;">📸</div>
+                  <small style="display: block;">Haz clic para editar</small>
+                </div>
+              </div>
+            {% else %}
+              <div id="emptyImagePlaceholder" class="bg-light rounded-3 d-flex align-items-center justify-content-center shadow-sm image-hover" 
+                   style="width: 100%; aspect-ratio: 1; font-size: 1.2rem; color: #6c757d; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.3s ease;">
+                <div class="text-center">
+                  <div class="mb-2">📦</div>
+                  <small>Sin imagen disponible</small>
+                  <small style="display: block; margin-top: 0.5rem; font-size: 0.8rem; color: #999;">Haz clic para agregar</small>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Botón para editar imagen -->
+          <button type="button" class="btn btn-sm btn-primary w-100 mb-3" data-bs-toggle="modal" data-bs-target="#editImageModal">
+            <i class="bi bi-pencil"></i> {% if product.image %}Cambiar{% else %}Agregar{% endif %} imagen
+          </button>
+          
+          <!-- Estados y badges -->
+          <div class="mb-3">
+            {% if product.is_active %}
+              <span class="badge bg-success p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-check-circle"></i> Producto Activo
+              </span>
+            {% else %}
+              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-x-circle"></i> Producto Inactivo
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Estado de stock -->
+          <div class="alert {% if product.stock > 10 %}alert-success{% elif product.stock > 0 %}alert-warning{% else %}alert-danger{% endif %}" role="alert">
+            <strong>Stock disponible:</strong> <span style="font-size: 1.3rem; font-weight: bold;">{{ product.stock }}</span> unidades
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: Información del producto -->
+      <div class="col-lg-8">
+        <!-- Título y precio principal -->
+        <div class="mb-4 pb-4 border-bottom">
+          <h1 class="h2 fw-bold mb-2" style="color: #2c3e50;">{{ product.name }}</h1>
+          <div class="d-flex align-items-baseline gap-2 mb-3">
+            <span class="h3 fw-bold text-primary">${{ product.unit_price }}</span>
+            <small class="text-muted">Precio unitario</small>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        {% if product.description %}
+          <div class="mb-4">
+            <h5 class="fw-bold mb-2" style="color: #34495e;">Descripción</h5>
+            <p class="text-muted" style="line-height: 1.8;">{{ product.description|linebreaks }}</p>
+          </div>
+        {% endif %}
+
+        <!-- Información general -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Información del Producto</h5>
+          <div class="row g-3">
+            <!-- Marca -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Marca</small>
+                <strong class="h6" style="color: #2c3e50;">{{ product.brand.name }}</strong>
+              </div>
+            </div>
+
+            <!-- Grupo/Categoría -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Grupo/Categoría</small>
+                <strong class="h6" style="color: #2c3e50;">{{ product.group.name }}</strong>
+              </div>
+            </div>
+
+            <!-- Precio unitario -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Precio Unitario</small>
+                <strong class="h6 text-success" style="font-size: 1.1rem;">${{ product.unit_price }}</strong>
+              </div>
+            </div>
+
+            <!-- Stock -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Cantidad en Stock</small>
+                <strong class="h6" style="color: #2c3e50;">{{ product.stock }} unidades</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Proveedores -->
+        {% if product.suppliers.all %}
+          <div class="mb-4">
+            <h5 class="fw-bold mb-3" style="color: #34495e;">Proveedores</h5>
+            <div class="row g-2">
+              {% for supplier in product.suppliers.all %}
+                <div class="col-auto">
+                  <span class="badge bg-info text-dark p-2" style="font-size: 0.9rem;">
+                    <i class="bi bi-building"></i> {{ supplier.name }}
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <div class="alert alert-info mb-4">
+            <small><i class="bi bi-info-circle"></i> No hay proveedores asignados a este producto.</small>
+          </div>
+        {% endif %}
+
+        <!-- Información de auditoría -->
+        <div class="mt-5 pt-4 border-top">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Fecha de creación</small>
+              <span class="small" style="color: #7f8c8d;">{{ product.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Última actualización</small>
+              <span class="small" style="color: #7f8c8d;">{{ product.updated_at|date:"d/m/Y H:i" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="mt-5 pt-4 border-top d-flex gap-2">
+          <a href="{% url 'billing:product_update' product.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar Producto
+          </a>
+          <a href="{% url 'billing:product_delete' product.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Eliminar
+          </a>
+          <a href="{% url 'billing:product_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> Ver Listado
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PARA EDITAR IMAGEN -->
+<div class="modal fade" id="editImageModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white border-0">
+        <h5 class="modal-title"><i class="bi bi-image"></i> Editar imagen del producto</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <!-- Zona de Drag & Drop -->
+        <div class="drop-zone border-2 border-dashed rounded-3 p-4 text-center position-relative" 
+             id="detailDropZone"
+             style="border-color: #ccc; background-color: #f8f9fa; cursor: pointer; transition: all 0.3s ease; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          
+          <!-- Vista previa de imagen -->
+          <div id="detailImagePreview" class="mb-3" style="display: none;">
+            <img id="detailPreviewImg" src="" alt="Vista previa" 
+                 class="rounded-2 shadow-sm" 
+                 style="max-width: 100%; max-height: 200px; object-fit: cover;">
+          </div>
+          
+          <!-- Contenido por defecto -->
+          <div id="detailDefaultContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: #6c757d;">
+              📁
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+              <strong style="color: #2c3e50; font-size: 1rem;">Arrastra tu imagen aquí</strong>
+            </div>
+            <small style="color: #6c757d; display: block; margin-bottom: 1rem;">o haz clic para seleccionar</small>
+            <small style="color: #999; font-size: 0.85rem;">Formatos: JPG, PNG, GIF, WebP | Máx: 5MB</small>
+          </div>
+          
+          <!-- Input file oculto -->
+          <input type="file" id="detailImageInput" accept="image/*" style="display: none;">
+        </div>
+        
+        <!-- Botón para limpiar imagen -->
+        <button type="button" id="detailClearImageBtn" class="btn btn-sm btn-outline-secondary mt-3" style="display: none;">
+          🗑️ Limpiar imagen
+        </button>
+
+        <!-- Indicador de carga -->
+        <div id="uploadingIndicator" class="mt-3 text-center" style="display: none;">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <small class="text-muted d-block mt-2">Subiendo imagen...</small>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="detailSaveImageBtn" class="btn btn-primary" style="display: none;">
+          <i class="bi bi-save"></i> Guardar imagen
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos adicionales para mejorar la presentación -->
+<style>
+  .sticky-top {
+    position: sticky;
+    top: 20px;
+    z-index: 900;
+  }
+
+  @media (max-width: 991px) {
+    .sticky-top {
+      position: static;
+    }
+  }
+
+  .card {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .badge {
+    transition: all 0.2s ease;
+  }
+
+  .badge:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn {
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  h1, h5 {
+    letter-spacing: -0.5px;
+  }
+
+  .bg-light {
+    background-color: #f8f9fa !important;
+  }
+
+  /* Estilos para imagen clickeable */
+  .image-hover {
+    cursor: pointer;
+  }
+
+  .image-hover:hover {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+
+  #emptyImagePlaceholder:hover {
+    background-color: #e9ecef;
+    transform: scale(1.02);
+  }
+
+  .image-overlay {
+    cursor: pointer;
+  }
+
+  .image-overlay:hover {
+    opacity: 1 !important;
+  }
+
+  .drop-zone {
+    transition: all 0.3s ease;
+  }
+
+  .drop-zone:hover {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  }
+
+  .drop-zone.drag-over {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  }
+
+  #detailImagePreview img {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+</style>
+
+<!-- JavaScript para Drag & Drop y actualización de imagen -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const dropZone = document.getElementById('detailDropZone');
+  const imageInput = document.getElementById('detailImageInput');
+  const imagePreview = document.getElementById('detailImagePreview');
+  const previewImg = document.getElementById('detailPreviewImg');
+  const defaultContent = document.getElementById('detailDefaultContent');
+  const clearImageBtn = document.getElementById('detailClearImageBtn');
+  const saveImageBtn = document.getElementById('detailSaveImageBtn');
+  const uploadingIndicator = document.getElementById('uploadingIndicator');
+  const imageContainer = document.getElementById('imageContainer');
+  const modal = document.getElementById('editImageModal');
+  let selectedFile = null;
+
+  // Hacer clickeable la imagen
+  imageContainer.addEventListener('click', () => {
+    new bootstrap.Modal(modal).show();
+  });
+
+  // Eventos drag
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Destacar zona cuando se arrastra sobre ella
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.style.borderColor = '#0d6efd';
+      dropZone.style.backgroundColor = '#e7f1ff';
+      dropZone.style.boxShadow = '0 0 0 3px rgba(13, 110, 253, 0.1)';
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.style.borderColor = '#ccc';
+      dropZone.style.backgroundColor = '#f8f9fa';
+      dropZone.style.boxShadow = 'none';
+    }, false);
+  });
+
+  // Manejar drop
+  dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+  }, false);
+
+  // Hacer clickeable la zona
+  dropZone.addEventListener('click', () => {
+    imageInput.click();
+  });
+
+  // Manejar selección de archivo
+  imageInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+  });
+
+  // Procesar archivos
+  function handleFiles(files) {
+    if (files.length === 0) return;
+
+    const file = files[0];
+
+    // Validar tipo de archivo
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('❌ Por favor, selecciona un archivo de imagen válido (JPG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validar tamaño (5MB máximo)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('❌ El archivo es muy grande. Máximo: 5MB');
+      return;
+    }
+
+    selectedFile = file;
+
+    // Mostrar vista previa
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      imagePreview.style.display = 'block';
+      defaultContent.style.display = 'none';
+      clearImageBtn.style.display = 'inline-block';
+      saveImageBtn.style.display = 'inline-block';
+      dropZone.style.minHeight = 'auto';
+      dropZone.style.padding = '2rem 1rem';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Botón para limpiar imagen
+  clearImageBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    selectedFile = null;
+    imageInput.value = '';
+    imagePreview.style.display = 'none';
+    defaultContent.style.display = 'flex';
+    clearImageBtn.style.display = 'none';
+    saveImageBtn.style.display = 'none';
+    dropZone.style.minHeight = '250px';
+    dropZone.style.padding = '2rem 1rem';
+  });
+
+  // Guardar imagen
+  saveImageBtn.addEventListener('click', () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '');
+
+    uploadingIndicator.style.display = 'block';
+    saveImageBtn.disabled = true;
+
+    fetch(`/products/{{ product.pk }}/update-image/`, {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Error al guardar');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        // Actualizar imagen en la página
+        const productImage = document.getElementById('productImage');
+        const emptyPlaceholder = document.getElementById('emptyImagePlaceholder');
+        
+        if (productImage) {
+          productImage.src = data.image_url + '?t=' + new Date().getTime();
+        } else if (emptyPlaceholder) {
+          // Crear elemento de imagen si no existe
+          const newImg = document.createElement('img');
+          newImg.id = 'productImage';
+          newImg.src = data.image_url;
+          newImg.alt = '{{ product.name }}';
+          newImg.className = 'img-fluid rounded-3 shadow-sm mb-4 image-hover';
+          newImg.style.cssText = 'max-width: 100%; height: auto; transition: all 0.3s ease;';
+          
+          emptyPlaceholder.replaceWith(newImg);
+          newImg.addEventListener('click', () => {
+            new bootstrap.Modal(modal).show();
+          });
+        }
+
+        // Mostrar mensaje de éxito
+        alert('✅ Imagen actualizada correctamente');
+        
+        // Cerrar modal
+        bootstrap.Modal.getInstance(modal).hide();
+        
+        // Limpiar formulario
+        selectedFile = null;
+        imageInput.value = '';
+        imagePreview.style.display = 'none';
+        defaultContent.style.display = 'flex';
+        clearImageBtn.style.display = 'none';
+        saveImageBtn.style.display = 'none';
+        dropZone.style.minHeight = '250px';
+      } else {
+        alert('❌ ' + (data.error || 'Error al guardar la imagen'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('❌ Error al guardar la imagen: ' + error.message);
+    })
+    .finally(() => {
+      uploadingIndicator.style.display = 'none';
+      saveImageBtn.disabled = false;
+    });
+  });
+});
+</script>
+
+{% endblock %}

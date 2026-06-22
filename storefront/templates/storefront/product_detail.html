@@ -1,0 +1,69 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .back-link { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); text-decoration: none; font-size: .875rem; margin-bottom: 1.5rem; transition: color var(--transition); }
+  .back-link:hover { color: var(--text); }
+  .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
+  .product-img-wrap { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .product-img-wrap .no-img { font-size: 4rem; color: var(--border); }
+  .product-info h1 { font-family: var(--font-head); font-size: 2.2rem; font-weight: 600; line-height: 1.2; margin-bottom: .5rem; }
+  .product-meta { color: var(--muted); font-size: .875rem; margin-bottom: 1.25rem; }
+  .product-price { font-size: 2rem; font-weight: 700; color: var(--rust); margin-bottom: 1rem; }
+  .product-desc { color: var(--muted); line-height: 1.7; margin-bottom: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem; }
+  .stock-info { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.25rem; font-size: .875rem; }
+  .stock-info.in { color: #1a5c35; } .stock-info.out { color: #7a1a0d; }
+  .qty-row { display: flex; gap: .75rem; align-items: center; margin-bottom: 1.5rem; }
+  .qty-input { width: 90px; padding: .65rem .9rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: var(--font-body); text-align: center; }
+  .qty-input:focus { outline: none; border-color: var(--rust); }
+  @media (max-width: 700px) {
+    .product-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+    .product-info h1 { font-size: 1.7rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'storefront:catalog_list' %}" class="back-link">
+  <i class="bi bi-arrow-left"></i> Volver al catálogo
+</a>
+
+<div class="product-layout">
+  <div class="product-img-wrap">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    {% else %}
+      <div class="no-img"><i class="bi bi-image"></i></div>
+    {% endif %}
+  </div>
+
+  <div class="product-info">
+    <p class="product-meta">{{ product.brand.name }} · {{ product.group.name }}</p>
+    <h1>{{ product.name }}</h1>
+    <p class="product-price">${{ product.unit_price }}</p>
+
+    {% if product.stock > 0 %}
+      <p class="stock-info in"><i class="bi bi-check-circle-fill"></i> {{ product.stock }} unidades disponibles</p>
+      <form method="post" action="{% url 'storefront:cart_add' product.pk %}">
+        {% csrf_token %}
+        <div class="qty-row">
+          <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="qty-input">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-bag-plus"></i> Agregar al carrito
+          </button>
+        </div>
+      </form>
+    {% else %}
+      <p class="stock-info out"><i class="bi bi-x-circle-fill"></i> Agotado por el momento</p>
+    {% endif %}
+
+    {% if product.description %}
+    <div class="product-desc">
+      <p>{{ product.description }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

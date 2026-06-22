@@ -1,0 +1,103 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Crear cuenta{% endblock %}
+{% block extra_css %}
+<style>
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; width: 100%; max-width: 560px; margin: 2rem auto; box-shadow: var(--shadow-lg); }
+  .auth-card h1 { font-family: var(--font-head); font-size: 2rem; margin-bottom: .3rem; }
+  .auth-card .subtitle { color: var(--muted); margin-bottom: 1.75rem; font-size: .9rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-error { background: #fef2f0; border: 1px solid #f5b8ad; color: #7a1a0d; border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .5rem; }
+  .auth-footer { text-align: center; margin-top: 1.25rem; font-size: .875rem; color: var(--muted); }
+  .auth-footer a { color: var(--rust); text-decoration: none; font-weight: 600; }
+  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <h1>Crear cuenta</h1>
+  <p class="subtitle">Regístrate para hacer seguimiento de tus compras.</p>
+
+  {% if form.non_field_errors %}
+  <div class="form-error"><i class="bi bi-exclamation-circle"></i> {{ form.non_field_errors|striptags }}</div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">{{ form.dni.label }}</label>
+      {{ form.dni }}
+      {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors|striptags }}</p>{% endif %}
+      <p class="form-hint">Cédula de 10 dígitos o RUC de 13.</p>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">{{ form.first_name.label }}</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ form.last_name.label }}</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.email.label }}</label>
+      {{ form.email }}
+      {% if form.email.errors %}<p class="field-error">{{ form.email.errors|striptags }}</p>{% endif %}
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">{{ form.phone.label }}</label>
+        {{ form.phone }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ form.address.label }}</label>
+        {{ form.address }}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">{{ form.password1.label }}</label>
+        <div style="position:relative;">
+          {{ form.password1 }}
+          <button type="button" onclick="togglePass('id_password1')"
+            style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;font-size:1rem;">
+            <i class="bi bi-eye" id="icon-id_password1"></i>
+          </button>
+        </div>
+        {% if form.password1.errors %}<p class="field-error">{{ form.password1.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ form.password2.label }}</label>
+        <div style="position:relative;">
+          {{ form.password2 }}
+          <button type="button" onclick="togglePass('id_password2')"
+            style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;font-size:1rem;">
+            <i class="bi bi-eye" id="icon-id_password2"></i>
+          </button>
+        </div>
+        {% if form.password2.errors %}<p class="field-error">{{ form.password2.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">
+      Crear cuenta <i class="bi bi-arrow-right"></i>
+    </button>
+  </form>
+  <p class="auth-footer">¿Ya tienes cuenta? <a href="{% url 'storefront:customer_login' %}">Inicia sesión</a></p>
+</div>
+
+<script>
+function togglePass(fieldId) {
+  const field = document.getElementById(fieldId);
+  const icon = document.getElementById('icon-' + fieldId);
+  if (field.type === 'password') {
+    field.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    field.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+</script>
+{% endblock %}

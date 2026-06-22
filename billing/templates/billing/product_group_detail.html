@@ -1,0 +1,104 @@
+{% extends 'billing/base.html' %}
+{% block title %}{{ group.name }} - Detalle de Categoría{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+  <a href="{% url 'billing:productgroup_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+</div>
+
+<div class="card shadow-lg border-0 mb-4">
+  <div class="card-body p-4">
+    <div class="row g-4">
+      <!-- Columna izquierda -->
+      <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                 style="width: 120px; height: 120px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); font-size: 2.2rem; color: white; font-weight: bold;">
+              <i class="bi bi-tags"></i>
+            </div>
+          </div>
+          <div class="text-center mb-3">
+            {% if group.is_active %}
+              <span class="badge bg-success p-2" style="font-size: 0.9rem;"><i class="bi bi-check-circle"></i> Categoría Activa</span>
+            {% else %}
+              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;"><i class="bi bi-x-circle"></i> Categoría Inactiva</span>
+            {% endif %}
+          </div>
+          <div class="alert alert-info text-center" role="alert">
+            <small class="text-muted d-block mb-1">Productos en esta categoría</small>
+            <strong style="font-size: 1.3rem;">{{ product_count }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha -->
+      <div class="col-lg-8">
+        <div class="mb-4 pb-4 border-bottom">
+          <h1 class="h2 fw-bold mb-2" style="color: #2c3e50;">{{ group.name }}</h1>
+        </div>
+
+        <!-- Productos de esta categoría -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Productos en esta categoría</h5>
+          {% if products %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr><th>Nombre</th><th>Marca</th><th>Precio</th><th>Stock</th></tr>
+              </thead>
+              <tbody>
+                {% for p in products %}
+                <tr>
+                  <td>{{ p.name }}</td>
+                  <td>{{ p.brand.name }}</td>
+                  <td>${{ p.unit_price }}</td>
+                  <td>
+                    <span class="badge {% if p.stock > 10 %}bg-success{% elif p.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">{{ p.stock }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if product_count > products|length %}
+          <small class="text-muted">Mostrando {{ products|length }} de {{ product_count }} producto(s).</small>
+          {% endif %}
+          {% else %}
+          <div class="alert alert-info"><small><i class="bi bi-info-circle"></i> Esta categoría no tiene productos registrados.</small></div>
+          {% endif %}
+        </div>
+
+        <div class="mt-5 pt-4 border-top">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Fecha de creación</small>
+              <span class="small" style="color: #7f8c8d;">{{ group.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Última actualización</small>
+              <span class="small" style="color: #7f8c8d;">{{ group.updated_at|date:"d/m/Y H:i" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 pt-4 border-top d-flex gap-2">
+          <a href="{% url 'billing:productgroup_update' group.pk %}" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Editar</a>
+          <a href="{% url 'billing:productgroup_delete' group.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+          <a href="{% url 'billing:productgroup_list' %}" class="btn btn-outline-secondary"><i class="bi bi-list"></i> Ver Listado</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sticky-top { position: sticky; top: 20px; z-index: 900; }
+  @media (max-width: 991px) { .sticky-top { position: static; } }
+  .card { transition: box-shadow 0.3s ease; border-radius: 14px; }
+  .card:hover { box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.15) !important; }
+</style>
+
+{% endblock %}

@@ -1,0 +1,54 @@
+from django.db import models
+from decimal import Decimal
+from billing.models import Supplier, Product   # Reutilizamos modelos de billing
+
+
+class Purchase(models.Model):
+    """Cabecera de compra. Documenta una adquisición a un proveedor."""
+    supplier = models.ForeignKey(
+        Supplier, on_delete=models.PROTECT, related_name='purchases'
+    )
+    document_number = models.CharField(
+        max_length=20, verbose_name='Supplier Invoice No.'
+    )
+    purchase_date = models.DateTimeField(auto_now_add=True)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Purchase'
+        verbose_name_plural = 'Purchases'
+        ordering = ['-purchase_date']
+        # Reto opcional: no permitir el mismo número de documento dos veces
+        # para un mismo proveedor.
+        constraints = [
+            models.UniqueConstraint(
+                fields=['supplier', 'document_number'],
+                name='unique_supplier_document_number',
+            )
+        ]
+
+    def __str__(self):
+        return f'Purchase #{self.id} - {self.supplier}'
+
+
+class PurchaseDetail(models.Model):
+    """Líneas de compra. Cada fila es un producto adquirido."""
+    purchase = models.ForeignKey(
+        Purchase, on_delete=models.CASCADE, related_name='details'
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name='purchase_details'
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f'{self.product.name} x {self.quantity}'
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.quantity * self.unit_cost
+        super().save(*args, **kwargs)

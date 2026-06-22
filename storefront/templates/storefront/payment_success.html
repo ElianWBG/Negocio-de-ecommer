@@ -1,0 +1,10 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Pago aprobado{% endblock %}
+{% block content %}
+<div class="result-center">
+  <div class="icon" style="color:var(--rust);">💳</div>
+  <h2>¡Pago aprobado!</h2>
+  <p>Gracias, {{ purchase_request.customer.first_name }}. Tu compra fue confirmada{% if purchase_request.invoice %} — Factura #{{ purchase_request.invoice.id }}{% endif %}. Pronto recibirás más información.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark btn-lg">Volver al catálogo</a>
+</div>
+{% endblock %}

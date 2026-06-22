@@ -1,0 +1,267 @@
+{% extends 'billing/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">{{ title }}</h4>
+    <span class="badge bg-light text-dark">New</span>
+  </div>
+  <div class="card-body">
+
+    {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" id="purchase-form">
+      {% csrf_token %}
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Proveedor</label>
+          {{ form.supplier }}
+          {% for error in form.supplier.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold">N° de factura del proveedor</label>
+          {{ form.document_number }}
+          {% for error in form.document_number.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+      {% if form.non_field_errors %}
+        <div class="text-danger small mb-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+        <h5 class="mb-0">Detalle de la compra</h5>
+        <button type="button" id="add-row" class="btn btn-sm btn-outline-success">+ Agregar producto</button>
+      </div>
+
+      {{ formset.management_form }}
+
+      <table class="table table-bordered align-middle" id="detail-table">
+        <thead class="table-dark">
+          <tr>
+            <th>Producto</th>
+            <th style="width: 120px;">Cantidad</th>
+            <th style="width: 150px;">Costo unit.</th>
+            <th style="width: 100px;">Subtotal</th>
+            <th style="width: 70px;">Eliminar</th>
+          </tr>
+        </thead>
+        <tbody id="detail-rows">
+          {% for detail_form in formset %}
+          <tr class="detail-row">
+            <td>
+              {{ detail_form.product }}
+              <small class="text-muted stock-info" style="display:none;">
+                Stock actual: <span class="stock-value">0</span>
+              </small>
+              {% for error in detail_form.product.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+              {% for hidden in detail_form.hidden_fields %}{{ hidden }}{% endfor %}
+            </td>
+            <td>{{ detail_form.quantity }}</td>
+            <td>{{ detail_form.unit_cost }}</td>
+            <td class="text-end fw-bold row-subtotal">$0.00</td>
+            <td class="text-center">
+              <div style="display:none;">{{ detail_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger remove-row">✕</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+            <td class="text-end fw-bold" id="purchase-subtotal">$0.00</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td colspan="3" class="text-end fw-bold">IVA (15%):</td>
+            <td class="text-end fw-bold" id="purchase-tax">$0.00</td>
+            <td></td>
+          </tr>
+          <tr class="table-warning">
+            <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+            <td class="text-end fw-bold fs-5" id="purchase-total">$0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      {% if formset.non_form_errors %}
+        <div class="text-danger">{{ formset.non_form_errors }}</div>
+      {% endif %}
+
+      <div class="alert alert-light border small">
+        <i class="bi bi-info-circle"></i>
+        Al confirmar, la cantidad comprada se <strong>suma automáticamente</strong> al stock de cada producto.
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-success" id="btn-submit">Registrar compra</button>
+        <a href="{% url 'purchasing:purchase_list' %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var totalFormsInput = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+  var tbody = document.getElementById('detail-rows');
+  var API_URL = '{% url "billing:api_product_info" pk=0 %}'.replace('/0/', '/PRODUCT_ID/');
+
+  // Cache de datos de productos
+  var productCache = {};
+
+  function fetchProductInfo(productId, callback) {
+    if (!productId) { callback(null); return; }
+    if (productCache[productId]) { callback(productCache[productId]); return; }
+
+    var url = API_URL.replace('PRODUCT_ID', productId);
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        productCache[productId] = data;
+        callback(data);
+      })
+      .catch(function() { callback(null); });
+  }
+
+  function setupRow(row) {
+    var productSelect = row.querySelector('select[name$="-product"]');
+    var costInput = row.querySelector('input[name$="-unit_cost"]');
+    var stockInfo = row.querySelector('.stock-info');
+    var stockValue = row.querySelector('.stock-value');
+
+    if (!productSelect) return;
+
+    // Al seleccionar un producto → sugerir costo (precio actual) y mostrar stock actual
+    productSelect.addEventListener('change', function() {
+      var productId = this.value;
+      if (!productId) {
+        if (stockInfo) stockInfo.style.display = 'none';
+        recalcTotals();
+        return;
+      }
+      fetchProductInfo(productId, function(data) {
+        if (data) {
+          if (!costInput.value) costInput.value = data.unit_price;
+          if (stockInfo && stockValue) {
+            stockValue.textContent = data.stock;
+            stockInfo.style.display = 'block';
+          }
+          recalcTotals();
+        }
+      });
+    });
+
+    row.querySelector('input[name$="-quantity"]').addEventListener('input', recalcTotals);
+    costInput.addEventListener('input', recalcTotals);
+
+    // Si ya hay un producto seleccionado al cargar (por errores de form)
+    if (productSelect.value) {
+      fetchProductInfo(productSelect.value, function(data) {
+        if (data && stockInfo && stockValue) {
+          stockValue.textContent = data.stock;
+          stockInfo.style.display = 'block';
+        }
+        recalcTotals();
+      });
+    }
+  }
+
+  function recalcTotals() {
+    var rows = tbody.querySelectorAll('tr.detail-row');
+    var subtotal = 0;
+
+    rows.forEach(function(row) {
+      var deleteCheck = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteCheck && deleteCheck.checked) return;
+      if (row.style.display === 'none') return;
+
+      var qty = parseFloat(row.querySelector('input[name$="-quantity"]').value) || 0;
+      var cost = parseFloat(row.querySelector('input[name$="-unit_cost"]').value) || 0;
+      var rowSub = qty * cost;
+      subtotal += rowSub;
+
+      var subtotalCell = row.querySelector('.row-subtotal');
+      if (subtotalCell) subtotalCell.textContent = '$' + rowSub.toFixed(2);
+    });
+
+    var tax = subtotal * 0.15;
+    var total = subtotal + tax;
+
+    document.getElementById('purchase-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('purchase-tax').textContent = '$' + tax.toFixed(2);
+    document.getElementById('purchase-total').textContent = '$' + total.toFixed(2);
+  }
+
+  function attachRemove(btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr');
+      var deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteCheckbox) {
+        deleteCheckbox.checked = true;
+        row.style.display = 'none';
+      } else {
+        row.remove();
+      }
+      recalcTotals();
+    });
+  }
+
+  // Inicializar filas existentes
+  document.querySelectorAll('#detail-table .remove-row').forEach(attachRemove);
+  document.querySelectorAll('#detail-rows .detail-row').forEach(setupRow);
+
+  // Agregar nueva fila
+  document.getElementById('add-row').addEventListener('click', function () {
+    var formIndex = parseInt(totalFormsInput.value, 10);
+    var lastRow = tbody.querySelector('tr.detail-row:last-of-type');
+    var newRow = lastRow.cloneNode(true);
+
+    newRow.style.display = '';
+
+    newRow.querySelectorAll('[name]').forEach(function (el) {
+      el.name = el.name.replace(/-\d+-/, '-' + formIndex + '-');
+      if (el.id) el.id = el.id.replace(/-\d+-/, '-' + formIndex + '-');
+      if (el.type === 'checkbox') {
+        el.checked = false;
+      } else if (el.tagName === 'SELECT') {
+        el.value = '';
+      } else {
+        el.value = '';
+      }
+      el.classList.remove('is-invalid');
+    });
+
+    var stockInfo = newRow.querySelector('.stock-info');
+    if (stockInfo) stockInfo.style.display = 'none';
+    var subtotalCell = newRow.querySelector('.row-subtotal');
+    if (subtotalCell) subtotalCell.textContent = '$0.00';
+
+    newRow.querySelectorAll('input[type="hidden"][name$="-id"]').forEach(function (el) {
+      el.value = '';
+    });
+
+    var removeBtn = newRow.querySelector('.remove-row');
+    attachRemove(removeBtn);
+    setupRow(newRow);
+
+    tbody.appendChild(newRow);
+    totalFormsInput.value = formIndex + 1;
+  });
+
+  // Calcular totales iniciales
+  recalcTotals();
+})();
+</script>
+{% endblock %}

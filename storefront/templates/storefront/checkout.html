@@ -1,0 +1,91 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Confirmar compra{% endblock %}
+{% block extra_css %}
+<style>
+  .checkout-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start; }
+  .section-title { font-family: var(--font-head); font-size: 1.4rem; margin-bottom: 1.25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--border); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .order-summary h3 { font-family: var(--font-head); font-size: 1.3rem; margin-bottom: 1rem; }
+  .order-item { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid var(--sand-dark); font-size: .9rem; }
+  .order-item:last-of-type { border-bottom: none; }
+  .order-item .name { color: var(--text); }
+  .order-item .price { font-weight: 600; }
+  .order-total { display: flex; justify-content: space-between; padding-top: .85rem; margin-top: .5rem; border-top: 2px solid var(--border); font-weight: 700; font-size: 1.05rem; }
+  .order-total span:last-child { color: var(--rust); }
+  @media (max-width: 768px) {
+    .checkout-layout { grid-template-columns: 1fr; }
+    .form-row-2 { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Confirmar compra</h1>
+  <p>Revisa tus datos antes de enviar la solicitud.</p>
+</div>
+
+<div class="checkout-layout">
+  <div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="card card-body" style="margin-bottom:1.25rem;">
+        <p class="section-title">Tus datos</p>
+        <div class="form-group">
+          <label class="form-label">Cédula / RUC</label>
+          {{ form.dni }}
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Nombre</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|striptags }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellido</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|striptags }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Correo</label>
+            {{ form.email }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            {{ form.phone }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección de entrega</label>
+          {{ form.address }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notas adicionales <span style="color:var(--muted);font-weight:400;">(opcional)</span></label>
+          <textarea name="notes" class="form-control" placeholder="Ej: horario de entrega, instrucciones especiales..."></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-full">
+        Continuar al pago <i class="bi bi-arrow-right"></i>
+      </button>
+    </form>
+  </div>
+
+  <div class="card card-body order-summary" style="position:sticky;top:80px;">
+    <h3>Tu pedido</h3>
+    {% for item in items %}
+    <div class="order-item">
+      <span class="name">{{ item.product.name }} <span style="color:var(--muted);">x{{ item.quantity }}</span></span>
+      <span class="price">${{ item.subtotal }}</span>
+    </div>
+    {% endfor %}
+    <div class="order-total">
+      <span>Total estimado</span>
+      <span>${{ total }}</span>
+    </div>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:1rem;text-align:center;">
+      El IVA (15%) se calculará al confirmar el pago.
+    </p>
+  </div>
+</div>
+{% endblock %}

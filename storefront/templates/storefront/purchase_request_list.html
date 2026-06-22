@@ -1,0 +1,47 @@
+{% extends 'billing/base.html' %}
+{% block title %}Solicitudes de compra{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">Solicitudes de compra</h2>
+
+<ul class="nav nav-pills mb-3">
+  {% for value, label in status_choices %}
+  <li class="nav-item">
+    <a class="nav-link {% if status == value %}active{% endif %}"
+       href="?status={{ value }}">{{ label }}</a>
+  </li>
+  {% endfor %}
+</ul>
+
+<table class="table align-middle">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Cliente</th>
+      <th>Fecha</th>
+      <th>Total estimado</th>
+      <th>Estado</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in requests %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td>{{ r.customer.full_name }}</td>
+      <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+      <td>${{ r.total_estimado }}</td>
+      <td>{{ r.get_status_display }}</td>
+      <td>
+        <a href="{% url 'storefront:purchase_request_detail' r.pk %}" class="btn btn-sm btn-outline-dark">
+          Ver
+        </a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-muted">No hay solicitudes en este estado.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

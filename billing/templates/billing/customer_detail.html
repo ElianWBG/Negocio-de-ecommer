@@ -1,0 +1,243 @@
+{% extends 'billing/base.html' %}
+{% block title %}{{ customer.full_name }} - Detalle del Cliente{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+  <a href="{% url 'billing:customer_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+</div>
+
+<div class="card shadow-lg border-0 mb-4">
+  <div class="card-body p-4">
+    <div class="row g-4">
+      <!-- Columna izquierda: Avatar e info rápida -->
+      <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+          <!-- Avatar con iniciales -->
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                 style="width: 120px; height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 2.5rem; color: white; font-weight: bold;">
+              {{ customer.first_name|first }}{{ customer.last_name|first }}
+            </div>
+          </div>
+
+          <!-- Estado -->
+          <div class="text-center mb-3">
+            {% if customer.is_active %}
+              <span class="badge bg-success p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-check-circle"></i> Cliente Activo
+              </span>
+            {% else %}
+              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-x-circle"></i> Cliente Inactivo
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Tipo de contribuyente -->
+          {% if profile %}
+          <div class="alert alert-info text-center" role="alert">
+            <small class="text-muted d-block mb-1">Tipo de contribuyente</small>
+            <strong>{{ profile.get_taxpayer_type_display }}</strong>
+          </div>
+          <div class="alert alert-light text-center" role="alert">
+            <small class="text-muted d-block mb-1">Condiciones de pago</small>
+            <strong>{{ profile.get_payment_terms_display }}</strong>
+          </div>
+          {% if profile.credit_limit > 0 %}
+          <div class="alert {% if profile.credit_limit > 500 %}alert-success{% else %}alert-warning{% endif %} text-center" role="alert">
+            <small class="text-muted d-block mb-1">Límite de crédito</small>
+            <strong style="font-size: 1.3rem;">${{ profile.credit_limit }}</strong>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Columna derecha: Información del cliente -->
+      <div class="col-lg-8">
+        <!-- Título -->
+        <div class="mb-4 pb-4 border-bottom">
+          <h1 class="h2 fw-bold mb-2" style="color: #2c3e50;">{{ customer.full_name }}</h1>
+          <div class="d-flex align-items-baseline gap-2 mb-1">
+            <span class="badge bg-dark p-2" style="font-size: 0.95rem;">
+              <i class="bi bi-person-vcard"></i> {{ customer.dni }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Información de contacto -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Información de Contacto</h5>
+          <div class="row g-3">
+            <!-- DNI/RUC -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">DNI / RUC</small>
+                <strong class="h6" style="color: #2c3e50;">{{ customer.dni }}</strong>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Correo electrónico</small>
+                {% if customer.email %}
+                  <strong class="h6" style="color: #2c3e50;">
+                    <a href="mailto:{{ customer.email }}" class="text-decoration-none">{{ customer.email }}</a>
+                  </strong>
+                {% else %}
+                  <span class="text-muted">No registrado</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Teléfono -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Teléfono</small>
+                {% if customer.phone %}
+                  <strong class="h6" style="color: #2c3e50;">{{ customer.phone }}</strong>
+                {% else %}
+                  <span class="text-muted">No registrado</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Dirección -->
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Dirección</small>
+                {% if customer.address %}
+                  <strong class="h6" style="color: #2c3e50;">{{ customer.address }}</strong>
+                {% else %}
+                  <span class="text-muted">No registrada</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Perfil: Notas -->
+        {% if profile and profile.notes %}
+        <div class="mb-4">
+          <h5 class="fw-bold mb-2" style="color: #34495e;">Notas</h5>
+          <p class="text-muted" style="line-height: 1.8;">{{ profile.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Historial de facturas recientes -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Últimas Facturas</h5>
+          {% if invoices %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Fecha</th>
+                  <th>Subtotal</th>
+                  <th>Impuesto</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in invoices %}
+                <tr>
+                  <td><strong>{{ inv.id }}</strong></td>
+                  <td>{{ inv.invoice_date|date:"d/m/Y H:i" }}</td>
+                  <td>${{ inv.subtotal }}</td>
+                  <td>${{ inv.tax }}</td>
+                  <td><strong class="text-success">${{ inv.total }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <small><i class="bi bi-info-circle"></i> Este cliente no tiene facturas registradas.</small>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Información de auditoría -->
+        <div class="mt-5 pt-4 border-top">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Fecha de creación</small>
+              <span class="small" style="color: #7f8c8d;">{{ customer.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Última actualización</small>
+              <span class="small" style="color: #7f8c8d;">{{ customer.updated_at|date:"d/m/Y H:i" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="mt-5 pt-4 border-top d-flex gap-2">
+          <a href="{% url 'billing:customer_update' customer.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar Cliente
+          </a>
+          <a href="{% url 'billing:customer_delete' customer.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Eliminar
+          </a>
+          <a href="{% url 'billing:customer_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> Ver Listado
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos adicionales -->
+<style>
+  .sticky-top {
+    position: sticky;
+    top: 20px;
+    z-index: 900;
+  }
+
+  @media (max-width: 991px) {
+    .sticky-top {
+      position: static;
+    }
+  }
+
+  .card {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .badge {
+    transition: all 0.2s ease;
+  }
+
+  .badge:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn {
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  h1, h5 {
+    letter-spacing: -0.5px;
+  }
+
+  .bg-light {
+    background-color: #f8f9fa !important;
+  }
+</style>
+
+{% endblock %}

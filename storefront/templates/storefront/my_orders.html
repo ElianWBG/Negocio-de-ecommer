@@ -1,0 +1,88 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Mis pedidos{% endblock %}
+
+{% block extra_css %}
+<style>
+  .orders-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+  .orders-header h1 { font-family:var(--font-head); font-size:2rem; }
+  .order-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:1rem; overflow:hidden; }
+  .order-head { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; cursor:pointer; user-select:none; }
+  .order-head:hover { background:var(--sand); }
+  .order-id { font-family:var(--font-head); font-size:1.1rem; font-weight:600; }
+  .order-meta { color:var(--muted); font-size:.8rem; }
+  .order-total { font-weight:700; color:var(--rust); margin-left:auto; }
+  .order-chevron { color:var(--muted); transition:transform .2s; }
+  .order-card.open .order-chevron { transform:rotate(180deg); }
+  .order-body { display:none; border-top:1px solid var(--sand-dark); }
+  .order-card.open .order-body { display:block; }
+  .order-items { padding:1rem 1.25rem; }
+  .order-item-row { display:flex; justify-content:space-between; padding:.4rem 0; font-size:.9rem; border-bottom:1px solid var(--sand-dark); }
+  .order-item-row:last-child { border-bottom:none; }
+  .order-footer { padding:.85rem 1.25rem; background:var(--sand); display:flex; align-items:center; gap:.75rem; font-size:.875rem; }
+  .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot-pendiente  { background:#f5a623; }
+  .dot-confirmada { background:#27ae60; }
+  .dot-rechazada  { background:#c0392b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-header">
+  <h1>Mis pedidos</h1>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-sm">
+    <i class="bi bi-bag"></i> Seguir comprando
+  </a>
+</div>
+
+{% if requests %}
+  {% for r in requests %}
+  <div class="order-card" id="order-{{ r.id }}">
+    <div class="order-head" onclick="toggleOrder({{ r.id }})">
+      <div>
+        <p class="order-id">Pedido #{{ r.id }}</p>
+        <p class="order-meta">{{ r.created_at|date:"d/m/Y H:i" }} · {{ r.get_payment_method_display }}</p>
+      </div>
+      <span class="badge {% if r.status == 'confirmada' %}badge-success{% elif r.status == 'rechazada' %}badge-danger{% else %}badge-warning{% endif %}">
+        {{ r.get_status_display }}
+      </span>
+      <p class="order-total">${{ r.total_estimado }}</p>
+      <i class="bi bi-chevron-down order-chevron"></i>
+    </div>
+    <div class="order-body">
+      <div class="order-items">
+        {% for d in r.details.all %}
+        <div class="order-item-row">
+          <span>{{ d.product.name }} <span style="color:var(--muted);">x{{ d.quantity }}</span></span>
+          <span>${{ d.subtotal }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="order-footer">
+        <span class="status-dot dot-{{ r.status }}"></span>
+        {% if r.status == 'pendiente' %}
+          Tu pedido está en revisión. El negocio se pondrá en contacto contigo.
+        {% elif r.status == 'confirmada' %}
+          Pedido confirmado{% if r.invoice %} — Factura #{{ r.invoice.id }}{% endif %}.
+        {% else %}
+          Este pedido fue rechazado. Puedes hacer uno nuevo desde el catálogo.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-bag-x"></i>
+  <h3>Aún no tienes pedidos</h3>
+  <p>Cuando hagas tu primera compra, aparecerá aquí.</p>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver catálogo</a>
+</div>
+{% endif %}
+
+<script>
+function toggleOrder(id) {
+  const card = document.getElementById('order-' + id);
+  card.classList.toggle('open');
+}
+</script>
+{% endblock %}

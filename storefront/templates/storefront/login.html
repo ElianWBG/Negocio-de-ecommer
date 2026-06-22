@@ -1,0 +1,75 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block extra_css %}
+<style>
+  .auth-wrap { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); }
+  .auth-card h1 { font-family: var(--font-head); font-size: 2rem; margin-bottom: .3rem; }
+  .auth-card .subtitle { color: var(--muted); margin-bottom: 1.75rem; font-size: .9rem; }
+  .auth-footer { text-align: center; margin-top: 1.25rem; font-size: .875rem; color: var(--muted); }
+  .auth-footer a { color: var(--rust); text-decoration: none; font-weight: 600; }
+  .auth-footer a:hover { text-decoration: underline; }
+  .form-error { background: #fef2f0; border: 1px solid #f5b8ad; color: #7a1a0d; border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Bienvenido</h1>
+    <p class="subtitle">Inicia sesión para continuar con tu compra.</p>
+
+    {% if form.non_field_errors %}
+    <div class="form-error">
+      <i class="bi bi-exclamation-circle"></i>
+      {{ form.non_field_errors|striptags }}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">{{ form.email.label }}</label>
+        {{ form.email }}
+        {% if form.email.errors %}<p class="field-error">{{ form.email.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+          <label class="form-label" style="margin:0;">{{ form.password.label }}</label>
+          <a href="{% url 'password_reset' %}" style="font-size:.8rem;color:var(--rust);text-decoration:none;">¿Olvidaste tu contraseña?</a>
+        </div>
+        <div style="position:relative;">
+          {{ form.password }}
+          <button type="button" onclick="togglePass('id_password')"
+            style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;font-size:1rem;">
+            <i class="bi bi-eye" id="icon-id_password"></i>
+          </button>
+        </div>
+        {% if form.password.errors %}<p class="field-error">{{ form.password.errors|striptags }}</p>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">
+        Iniciar sesión
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      ¿No tienes cuenta? <a href="{% url 'storefront:customer_register' %}">Regístrate gratis</a>
+    </p>
+  </div>
+</div>
+
+<script>
+function togglePass(fieldId) {
+  const field = document.getElementById(fieldId);
+  const icon = document.getElementById('icon-' + fieldId);
+  if (field.type === 'password') {
+    field.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    field.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+</script>
+  </div>
+</div>
+{% endblock %}

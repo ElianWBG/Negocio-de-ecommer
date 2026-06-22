@@ -1,0 +1,202 @@
+{% extends 'billing/base.html' %}
+{% block title %}Compra #{{ purchase.id }} - Detalle{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+  <a href="{% url 'purchasing:purchase_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+</div>
+
+<div class="card shadow-lg border-0 mb-4">
+  <div class="card-body p-4">
+    <div class="row g-4">
+      <!-- Columna izquierda: Resumen -->
+      <div class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                 style="width: 120px; height: 120px; background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); font-size: 2.5rem; color: white; font-weight: bold;">
+              #{{ purchase.id }}
+            </div>
+          </div>
+
+          <div class="text-center mb-3">
+            {% if purchase.is_active %}
+              <span class="badge bg-success p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-check-circle"></i> Compra Activa
+              </span>
+            {% else %}
+              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;">
+                <i class="bi bi-x-circle"></i> Compra Anulada
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="alert alert-light text-center border" role="alert">
+            <small class="text-muted d-block mb-1">Subtotal</small>
+            <strong style="font-size: 1.1rem;">${{ purchase.subtotal }}</strong>
+          </div>
+          <div class="alert alert-light text-center border" role="alert">
+            <small class="text-muted d-block mb-1">IVA (15%)</small>
+            <strong style="font-size: 1.1rem;">${{ purchase.tax }}</strong>
+          </div>
+          <div class="alert alert-success text-center" role="alert">
+            <small class="text-muted d-block mb-1">TOTAL</small>
+            <strong style="font-size: 1.8rem; color: #155724;">${{ purchase.total }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: Información de la compra -->
+      <div class="col-lg-8">
+        <div class="mb-4 pb-4 border-bottom">
+          <h1 class="h2 fw-bold mb-2" style="color: #2c3e50;">Compra #{{ purchase.id }}</h1>
+          <div class="d-flex align-items-baseline gap-2 mb-1">
+            <span class="badge bg-dark p-2" style="font-size: 0.95rem;">
+              <i class="bi bi-calendar"></i> {{ purchase.purchase_date|date:"d/m/Y H:i" }}
+            </span>
+            <span class="badge bg-warning text-dark p-2" style="font-size: 0.95rem;">
+              <i class="bi bi-receipt"></i> Doc. {{ purchase.document_number }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Información del proveedor -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Información del Proveedor</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Proveedor</small>
+                <strong class="h6" style="color: #2c3e50;">{{ purchase.supplier.name }}</strong>
+              </div>
+            </div>
+            {% if purchase.supplier.contact_name %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Contacto</small>
+                <strong class="h6" style="color: #2c3e50;">{{ purchase.supplier.contact_name }}</strong>
+              </div>
+            </div>
+            {% endif %}
+            {% if purchase.supplier.email %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Correo electrónico</small>
+                <strong class="h6" style="color: #2c3e50;">
+                  <a href="mailto:{{ purchase.supplier.email }}" class="text-decoration-none">{{ purchase.supplier.email }}</a>
+                </strong>
+              </div>
+            </div>
+            {% endif %}
+            {% if purchase.supplier.phone %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-2">
+                <small class="text-muted d-block mb-1">Teléfono</small>
+                <strong class="h6" style="color: #2c3e50;">{{ purchase.supplier.phone }}</strong>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Detalle de productos -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-3" style="color: #34495e;">Productos Adquiridos</h5>
+          {% if details %}
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th>Producto</th>
+                  <th>Marca</th>
+                  <th class="text-center" style="width: 100px;">Cantidad</th>
+                  <th class="text-end" style="width: 130px;">Costo Unit.</th>
+                  <th class="text-end" style="width: 130px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for detail in details %}
+                <tr>
+                  <td class="text-muted">{{ forloop.counter }}</td>
+                  <td><strong>{{ detail.product.name }}</strong></td>
+                  <td><span class="badge bg-info text-dark">{{ detail.product.brand.name }}</span></td>
+                  <td class="text-center">
+                    <span class="badge bg-primary rounded-pill" style="font-size: 0.9rem;">{{ detail.quantity }}</span>
+                  </td>
+                  <td class="text-end">${{ detail.unit_cost }}</td>
+                  <td class="text-end"><strong>${{ detail.subtotal }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-light">
+                  <td colspan="4"></td>
+                  <td class="text-end fw-bold">Subtotal:</td>
+                  <td class="text-end fw-bold">${{ purchase.subtotal }}</td>
+                </tr>
+                <tr class="table-light">
+                  <td colspan="4"></td>
+                  <td class="text-end fw-bold">IVA (15%):</td>
+                  <td class="text-end fw-bold">${{ purchase.tax }}</td>
+                </tr>
+                <tr class="table-warning">
+                  <td colspan="4"></td>
+                  <td class="text-end fw-bold fs-5">TOTAL:</td>
+                  <td class="text-end fw-bold fs-5">${{ purchase.total }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <small><i class="bi bi-info-circle"></i> Esta compra no tiene productos registrados.</small>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Información de auditoría -->
+        <div class="mt-5 pt-4 border-top">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <small class="text-muted d-block mb-1">Fecha de registro</small>
+              <span class="small" style="color: #7f8c8d;">{{ purchase.purchase_date|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block mb-1">Cantidad de productos</small>
+              <span class="small" style="color: #7f8c8d;">{{ details|length }} producto(s)</span>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block mb-1">Total de unidades</small>
+              <span class="small" style="color: #7f8c8d;">{{ total_units }} unidad(es)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="mt-5 pt-4 border-top d-flex gap-2">
+          <a href="{% url 'purchasing:purchase_delete' purchase.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Eliminar Compra
+          </a>
+          <a href="{% url 'purchasing:purchase_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nueva Compra
+          </a>
+          <a href="{% url 'purchasing:purchase_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> Ver Listado
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sticky-top { position: sticky; top: 20px; z-index: 900; }
+  @media (max-width: 991px) { .sticky-top { position: static; } }
+  .card { transition: box-shadow 0.3s ease; }
+  .card:hover { box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.15) !important; }
+</style>
+
+{% endblock %}
