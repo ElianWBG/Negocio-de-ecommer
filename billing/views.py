@@ -1711,3 +1711,202 @@ def product_import_template(request):
     response['Content-Disposition'] = 'attachment; filename="plantilla_productos.xlsx"'
     wb.save(response)
     return response
+
+
+# ─────────────────────────────────────────────
+# Importar clientes desde Excel
+# ─────────────────────────────────────────────
+
+@login_required
+def customer_import(request):
+    """Importa clientes desde un .xlsx con columnas:
+    cedula, nombre, apellido, email, telefono, direccion.
+    Si el cliente ya existe (misma cédula), actualiza sus datos."""
+
+    if request.method != 'POST' or 'excel_file' not in request.FILES:
+        return render(request, 'billing/customer_import.html')
+
+    excel_file = request.FILES['excel_file']
+    if not excel_file.name.endswith('.xlsx'):
+        messages.error(request, 'El archivo debe ser .xlsx')
+        return render(request, 'billing/customer_import.html')
+
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(excel_file, data_only=True)
+        ws = wb.active
+    except Exception:
+        messages.error(request, 'No se pudo leer el archivo. Verifica que sea un Excel válido (.xlsx).')
+        return render(request, 'billing/customer_import.html')
+
+    REQUIRED = ['cedula', 'nombre', 'apellido']
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        messages.error(request, 'El archivo está vacío.')
+        return render(request, 'billing/customer_import.html')
+
+    headers = [str(h).strip().lower() if h else '' for h in rows[0]]
+    missing = [h for h in REQUIRED if h not in headers]
+    if missing:
+        messages.error(request, f'Faltan columnas requeridas: {", ".join(missing)}. Descarga la plantilla para ver el formato correcto.')
+        return render(request, 'billing/customer_import.html')
+
+    from shared.validators import validate_cedula_ec
+    from django.core.exceptions import ValidationError as DjangoValidationError
+    import re
+
+    preview_rows = []
+    for i, raw_row in enumerate(rows[1:], start=2):
+        row_dict = {headers[j]: raw_row[j] for j in range(len(headers)) if j < len(raw_row)}
+        errors = []
+
+        cedula    = str(row_dict.get('cedula', '') or '').strip()
+        nombre    = str(row_dict.get('nombre', '') or '').strip()
+        apellido  = str(row_dict.get('apellido', '') or '').strip()
+        email     = str(row_dict.get('email', '') or '').strip()
+        telefono  = str(row_dict.get('telefono', '') or '').strip()
+        direccion = str(row_dict.get('direccion', '') or '').strip()
+
+        if not any([cedula, nombre, apellido]):
+            continue
+
+        if not cedula:
+            errors.append('Cédula requerida')
+        else:
+            try:
+                validate_cedula_ec(cedula)
+            except DjangoValidationError as e:
+                errors.append(str(e.message))
+
+        if not nombre:
+            errors.append('Nombre requerido')
+        if not apellido:
+            errors.append('Apellido requerido')
+
+        if email and not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+            errors.append('Email inválido')
+
+        exists = Customer.objects.filter(dni=cedula).exists() if cedula and not errors else False
+
+        preview_rows.append({
+            'fila': i,
+            'cedula': cedula,
+            'nombre': nombre,
+            'apellido': apellido,
+            'email': email,
+            'telefono': telefono,
+            'direccion': direccion,
+            'errores': errors,
+            'valido': len(errors) == 0,
+            'accion': 'Actualizar' if exists else 'Crear',
+        })
+
+    if not preview_rows:
+        messages.warning(request, 'El archivo no tiene filas de datos.')
+        return render(request, 'billing/customer_import.html')
+
+    if 'confirmar' in request.POST:
+        imported = updated = skipped = 0
+        for row in preview_rows:
+            if not row['valido']:
+                skipped += 1
+                continue
+            obj, created = Customer.objects.update_or_create(
+                dni=row['cedula'],
+                defaults={
+                    'first_name': row['nombre'],
+                    'last_name':  row['apellido'],
+                    'email':      row['email'] or None,
+                    'phone':      row['telefono'] or None,
+                    'address':    row['direccion'] or None,
+                    'is_active':  True,
+                }
+            )
+            if created:
+                imported += 1
+            else:
+                updated += 1
+
+        messages.success(
+            request,
+            f'Importación completada: {imported} cliente(s) nuevo(s), '
+            f'{updated} actualizado(s), {skipped} fila(s) con errores omitida(s).'
+        )
+        return redirect('billing:customer_list')
+
+    validas   = sum(1 for r in preview_rows if r['valido'])
+    invalidas = len(preview_rows) - validas
+    return render(request, 'billing/customer_import.html', {
+        'preview_rows': preview_rows,
+        'validas':   validas,
+        'invalidas': invalidas,
+    })
+
+
+@login_required
+def customer_import_template(request):
+    """Descarga la plantilla Excel para importar clientes."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Clientes'
+
+    headers = ['cedula', 'nombre', 'apellido', 'email', 'telefono', 'direccion']
+    header_fill = PatternFill('solid', start_color='231A10')
+    header_font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
+    border = Border(
+        bottom=Side(style='thin', color='B5441B'),
+        right=Side(style='thin', color='DDD3C5'),
+    )
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+
+    examples = [
+        ['1710034065', 'Juan', 'Pérez', 'juan@gmail.com', '0999999999', 'Quito, Pichincha'],
+        ['1720034066', 'María', 'López', 'maria@gmail.com', '0988888888', 'Guayaquil, Guayas'],
+        ['1730034067', 'Carlos', 'Gómez', '', '0977777777', ''],
+    ]
+    example_font = Font(color='555555', italic=True, name='Arial', size=10)
+    example_fill = PatternFill('solid', start_color='F8F3EE')
+    for row_num, row_data in enumerate(examples, 2):
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.font = example_font
+            cell.fill = example_fill
+            cell.alignment = Alignment(vertical='center')
+
+    note_row = len(examples) + 3
+    ws.cell(row=note_row, column=1, value='INSTRUCCIONES:').font = Font(bold=True, name='Arial', size=10)
+    notes = [
+        '• Las columnas cedula, nombre y apellido son obligatorias.',
+        '• Email, teléfono y dirección son opcionales.',
+        '• Si el cliente ya existe (misma cédula), se actualizan sus datos.',
+        '• La cédula debe ser válida (10 dígitos) o RUC (13 dígitos).',
+        '• Borra las filas de ejemplo antes de importar.',
+        '• No cambies los nombres de los encabezados de la fila 1.',
+    ]
+    for i, note in enumerate(notes, note_row + 1):
+        ws.cell(row=i, column=1, value=note).font = Font(color='8B7355', name='Arial', size=9)
+
+    ws.merge_cells(f'A{note_row}:F{note_row}')
+    for i in range(note_row + 1, note_row + 1 + len(notes)):
+        ws.merge_cells(f'A{i}:F{i}')
+
+    widths = [15, 20, 20, 30, 15, 35]
+    for col_num, width in enumerate(widths, 1):
+        ws.column_dimensions[ws.cell(row=1, column=col_num).column_letter].width = width
+    ws.row_dimensions[1].height = 22
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="plantilla_clientes.xlsx"'
+    wb.save(response)
+    return response

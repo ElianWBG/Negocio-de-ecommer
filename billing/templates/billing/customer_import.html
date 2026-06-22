@@ -1,0 +1,158 @@
+{% extends 'billing/base.html' %}
+{% block title %}Importar clientes{% endblock %}
+
+{% block content %}
+<div style="max-width:960px;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+    <div>
+      <h2 style="margin:0;">Importar clientes desde Excel</h2>
+      <p style="color:#6c757d;margin:.3rem 0 0;">Sube un archivo .xlsx para crear o actualizar clientes en lote.</p>
+    </div>
+    <a href="{% url 'billing:customer_import_template' %}"
+       style="display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;background:#198754;color:#fff;border-radius:6px;text-decoration:none;font-size:.875rem;font-weight:600;">
+      <i class="bi bi-file-earmark-arrow-down"></i> Descargar plantilla
+    </a>
+  </div>
+
+  {% if not preview_rows %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Paso 1 — Sube tu archivo</h5>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="border:2px dashed #dee2e6;border-radius:8px;padding:2.5rem;text-align:center;margin-bottom:1.25rem;background:#f8f9fa;">
+          <i class="bi bi-people" style="font-size:2.5rem;color:#198754;"></i>
+          <p style="margin:.75rem 0 .25rem;font-weight:600;">Arrastra tu archivo aquí o haz clic para seleccionarlo</p>
+          <p style="color:#6c757d;font-size:.875rem;margin-bottom:1rem;">Solo archivos .xlsx</p>
+          <input type="file" name="excel_file" id="excel_file" accept=".xlsx" required
+            style="display:none;" onchange="showFileName(this)">
+          <label for="excel_file"
+            style="display:inline-block;padding:.55rem 1.25rem;background:#fff;border:1.5px solid #dee2e6;border-radius:6px;cursor:pointer;font-size:.875rem;font-weight:600;">
+            Elegir archivo
+          </label>
+          <p id="file-name" style="color:#198754;font-size:.875rem;margin-top:.75rem;display:none;"></p>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-upload"></i> Previsualizar importación
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3">¿Qué hace esta importación?</h5>
+      <ul style="color:#6c757d;font-size:.9rem;padding-left:1.25rem;line-height:1.8;">
+        <li>Si el cliente <strong>ya existe</strong> (misma cédula), se actualizan sus datos.</li>
+        <li>Si el cliente <strong>no existe</strong>, se crea nuevo.</li>
+        <li>Las filas con errores se <strong>omiten</strong> — las demás se importan igual.</li>
+        <li>Descarga la plantilla para ver el formato exacto que necesita el archivo.</li>
+      </ul>
+    </div>
+  </div>
+
+  {% else %}
+  <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <span style="background:#d1e7dd;color:#0a3622;border-radius:20px;padding:.3rem .9rem;font-size:.875rem;font-weight:600;">
+      <i class="bi bi-check-circle"></i> {{ validas }} filas válidas
+    </span>
+    {% if invalidas %}
+    <span style="background:#f8d7da;color:#58151c;border-radius:20px;padding:.3rem .9rem;font-size:.875rem;font-weight:600;">
+      <i class="bi bi-x-circle"></i> {{ invalidas }} con errores (se omitirán)
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="card mb-3" style="overflow:auto;">
+    <table class="table table-sm mb-0" style="font-size:.875rem;min-width:700px;">
+      <thead style="background:#f8f9fa;">
+        <tr>
+          <th>Fila</th>
+          <th>Cédula</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Email</th>
+          <th>Teléfono</th>
+          <th>Acción</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview_rows %}
+        <tr style="{% if not row.valido %}background:#fff5f5;{% endif %}">
+          <td style="color:#6c757d;">{{ row.fila }}</td>
+          <td>{{ row.cedula|default:"—" }}</td>
+          <td>{{ row.nombre|default:"—" }}</td>
+          <td>{{ row.apellido|default:"—" }}</td>
+          <td>{{ row.email|default:"—" }}</td>
+          <td>{{ row.telefono|default:"—" }}</td>
+          <td>
+            {% if row.valido %}
+            <span style="font-size:.8rem;font-weight:600;
+              {% if row.accion == 'Actualizar' %}color:#0d6efd;{% else %}color:#198754;{% endif %}">
+              {{ row.accion }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if row.valido %}
+              <span style="color:#198754;font-weight:600;font-size:.8rem;">
+                <i class="bi bi-check-circle-fill"></i> OK
+              </span>
+            {% else %}
+              <span style="color:#dc3545;font-size:.8rem;">
+                <i class="bi bi-x-circle-fill"></i> {{ row.errores|join:", " }}
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if validas > 0 %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="confirmar" value="1">
+    <div style="background:#d1e7dd;border:1px solid #a3cfbb;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+      <i class="bi bi-info-circle" style="color:#0a3622;font-size:1.1rem;"></i>
+      <span style="font-size:.9rem;color:#0a3622;">
+        Se importarán <strong>{{ validas }}</strong> cliente(s).
+        {% if invalidas %}<strong>{{ invalidas }}</strong> fila(s) con errores se omitirán.{% endif %}
+      </span>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+      <label for="excel_file_confirm"
+        style="display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:#198754;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;font-size:.875rem;">
+        <i class="bi bi-check-lg"></i> Confirmar e importar
+        <input type="file" name="excel_file" id="excel_file_confirm" accept=".xlsx" required
+          style="display:none;" onchange="this.form.submit()">
+      </label>
+      <a href="{% url 'billing:customer_import' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+    </div>
+    <p style="color:#6c757d;font-size:.8rem;margin-top:.6rem;">
+      <i class="bi bi-arrow-repeat"></i> Selecciona de nuevo el mismo archivo para confirmar la importación.
+    </p>
+  </form>
+  {% else %}
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;">
+    <strong>No hay filas válidas para importar.</strong> Corrige los errores en el archivo y vuelve a subirlo.
+  </div>
+  <a href="{% url 'billing:customer_import' %}" class="btn btn-secondary">Volver a intentar</a>
+  {% endif %}
+  {% endif %}
+
+</div>
+
+<script>
+function showFileName(input) {
+  const label = document.getElementById('file-name');
+  if (input.files && input.files[0]) {
+    label.textContent = input.files[0].name;
+    label.style.display = 'block';
+  }
+}
+</script>
+{% endblock %}

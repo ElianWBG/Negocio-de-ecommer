@@ -11,6 +11,9 @@
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=pdf" class="btn btn-outline-danger">Listado PDF</a>
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=excel" class="btn btn-outline-success">Listado Excel</a>
     <a href="{% url 'billing:customer_create' %}" class="btn btn-primary">+ Nuevo cliente</a>
+    <a href="{% url 'billing:customer_import' %}" class="btn btn-success ms-2">
+      <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
+    </a>
   </div>
 </div>
 

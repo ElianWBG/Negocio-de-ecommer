@@ -42,6 +42,8 @@ urlpatterns = [
 
     # Customer
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),
+    path('customers/import/', views.customer_import, name='customer_import'),
+    path('customers/import/template/', views.customer_import_template, name='customer_import_template'),
     path('customers/create/', views.CustomerCreateView.as_view(), name='customer_create'),
     path('customers/<int:pk>/', views.CustomerDetailView.as_view(), name='customer_detail'),
     path('customers/<int:pk>/edit/', views.CustomerUpdateView.as_view(), name='customer_update'),
