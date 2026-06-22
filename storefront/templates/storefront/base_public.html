@@ -141,6 +141,9 @@
           <div class="nav-dropdown-menu">
             <div class="user-info">{{ user.email }}</div>
             <div class="divider"></div>
+            <a href="{% url 'storefront:profile' %}">
+              <i class="bi bi-person-circle"></i> Mi perfil
+            </a>
             <a href="{% url 'storefront:my_orders' %}">
               <i class="bi bi-bag-check"></i> Mis pedidos
             </a>

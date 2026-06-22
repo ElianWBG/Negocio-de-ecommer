@@ -187,12 +187,23 @@ def catalog_list(request):
     if group_id:
         products = products.filter(group_id=group_id)
     cart_count = sum(_get_cart(request).values())
+
+    # Novedades: últimos 4 productos con stock, solo en la vista principal
+    novedades = []
+    if not query and not group_id:
+        novedades = list(
+            Product.objects.filter(is_active=True, stock__gt=0)
+            .select_related('brand', 'group')
+            .order_by('-id')[:4]
+        )
+
     return render(request, 'storefront/catalog.html', {
         'products': products,
         'groups': ProductGroup.objects.filter(is_active=True),
         'query': query,
         'selected_group': group_id,
         'cart_count': cart_count,
+        'novedades': novedades,
     })
 
 
@@ -338,15 +349,25 @@ def my_orders(request):
         request.session['next_after_login'] = reverse('storefront:my_orders')
         return redirect('storefront:customer_login')
     customer = request.user.customer_profile
-    requests_qs = (
-        PurchaseRequest.objects
-        .filter(customer=customer)
-        .prefetch_related('details__product')
-        .order_by('-created_at')
-    )
+    status_filter = request.GET.get('status', 'todos')
+
+    all_requests = PurchaseRequest.objects.filter(customer=customer).prefetch_related('details__product')
+
+    # Contadores por estado para el sidebar
+    counts = {s: all_requests.filter(status=s).count() for s, _ in PurchaseRequest.STATUS_CHOICES}
+
+    if status_filter in dict(PurchaseRequest.STATUS_CHOICES):
+        requests_qs = all_requests.filter(status=status_filter).order_by('-created_at')
+    else:
+        requests_qs = all_requests.order_by('-created_at')
+
     return render(request, 'storefront/my_orders.html', {
-        'requests': requests_qs,
-        'cart_count': sum(_get_cart(request).values()),
+        'requests':      requests_qs,
+        'status':        status_filter,
+        'status_choices': PurchaseRequest.STATUS_CHOICES,
+        'counts':        counts,
+        'total_count':   all_requests.count(),
+        'cart_count':    sum(_get_cart(request).values()),
     })
 
 
@@ -383,6 +404,42 @@ def change_password(request):
 
     return render(request, 'storefront/change_password.html', {
         'cart_count': sum(_get_cart(request).values()),
+    })
+
+
+def profile(request):
+    """Perfil del cliente — ver y editar datos personales."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:profile')
+        return redirect('storefront:customer_login')
+
+    customer = request.user.customer_profile
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name  = request.POST.get('last_name', '').strip()
+        phone      = request.POST.get('phone', '').strip()
+        address    = request.POST.get('address', '').strip()
+
+        if not first_name or not last_name:
+            messages.error(request, 'Nombre y apellido son obligatorios.')
+        else:
+            customer.first_name = first_name
+            customer.last_name  = last_name
+            customer.phone      = phone or None
+            customer.address    = address or None
+            customer.save()
+            request.user.first_name = first_name
+            request.user.last_name  = last_name
+            request.user.save()
+            messages.success(request, 'Datos actualizados correctamente.')
+            return redirect('storefront:profile')
+
+    return render(request, 'storefront/profile.html', {
+        'customer':     customer,
+        'cart_count':   sum(_get_cart(request).values()),
+        'total_orders': PurchaseRequest.objects.filter(customer=customer).count(),
+        'confirmed':    PurchaseRequest.objects.filter(customer=customer, status='confirmada').count(),
     })
 
 

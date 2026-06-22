@@ -1,0 +1,107 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Mi perfil{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-layout { display:grid; grid-template-columns:280px 1fr; gap:2rem; align-items:start; }
+  .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem; text-align:center; position:sticky; top:80px; }
+  .profile-avatar { width:80px; height:80px; border-radius:50%; background:var(--espresso); color:#fff; font-family:var(--font-head); font-size:2.2rem; font-weight:600; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; }
+  .profile-name { font-family:var(--font-head); font-size:1.4rem; font-weight:600; margin-bottom:.2rem; }
+  .profile-email { color:var(--muted); font-size:.875rem; margin-bottom:1.25rem; }
+  .profile-stats { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1.25rem; }
+  .profile-stat { background:var(--sand); border-radius:8px; padding:.75rem; }
+  .profile-stat .num { font-size:1.5rem; font-weight:700; color:var(--rust); }
+  .profile-stat .label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .profile-nav { border-top:1px solid var(--border); padding-top:1rem; text-align:left; }
+  .profile-nav a { display:flex; align-items:center; gap:.5rem; padding:.5rem .6rem; border-radius:7px; color:var(--muted); text-decoration:none; font-size:.875rem; transition:all var(--transition); }
+  .profile-nav a:hover { background:var(--sand); color:var(--text); }
+  .profile-nav a.active { background:var(--sand-dark); color:var(--text); font-weight:500; }
+
+  .edit-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem; }
+  .edit-card h2 { font-family:var(--font-head); font-size:1.5rem; margin-bottom:.25rem; }
+  .edit-card .subtitle { color:var(--muted); font-size:.875rem; margin-bottom:1.5rem; }
+  .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .field-hint { font-size:.75rem; color:var(--muted); margin-top:.3rem; }
+
+  @media(max-width:768px) {
+    .profile-layout { grid-template-columns:1fr; }
+    .profile-card { position:static; }
+    .form-row-2 { grid-template-columns:1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+  <!-- Sidebar del perfil -->
+  <div class="profile-card">
+    <div class="profile-avatar">{{ customer.first_name|first|upper }}</div>
+    <p class="profile-name">{{ customer.full_name }}</p>
+    <p class="profile-email">{{ customer.email }}</p>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="num">{{ total_orders }}</div>
+        <div class="label">Pedidos</div>
+      </div>
+      <div class="profile-stat">
+        <div class="num">{{ confirmed }}</div>
+        <div class="label">Confirmados</div>
+      </div>
+    </div>
+    <div class="profile-nav">
+      <a href="{% url 'storefront:profile' %}" class="active">
+        <i class="bi bi-person"></i> Mis datos
+      </a>
+      <a href="{% url 'storefront:my_orders' %}">
+        <i class="bi bi-bag-check"></i> Mis pedidos
+      </a>
+      <a href="{% url 'storefront:change_password' %}">
+        <i class="bi bi-key"></i> Cambiar contraseña
+      </a>
+    </div>
+  </div>
+
+  <!-- Formulario de edición -->
+  <div class="edit-card">
+    <h2>Mis datos</h2>
+    <p class="subtitle">Actualiza tu información de contacto.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="first_name" value="{{ customer.first_name }}" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="last_name" value="{{ customer.last_name }}" class="form-control" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" value="{{ customer.email }}" class="form-control" readonly>
+        <p class="field-hint">El correo no se puede cambiar. Es tu identificador de cuenta.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cédula / RUC</label>
+        <input type="text" value="{{ customer.dni }}" class="form-control" readonly>
+        <p class="field-hint">La cédula no se puede modificar.</p>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="phone" value="{{ customer.phone|default:'' }}" class="form-control" placeholder="0999999999">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="address" value="{{ customer.address|default:'' }}" class="form-control" placeholder="Ciudad, sector">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> Guardar cambios
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

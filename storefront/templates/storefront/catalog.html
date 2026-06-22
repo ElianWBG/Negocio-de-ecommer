@@ -4,42 +4,71 @@
 {% block extra_css %}
 <style>
   .hero-strip { background:var(--espresso); border-radius:var(--radius); padding:2.5rem 2rem; margin-bottom:2rem; text-align:center; }
-  .hero-strip h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:600; color:#fff; letter-spacing:.01em; margin-bottom:.4rem; }
+  .hero-strip h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:600; color:#fff; margin-bottom:.4rem; }
   .hero-strip p { color:rgba(255,255,255,.6); margin-bottom:1.5rem; font-size:.95rem; }
   .search-bar { display:flex; gap:.5rem; max-width:560px; margin:0 auto; }
   .search-bar input { flex:1; padding:.75rem 1.1rem; border:none; border-radius:8px; font-family:var(--font-body); font-size:.95rem; background:rgba(255,255,255,.12); color:#fff; }
   .search-bar input::placeholder { color:rgba(255,255,255,.4); }
   .search-bar input:focus { outline:none; background:rgba(255,255,255,.18); }
-  .search-bar button { padding:.75rem 1.3rem; background:var(--rust); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-family:var(--font-body); transition:background var(--transition); white-space:nowrap; }
+  .search-bar button { padding:.75rem 1.3rem; background:var(--rust); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-family:var(--font-body); white-space:nowrap; }
   .search-bar button:hover { background:var(--rust-dark); }
 
+  /* Banner promo */
+  .promo-banner { background:linear-gradient(135deg,#2d1a0e 0%,#4a2a12 100%); border-radius:var(--radius); padding:1.25rem 1.75rem; margin-bottom:2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; overflow:hidden; position:relative; }
+  .promo-banner::before { content:''; position:absolute; right:-30px; top:-30px; width:120px; height:120px; border-radius:50%; background:rgba(181,68,27,.2); }
+  .promo-banner::after { content:''; position:absolute; right:50px; bottom:-40px; width:80px; height:80px; border-radius:50%; background:rgba(181,68,27,.15); }
+  .promo-text { position:relative; z-index:1; }
+  .promo-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--rust); margin-bottom:.3rem; }
+  .promo-title { font-family:var(--font-head); font-size:1.3rem; font-weight:600; color:#fff; margin-bottom:.2rem; }
+  .promo-sub { font-size:.85rem; color:rgba(255,255,255,.55); }
+  .promo-cta { position:relative; z-index:1; flex-shrink:0; }
+  .promo-cta a { background:var(--rust); color:#fff; border-radius:7px; padding:.55rem 1.1rem; text-decoration:none; font-size:.85rem; font-weight:600; white-space:nowrap; display:inline-block; }
+  .promo-cta a:hover { background:var(--rust-dark); }
+
+  /* Novedades */
+  .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .section-head h2 { font-family:var(--font-head); font-size:1.5rem; font-weight:600; }
+  .section-head a { font-size:.8rem; color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:.25rem; }
+  .section-head a:hover { color:var(--rust); }
+
+  .novedades-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2.5rem; }
+  .nov-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; text-decoration:none; color:var(--text); display:block; transition:transform var(--transition), box-shadow var(--transition); }
+  .nov-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); color:var(--text); }
+  .nov-img { height:150px; background:var(--sand-dark); overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; }
+  .nov-img img { width:100%; height:100%; object-fit:cover; }
+  .nov-img i { font-size:2rem; color:var(--border); }
+  .nov-new-badge { position:absolute; top:.5rem; right:.5rem; background:var(--rust); color:#fff; font-size:.65rem; font-weight:700; padding:.2rem .55rem; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; }
+  .nov-info { padding:.75rem; }
+  .nov-name { font-weight:600; font-size:.9rem; margin-bottom:.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nov-price { color:var(--rust); font-weight:700; font-size:.95rem; }
+
+  /* Divider */
+  .section-divider { border:none; border-top:1px solid var(--border); margin:2rem 0 1.5rem; }
+
+  /* Categorías */
   .cat-pills { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem; margin-bottom:1.5rem; scrollbar-width:none; }
   .cat-pills::-webkit-scrollbar { display:none; }
-  .cat-pill { display:inline-flex; align-items:center; padding:.4rem 1rem; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.85rem; font-weight:500; white-space:nowrap; cursor:pointer; text-decoration:none; transition:all var(--transition); }
+  .cat-pill { display:inline-flex; align-items:center; padding:.4rem 1rem; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.85rem; font-weight:500; white-space:nowrap; text-decoration:none; transition:all var(--transition); }
   .cat-pill:hover { border-color:var(--rust); color:var(--rust); }
   .cat-pill.active { background:var(--espresso); border-color:var(--espresso); color:#fff; }
 
   .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
   .toolbar p { color:var(--muted); font-size:.875rem; }
 
+  /* Productos */
   .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1.25rem; }
-
   .product-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; transition:transform var(--transition), box-shadow var(--transition); display:flex; flex-direction:column; position:relative; }
   .product-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); }
   .product-card:hover .card-overlay { opacity:1; }
-
-  .product-img { height:210px; overflow:hidden; background:var(--sand-dark); position:relative; flex-shrink:0; }
-  .product-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; }
+  .product-img { height:210px; overflow:hidden; background:var(--sand-dark); position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem; }
+  .product-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; position:absolute; inset:0; }
   .product-card:hover .product-img img { transform:scale(1.06); }
-  .product-img .no-img { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:.5rem; }
-  .product-img .no-img i { font-size:2rem; color:var(--border); }
-  .product-img .no-img span { font-size:.75rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
+  .product-img i { font-size:2rem; color:var(--border); }
+  .product-img .cat-label { font-size:.7rem; color:var(--muted); font-weight:600; letter-spacing:.07em; text-transform:uppercase; }
   .stock-badge { position:absolute; top:.65rem; left:.65rem; z-index:1; }
-
   .card-overlay { position:absolute; inset:0; background:rgba(35,26,16,.45); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition); }
-  .card-overlay a { background:#fff; color:var(--espresso); border-radius:8px; padding:.6rem 1.25rem; font-weight:700; font-size:.85rem; text-decoration:none; transition:background var(--transition), color var(--transition); }
+  .card-overlay a { background:#fff; color:var(--espresso); border-radius:8px; padding:.6rem 1.25rem; font-weight:700; font-size:.85rem; text-decoration:none; }
   .card-overlay a:hover { background:var(--rust); color:#fff; }
-
   .card-info { padding:1rem; flex:1; display:flex; flex-direction:column; }
   .card-brand { font-size:.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin-bottom:.3rem; }
   .card-name { font-family:var(--font-head); font-size:1.1rem; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:auto; }
@@ -48,9 +77,9 @@
   .card-action { display:inline-flex; align-items:center; gap:.3rem; font-size:.8rem; font-weight:600; color:var(--espresso); text-decoration:none; padding:.35rem .75rem; border:1.5px solid var(--border); border-radius:6px; transition:all var(--transition); }
   .card-action:hover { background:var(--espresso); color:#fff; border-color:var(--espresso); }
 
-  @media(max-width:480px) {
-    .hero-strip h1 { font-size:1.9rem; }
-    .search-bar { flex-direction:column; }
+  @media(max-width:700px) {
+    .novedades-grid { grid-template-columns:repeat(2,1fr); }
+    .promo-banner { flex-direction:column; text-align:center; }
     .product-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; }
     .product-img { height:150px; }
     .card-overlay { opacity:1; background:rgba(35,26,16,.3); }
@@ -59,6 +88,7 @@
 {% endblock %}
 
 {% block content %}
+<!-- Hero -->
 <div class="hero-strip">
   <h1>Encuentra lo que buscas</h1>
   <p>Explora nuestro catálogo y solicita tu pedido en minutos</p>
@@ -69,12 +99,53 @@
   </form>
 </div>
 
-<!-- Filtros por categoría como pills -->
+{% if not query and not selected_group %}
+
+<!-- Banner promocional -->
+<div class="promo-banner">
+  <div class="promo-text">
+    <div class="promo-label">✦ Oferta especial</div>
+    <div class="promo-title">Envío gratis en pedidos mayores a $50</div>
+    <div class="promo-sub">Válido para entregas dentro de la ciudad · Coordina con el negocio</div>
+  </div>
+  <div class="promo-cta">
+    <a href="{% url 'storefront:catalog_list' %}">Ver productos</a>
+  </div>
+</div>
+
+<!-- Novedades -->
+{% if novedades %}
+<div class="section-head">
+  <h2>✦ Novedades</h2>
+  <a href="{% url 'storefront:catalog_list' %}">Ver todos <i class="bi bi-arrow-right"></i></a>
+</div>
+<div class="novedades-grid">
+  {% for p in novedades %}
+  <a href="{% url 'storefront:product_detail' p.pk %}" class="nov-card">
+    <div class="nov-img">
+      {% if p.image %}
+        <img src="{{ p.image.url }}" alt="{{ p.name }}">
+      {% else %}
+        <i class="bi bi-image"></i>
+      {% endif %}
+      <span class="nov-new-badge">Nuevo</span>
+    </div>
+    <div class="nov-info">
+      <p class="nov-name">{{ p.name }}</p>
+      <p class="nov-price">${{ p.unit_price }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+<hr class="section-divider">
+{% endif %}
+
+{% endif %}
+
+<!-- Filtro por categoría -->
 <div class="cat-pills">
   <a href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}"
-     class="cat-pill {% if not selected_group %}active{% endif %}">
-    Todos
-  </a>
+     class="cat-pill {% if not selected_group %}active{% endif %}">Todos</a>
   {% for g in groups %}
   <a href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}"
      class="cat-pill {% if selected_group == g.id|stringformat:'s' %}active{% endif %}">
@@ -84,14 +155,9 @@
 </div>
 
 <div class="toolbar">
-  <p>
-    {{ products|length }} producto{% if products|length != 1 %}s{% endif %}
-    {% if query %} para "<strong>{{ query }}</strong>"{% endif %}
-  </p>
+  <p>{{ products|length }} producto{% if products|length != 1 %}s{% endif %}{% if query %} para "<strong>{{ query }}</strong>"{% endif %}</p>
   {% if query or selected_group %}
-  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-sm">
-    <i class="bi bi-x"></i> Limpiar
-  </a>
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-x"></i> Limpiar</a>
   {% endif %}
 </div>
 
@@ -103,17 +169,12 @@
       {% if product.image %}
         <img src="{{ product.image.url }}" alt="{{ product.name }}">
       {% else %}
-        <div class="no-img">
-          <i class="bi bi-image"></i>
-          <span>{{ product.group.name }}</span>
-        </div>
+        <i class="bi bi-image"></i>
+        <span class="cat-label">{{ product.group.name }}</span>
       {% endif %}
       <div class="stock-badge">
-        {% if product.stock > 0 %}
-          <span class="badge badge-success">En stock</span>
-        {% else %}
-          <span class="badge badge-danger">Agotado</span>
-        {% endif %}
+        {% if product.stock > 0 %}<span class="badge badge-success">En stock</span>
+        {% else %}<span class="badge badge-danger">Agotado</span>{% endif %}
       </div>
       <div class="card-overlay">
         <a href="{% url 'storefront:product_detail' product.pk %}">Ver detalle</a>
@@ -136,7 +197,7 @@
 <div class="empty-state">
   <i class="bi bi-search"></i>
   <h3>Sin resultados</h3>
-  <p>No encontramos productos con esos criterios. Prueba con otra búsqueda.</p>
+  <p>No encontramos productos con esos criterios.</p>
   <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver todo</a>
 </div>
 {% endif %}

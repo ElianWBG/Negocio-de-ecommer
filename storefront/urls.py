@@ -12,6 +12,7 @@ urlpatterns = [
     path('verificar-email/<str:token>/', views.verify_email, name='verify_email'),
     path('mis-pedidos/', views.my_orders, name='my_orders'),
     path('cambiar-contrasena/', views.change_password, name='change_password'),
+    path('perfil/', views.profile, name='profile'),
 
     # Catálogo público
     path('', views.catalog_list, name='catalog_list'),
