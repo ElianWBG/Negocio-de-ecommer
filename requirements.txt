@@ -17,6 +17,6 @@ reportlab==4.5.1
 # Requerido por ImageField (foto de producto)
 pillow==12.2.0
 
-# Servidor de producción y archivos estáticos (Railway / Render)
-gunicorn==23.0.0
-whitenoise==6.8.2
+# Almacenamiento de imágenes en la nube (producción)
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0

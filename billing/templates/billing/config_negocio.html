@@ -1,0 +1,181 @@
+{% extends 'billing/base.html' %}
+{% block title %}Configuración del negocio{% endblock %}
+{% block topbar_title %}Configuración del negocio{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1000px;">
+
+  <!-- Identidad -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="bi bi-shop"></i> Identidad de la tienda</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nombre de la tienda <span class="text-danger">*</span></label>
+        <input type="text" name="nombre_tienda" value="{{ config.nombre_tienda }}" class="form-control" required>
+        <div class="form-text">Aparece en el navbar y en el título de las páginas.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Slogan</label>
+        <input type="text" name="slogan" value="{{ config.slogan }}" class="form-control">
+        <div class="form-text">Se muestra debajo del buscador en el catálogo.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Logo</label>
+        {% if config.logo %}
+        <div class="mb-2">
+          <img src="{{ config.logo.url }}" style="height:50px;border-radius:6px;border:1px solid #dee2e6;" alt="Logo actual">
+          <span class="text-muted ms-2" style="font-size:.8rem;">Logo actual</span>
+        </div>
+        {% endif %}
+        <input type="file" name="logo" accept="image/*" class="form-control">
+        <div class="form-text">Recomendado: PNG transparente, mínimo 200px de alto.</div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Color principal</label>
+          <div class="input-group">
+            <input type="color" name="color_primario" value="{{ config.color_primario }}" class="form-control form-control-color" style="width:50px;">
+            <input type="text" id="color_primario_text" value="{{ config.color_primario }}" class="form-control" style="font-family:monospace;" oninput="syncColor(this,'color_primario')">
+          </div>
+          <div class="form-text">Botones, precios, acentos.</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Color oscuro</label>
+          <div class="input-group">
+            <input type="color" name="color_oscuro" value="{{ config.color_oscuro }}" class="form-control form-control-color" style="width:50px;">
+            <input type="text" id="color_oscuro_text" value="{{ config.color_oscuro }}" class="form-control" style="font-family:monospace;" oninput="syncColor(this,'color_oscuro')">
+          </div>
+          <div class="form-text">Navbar, hero, texto.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner promocional -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="bi bi-megaphone"></i> Banner promocional</h5>
+
+      <div class="mb-3">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="banner_activo" id="banner_activo" {% if config.banner_activo %}checked{% endif %}>
+          <label class="form-check-label fw-semibold" for="banner_activo">Mostrar banner en el catálogo</label>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Título del banner</label>
+        <input type="text" name="banner_titulo" value="{{ config.banner_titulo }}" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Subtítulo</label>
+        <input type="text" name="banner_subtitulo" value="{{ config.banner_subtitulo }}" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Texto del botón</label>
+        <input type="text" name="banner_cta" value="{{ config.banner_cta }}" class="form-control" maxlength="40">
+      </div>
+    </div>
+  </div>
+
+  <!-- Contacto -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="bi bi-telephone"></i> Información de contacto</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Email de contacto</label>
+        <input type="email" name="email_contacto" value="{{ config.email_contacto }}" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Teléfono</label>
+        <input type="text" name="telefono" value="{{ config.telefono }}" class="form-control" placeholder="0999999999">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">WhatsApp</label>
+        <input type="text" name="whatsapp" value="{{ config.whatsapp }}" class="form-control" placeholder="593999999999">
+        <div class="form-text">Con código de país. Ej: 593999999999 (Ecuador).</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Dirección</label>
+        <textarea name="direccion" class="form-control" rows="2">{{ config.direccion }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Redes sociales -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="bi bi-share"></i> Redes sociales</h5>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-facebook text-primary"></i> Facebook</label>
+        <input type="url" name="facebook_url" value="{{ config.facebook_url }}" class="form-control" placeholder="https://facebook.com/tupagina">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-instagram text-danger"></i> Instagram</label>
+        <input type="url" name="instagram_url" value="{{ config.instagram_url }}" class="form-control" placeholder="https://instagram.com/tuperfil">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-tiktok"></i> TikTok</label>
+        <input type="url" name="tiktok_url" value="{{ config.tiktok_url }}" class="form-control" placeholder="https://tiktok.com/@tuperfil">
+      </div>
+
+      <!-- Vista previa de colores -->
+      <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-top:1rem;">
+        <p style="font-size:.8rem;font-weight:600;color:#6c757d;margin-bottom:.5rem;">Vista previa de colores</p>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <div id="prev_oscuro" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_oscuro }};"></div>
+          <div id="prev_primario" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_primario }};"></div>
+          <span style="font-size:.8rem;color:#6c757d;">Los cambios se reflejan al guardar</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:1.5rem;">
+  <button type="submit" class="btn btn-primary btn-lg">
+    <i class="bi bi-check-lg"></i> Guardar configuración
+  </button>
+  <a href="{% url 'storefront:catalog_list' %}" target="_blank" class="btn btn-outline-secondary ms-2">
+    <i class="bi bi-box-arrow-up-right"></i> Ver cómo queda la tienda
+  </a>
+</div>
+
+</form>
+
+<script>
+function syncColor(textInput, fieldName) {
+  const hex = textInput.value;
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    document.querySelector(`input[name="${fieldName}"]`).value = hex;
+    document.getElementById('prev_' + (fieldName === 'color_primario' ? 'primario' : 'oscuro')).style.background = hex;
+  }
+}
+// Sync color pickers → text inputs
+document.querySelectorAll('input[type="color"]').forEach(picker => {
+  picker.addEventListener('input', function() {
+    const name = this.name;
+    const textId = name + '_text';
+    document.getElementById(textId).value = this.value;
+    const prevId = name === 'color_primario' ? 'prev_primario' : 'prev_oscuro';
+    document.getElementById(prevId).style.background = this.value;
+  });
+});
+</script>
+{% endblock %}

@@ -2250,3 +2250,40 @@ def report_stock_excel(request):
     response['Content-Disposition'] = f'attachment; filename="stock_{date.today()}.xlsx"'
     wb.save(response)
     return response
+
+
+# ─────────────────────────────────────────────
+# Configuración del negocio
+# ─────────────────────────────────────────────
+
+@login_required
+def config_negocio_edit(request):
+    """Vista para editar la configuración global del negocio."""
+    from billing.models import ConfigNegocio
+    config = ConfigNegocio.get()
+
+    if request.method == 'POST':
+        config.nombre_tienda    = request.POST.get('nombre_tienda', '').strip() or config.nombre_tienda
+        config.slogan           = request.POST.get('slogan', '').strip()
+        config.color_primario   = request.POST.get('color_primario', '#B5441B').strip()
+        config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()
+        config.banner_activo    = 'banner_activo' in request.POST
+        config.banner_titulo    = request.POST.get('banner_titulo', '').strip()
+        config.banner_subtitulo = request.POST.get('banner_subtitulo', '').strip()
+        config.banner_cta       = request.POST.get('banner_cta', '').strip()
+        config.email_contacto   = request.POST.get('email_contacto', '').strip()
+        config.telefono         = request.POST.get('telefono', '').strip()
+        config.whatsapp         = request.POST.get('whatsapp', '').strip()
+        config.direccion        = request.POST.get('direccion', '').strip()
+        config.facebook_url     = request.POST.get('facebook_url', '').strip()
+        config.instagram_url    = request.POST.get('instagram_url', '').strip()
+        config.tiktok_url       = request.POST.get('tiktok_url', '').strip()
+
+        if 'logo' in request.FILES:
+            config.logo = request.FILES['logo']
+
+        config.save()
+        messages.success(request, 'Configuración guardada correctamente.')
+        return redirect('billing:config_negocio')
+
+    return render(request, 'billing/config_negocio.html', {'config': config})

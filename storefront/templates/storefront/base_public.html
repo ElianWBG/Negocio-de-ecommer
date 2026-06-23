@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Tienda{% endblock %}</title>
+  <title>{% block title %}{{ config.nombre_tienda }}{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root {
-      --espresso:   #231A10;
-      --rust:       #B5441B;
-      --rust-dark:  #8F3515;
+      --espresso:   {{ config.color_oscuro|default:"#231A10" }};
+      --rust:       {{ config.color_primario|default:"#B5441B" }};
+      --rust-dark:  color-mix(in srgb, {{ config.color_primario|default:"#B5441B" }} 85%, black);
       --sand:       #F8F3EE;
       --sand-dark:  #EDE4D8;
       --border:     #DDD3C5;
@@ -123,7 +123,13 @@
 
 <nav class="site-nav">
   <div class="inner">
-    <a class="site-logo" href="{% url 'storefront:catalog_list' %}">Nuestra<span>Tienda</span></a>
+    <a class="site-logo" href="{% url 'storefront:catalog_list' %}">
+      {% if config.logo %}
+        <img src="{{ config.logo.url }}" style="height:36px;object-fit:contain;" alt="{{ config.nombre_tienda }}">
+      {% else %}
+        {{ config.nombre_tienda|truncatechars:20 }}
+      {% endif %}
+    </a>
     <div class="nav-links">
       <a class="nav-link" href="{% url 'storefront:cart_view' %}">
         <i class="bi bi-bag"></i>
@@ -184,5 +190,40 @@
   {% block content %}{% endblock %}
 </div>
 
+{% if config.whatsapp or config.facebook_url or config.instagram_url or config.tiktok_url or config.email_contacto %}
+<footer style="background:var(--espresso);color:rgba(255,255,255,.7);padding:2rem 1.5rem;margin-top:2rem;">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <p style="font-family:var(--font-head);font-size:1.1rem;color:#fff;margin-bottom:.25rem;">{{ config.nombre_tienda }}</p>
+      {% if config.email_contacto %}<p style="font-size:.8rem;margin:0;">{{ config.email_contacto }}</p>{% endif %}
+      {% if config.telefono %}<p style="font-size:.8rem;margin:0;">{{ config.telefono }}</p>{% endif %}
+    </div>
+    <div style="display:flex;gap:.75rem;align-items:center;">
+      {% if config.whatsapp %}
+      <a href="https://wa.me/{{ config.whatsapp }}" target="_blank"
+         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
+         title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+      {% endif %}
+      {% if config.facebook_url %}
+      <a href="{{ config.facebook_url }}" target="_blank"
+         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
+         title="Facebook"><i class="bi bi-facebook"></i></a>
+      {% endif %}
+      {% if config.instagram_url %}
+      <a href="{{ config.instagram_url }}" target="_blank"
+         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
+         title="Instagram"><i class="bi bi-instagram"></i></a>
+      {% endif %}
+      {% if config.tiktok_url %}
+      <a href="{{ config.tiktok_url }}" target="_blank"
+         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
+         title="TikTok"><i class="bi bi-tiktok"></i></a>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

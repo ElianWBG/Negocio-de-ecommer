@@ -91,7 +91,7 @@
 <!-- Hero -->
 <div class="hero-strip">
   <h1>Encuentra lo que buscas</h1>
-  <p>Explora nuestro catálogo y solicita tu pedido en minutos</p>
+  <p>{{ config.slogan }}</p>
   <form method="get" class="search-bar">
     {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
     <input type="text" name="q" value="{{ query }}" placeholder="Buscar producto...">
@@ -102,16 +102,18 @@
 {% if not query and not selected_group %}
 
 <!-- Banner promocional -->
+{% if config.banner_activo %}
 <div class="promo-banner">
   <div class="promo-text">
     <div class="promo-label">✦ Oferta especial</div>
-    <div class="promo-title">Envío gratis en pedidos mayores a $50</div>
-    <div class="promo-sub">Válido para entregas dentro de la ciudad · Coordina con el negocio</div>
+    <div class="promo-title">{{ config.banner_titulo }}</div>
+    {% if config.banner_subtitulo %}<div class="promo-sub">{{ config.banner_subtitulo }}</div>{% endif %}
   </div>
   <div class="promo-cta">
-    <a href="{% url 'storefront:catalog_list' %}">Ver productos</a>
+    <a href="{% url 'storefront:catalog_list' %}">{{ config.banner_cta }}</a>
   </div>
 </div>
+{% endif %}
 
 <!-- Novedades -->
 {% if novedades %}

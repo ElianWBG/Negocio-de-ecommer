@@ -205,6 +205,13 @@
       <i class="bi bi-boxes"></i> Stock
     </a>
   </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Sistema</div>
+    <a href="{% url 'billing:config_negocio' %}" class="sidebar-link {% if 'configuracion' in request.path %}active{% endif %}">
+      <i class="bi bi-gear"></i> Configuración
+    </a>
+  </div>
   {% endif %}
 
   <div class="sidebar-bottom">

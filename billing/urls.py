@@ -67,4 +67,7 @@ urlpatterns = [
     path('reportes/stock/', views.report_stock, name='report_stock'),
     path('reportes/stock/excel/', views.report_stock_excel, name='report_stock_excel'),
 
+    # Configuración del negocio
+    path('configuracion/', views.config_negocio_edit, name='config_negocio'),
+
 ]

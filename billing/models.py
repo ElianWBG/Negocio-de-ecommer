@@ -141,3 +141,50 @@ class InvoiceDetail(models.Model):
     def save(self, *args, **kwargs):
         self.subtotal = self.quantity * self.unit_price
         super().save(*args, **kwargs)
+
+class ConfigNegocio(models.Model):
+    """Configuración global del negocio — singleton (solo una fila).
+    El proveedor la edita desde el panel y el storefront la lee
+    automáticamente a través del context processor."""
+
+    # Identidad
+    nombre_tienda   = models.CharField(max_length=80, default='Nuestra Tienda', verbose_name='Nombre de la tienda')
+    slogan          = models.CharField(max_length=160, blank=True, default='Explora nuestro catálogo y solicita tu pedido en minutos', verbose_name='Slogan')
+    logo            = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Logo')
+    color_primario  = models.CharField(max_length=7, default='#B5441B', verbose_name='Color principal (hex)', help_text='Ej: #B5441B')
+    color_oscuro    = models.CharField(max_length=7, default='#231A10', verbose_name='Color oscuro (hex)', help_text='Ej: #231A10')
+
+    # Banner promocional
+    banner_activo   = models.BooleanField(default=True, verbose_name='Mostrar banner promocional')
+    banner_titulo   = models.CharField(max_length=120, default='Envío gratis en pedidos mayores a $50', verbose_name='Título del banner')
+    banner_subtitulo = models.CharField(max_length=200, blank=True, default='Válido para entregas dentro de la ciudad · Coordina con el negocio', verbose_name='Subtítulo del banner')
+    banner_cta      = models.CharField(max_length=40, default='Ver productos', verbose_name='Texto del botón del banner')
+
+    # Contacto
+    email_contacto   = models.EmailField(blank=True, verbose_name='Email de contacto')
+    telefono         = models.CharField(max_length=20, blank=True, verbose_name='Teléfono')
+    whatsapp         = models.CharField(max_length=20, blank=True, verbose_name='Número WhatsApp (con código de país, ej: 593999999999)')
+    direccion        = models.TextField(blank=True, verbose_name='Dirección')
+
+    # Redes sociales
+    facebook_url    = models.URLField(blank=True, verbose_name='Facebook')
+    instagram_url   = models.URLField(blank=True, verbose_name='Instagram')
+    tiktok_url      = models.URLField(blank=True, verbose_name='TikTok')
+
+    class Meta:
+        verbose_name = 'Configuración del negocio'
+        verbose_name_plural = 'Configuración del negocio'
+
+    def __str__(self):
+        return f'Config: {self.nombre_tienda}'
+
+    def save(self, *args, **kwargs):
+        # Singleton: siempre usa el id=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls):
+        """Devuelve la config actual, creándola con valores por defecto si no existe."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
