@@ -10,10 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-import sys
 from pathlib import Path
 import environ
-env = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -116,20 +114,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 #
-# Evitamos que falle el build de Nixpacks usando una base de datos temporal 
-# SQLite en memoria si se detecta que se están ejecutando comandos de gestión 
-# en un entorno aislado donde la red interna de Postgres no responde.
-if 'migrate' in sys.argv or 'collectstatic' in sys.argv:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
-    }
-else:
-    DATABASES = {
-        'default': env.db('DATABASE_URL', default='postgres://user:pass@localhost:5432/dbname')
-    }
+# Lee la conexión completa desde la variable DATABASE_URL del .env, por ej:
+# postgres://usuario:password@localhost:5432/sales_a2
+# Así tu Postgres local y el de producción funcionan con el mismo código,
+# solo cambia el valor de esta variable.
+
+DATABASES = {
+    'default': env.db('DATABASE_URL')
+}
 
 
 # Password validation
@@ -194,6 +186,12 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         api_secret=CLOUDINARY_API_SECRET,
         secure=True,
     )
+    # django-cloudinary-storage lee de este diccionario
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY':    CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+    }
     STORAGES['default'] = {
         'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
     }
