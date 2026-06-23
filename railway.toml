@@ -2,11 +2,9 @@
 builder = "nixpacks"
 
 [phases.build]
-# Ejecutamos solo los estáticos durante el build
 cmds = ["python manage.py collectstatic --noinput"]
 
 [deploy]
-# Aquí está la clave: preDeployCommand corre justo antes de iniciar la app, 
-# en el entorno de producción con acceso total a Postgres
 preDeployCommand = "python manage.py migrate"
-startCommand = "gunicorn config.wsgi --log-file -"
+# Llamamos a gunicorn directamente a través del ejecutable de python
+startCommand = "python -m gunicorn config.wsgi --log-file -"
