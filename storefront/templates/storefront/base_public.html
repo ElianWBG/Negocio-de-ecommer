@@ -11,7 +11,7 @@
       --espresso:   {{ config.color_oscuro|default:"#231A10" }};
       --rust:       {{ config.color_primario|default:"#B5441B" }};
       --rust-dark:  color-mix(in srgb, {{ config.color_primario|default:"#B5441B" }} 85%, black);
-      --sand:       #F8F3EE;
+      --sand:       {{ config.color_fondo|default:"#F8F3EE" }};
       --sand-dark:  #EDE4D8;
       --border:     #DDD3C5;
       --text:       #1A1209;
@@ -28,7 +28,7 @@
     body { font-family: var(--font-body); background: var(--sand); color: var(--text); font-size: 15px; line-height: 1.6; }
 
     /* ── NAVBAR ── */
-    .site-nav { background: var(--espresso); padding: 0 1.5rem; position: sticky; top: 0; z-index: 100; }
+    .site-nav { background: {{ config.color_navbar|default:"#231A10" }}; padding: 0 1.5rem; position: sticky; top: 0; z-index: 100; }
     .site-nav .inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
     .site-logo { font-family: var(--font-head); font-size: 1.6rem; font-weight: 600; color: #fff; text-decoration: none; letter-spacing: .02em; white-space: nowrap; }
     .site-logo span { color: var(--rust); }
