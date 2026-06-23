@@ -1,16 +1,12 @@
 [build]
 builder = "nixpacks"
 
-[phases.setup]
-# Forzamos a que instale las dependencias correctamente
-cmds = ["pip install -r requirements.txt"]
-
 [phases.build]
-# Recopilar estáticos (no requiere base de datos si configuras bien tus settings)
+# Ejecutamos solo los estáticos durante el build
 cmds = ["python manage.py collectstatic --noinput"]
 
 [deploy]
-# El comando de release se ejecuta justo antes de que el nuevo contenedor se active
-# y SÍ tiene acceso a la red interna y a Postgres.
-releaseCommand = "python manage.py migrate"
+# Aquí está la clave: preDeployCommand corre justo antes de iniciar la app, 
+# en el entorno de producción con acceso total a Postgres
+preDeployCommand = "python manage.py migrate"
 startCommand = "gunicorn config.wsgi --log-file -"
