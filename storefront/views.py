@@ -65,7 +65,6 @@ def customer_register(request):
             # Si el usuario ya existe, redirigir sin explotar
             if User.objects.filter(email=d['email']).exists():
                 return redirect('storefront:verify_email_sent')
-            # Crear el usuario de Django (inactivo hasta verificar el email)
             user = User.objects.create_user(
                 username=d['email'],
                 email=d['email'],
@@ -74,7 +73,6 @@ def customer_register(request):
                 last_name=d['last_name'],
                 is_active=False,
             )
-            # Crear o vincular el Customer
             customer, _ = Customer.objects.update_or_create(
                 dni=d['dni'],
                 defaults={
@@ -86,11 +84,8 @@ def customer_register(request):
                     'user': user,
                 }
             )
-            # Generar token de verificación
             token = secrets.token_hex(32)
             EmailVerificationToken.objects.create(user=user, token=token)
-
-            # Enviar email de verificación
             verify_url = request.build_absolute_uri(
                 reverse('storefront:verify_email', args=[token])
             )
@@ -108,6 +103,10 @@ def customer_register(request):
                 fail_silently=True,
             )
             return redirect('storefront:verify_email_sent')
+    else:
+        form = CustomerRegistrationForm()
+
+    return render(request, 'storefront/register.html', {'form': form})
 
 
 def verify_email_sent(request):
