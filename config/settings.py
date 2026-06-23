@@ -173,19 +173,10 @@ STORAGES = {
 }
 
 # Cloudinary para almacenamiento de imágenes en producción.
-# En desarrollo local sigue usando el filesystem.
-CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME', default='')
-CLOUDINARY_API_KEY    = env('CLOUDINARY_API_KEY', default='')
-CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET', default='')
-
-if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    # django-cloudinary-storage lee de este diccionario directamente
-    # NO usar cloudinary.config() aquí — causa import circular
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-        'API_KEY':    CLOUDINARY_API_KEY,
-        'API_SECRET': CLOUDINARY_API_SECRET,
-    }
+# La librería cloudinary lee CLOUDINARY_URL del entorno automáticamente.
+# Formato: cloudinary://api_key:api_secret@cloud_name
+import os as _os
+if _os.environ.get('CLOUDINARY_URL', ''):
     STORAGES['default'] = {
         'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
     }
