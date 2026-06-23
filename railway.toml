@@ -1,10 +1,8 @@
 [build]
 builder = "nixpacks"
 
-[phases.build]
-cmds = ["python manage.py collectstatic --noinput"]
-
 [deploy]
-preDeployCommand = "python manage.py migrate"
-# Llamamos a gunicorn directamente a través del ejecutable de python
-startCommand = "python -m gunicorn config.wsgi --log-file -"
+startCommand = "gunicorn config.wsgi --log-file -"
+preDeployCommand = "python manage.py migrate --noinput"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
