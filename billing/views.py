@@ -2272,6 +2272,8 @@ def config_negocio_edit(request):
         config.slogan           = request.POST.get('slogan', '').strip()
         config.color_primario   = request.POST.get('color_primario', '#B5441B').strip()
         config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()
+        config.color_fondo      = request.POST.get('color_fondo', '#F8F3EE').strip()
+        config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()
         config.banner_activo    = 'banner_activo' in request.POST
         config.banner_titulo    = request.POST.get('banner_titulo', '').strip()
         config.banner_subtitulo = request.POST.get('banner_subtitulo', '').strip()

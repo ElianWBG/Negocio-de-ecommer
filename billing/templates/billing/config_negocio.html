@@ -53,6 +53,22 @@
           </div>
           <div class="form-text">Navbar, hero, texto.</div>
         </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Color de fondo</label>
+          <div class="input-group">
+            <input type="color" name="color_fondo" value="{{ config.color_fondo }}" class="form-control form-control-color" style="width:50px;">
+            <input type="text" id="color_fondo_text" value="{{ config.color_fondo }}" class="form-control" style="font-family:monospace;" oninput="syncColor(this,'color_fondo')">
+          </div>
+          <div class="form-text">Fondo general de la tienda.</div>
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Color del navbar</label>
+          <div class="input-group">
+            <input type="color" name="color_navbar" value="{{ config.color_navbar }}" class="form-control form-control-color" style="width:50px;">
+            <input type="text" id="color_navbar_text" value="{{ config.color_navbar }}" class="form-control" style="font-family:monospace;" oninput="syncColor(this,'color_navbar')">
+          </div>
+          <div class="form-text">Barra de navegación superior.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -137,10 +153,24 @@
       <!-- Vista previa de colores -->
       <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-top:1rem;">
         <p style="font-size:.8rem;font-weight:600;color:#6c757d;margin-bottom:.5rem;">Vista previa de colores</p>
-        <div style="display:flex;gap:.5rem;align-items:center;">
-          <div id="prev_oscuro" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_oscuro }};"></div>
-          <div id="prev_primario" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_primario }};"></div>
-          <span style="font-size:.8rem;color:#6c757d;">Los cambios se reflejan al guardar</span>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div id="prev_oscuro" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_oscuro }};"></div>
+            <span style="font-size:.7rem;color:#6c757d;">Oscuro</span>
+          </div>
+          <div style="text-align:center;">
+            <div id="prev_primario" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_primario }};"></div>
+            <span style="font-size:.7rem;color:#6c757d;">Principal</span>
+          </div>
+          <div style="text-align:center;">
+            <div id="prev_fondo" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_fondo }};border:1px solid #dee2e6;"></div>
+            <span style="font-size:.7rem;color:#6c757d;">Fondo</span>
+          </div>
+          <div style="text-align:center;">
+            <div id="prev_navbar" style="width:40px;height:40px;border-radius:6px;background:{{ config.color_navbar }};"></div>
+            <span style="font-size:.7rem;color:#6c757d;">Navbar</span>
+          </div>
+          <span style="font-size:.8rem;color:#6c757d;margin-left:.5rem;">Los cambios se reflejan al guardar</span>
         </div>
       </div>
     </div>
@@ -164,17 +194,33 @@ function syncColor(textInput, fieldName) {
   const hex = textInput.value;
   if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
     document.querySelector(`input[name="${fieldName}"]`).value = hex;
-    document.getElementById('prev_' + (fieldName === 'color_primario' ? 'primario' : 'oscuro')).style.background = hex;
+    const prevMap = {
+      'color_primario': 'prev_primario',
+      'color_oscuro': 'prev_oscuro',
+      'color_fondo': 'prev_fondo',
+      'color_navbar': 'prev_navbar',
+    };
+    if (prevMap[fieldName]) {
+      document.getElementById(prevMap[fieldName]).style.background = hex;
+    }
   }
 }
-// Sync color pickers → text inputs
 document.querySelectorAll('input[type="color"]').forEach(picker => {
   picker.addEventListener('input', function() {
     const name = this.name;
     const textId = name + '_text';
-    document.getElementById(textId).value = this.value;
-    const prevId = name === 'color_primario' ? 'prev_primario' : 'prev_oscuro';
-    document.getElementById(prevId).style.background = this.value;
+    if (document.getElementById(textId)) {
+      document.getElementById(textId).value = this.value;
+    }
+    const prevMap = {
+      'color_primario': 'prev_primario',
+      'color_oscuro': 'prev_oscuro',
+      'color_fondo': 'prev_fondo',
+      'color_navbar': 'prev_navbar',
+    };
+    if (prevMap[name]) {
+      document.getElementById(prevMap[name]).style.background = this.value;
+    }
   });
 });
 </script>
