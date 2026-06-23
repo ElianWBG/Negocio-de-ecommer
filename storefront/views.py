@@ -102,7 +102,7 @@ def customer_register(request):
                 ),
                 from_email=None,
                 recipient_list=[d['email']],
-                fail_silently=False,
+                fail_silently=True,
             )
             return redirect('storefront:verify_email_sent')
     else:
