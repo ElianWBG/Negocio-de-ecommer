@@ -2260,7 +2260,12 @@ def report_stock_excel(request):
 def config_negocio_edit(request):
     """Vista para editar la configuración global del negocio."""
     from billing.models import ConfigNegocio
-    config = ConfigNegocio.get()
+    from django.db import OperationalError, ProgrammingError
+    try:
+        config = ConfigNegocio.get()
+    except (OperationalError, ProgrammingError):
+        messages.error(request, 'La tabla de configuración no existe aún. Ejecuta las migraciones.')
+        return redirect("billing:home")
 
     if request.method == 'POST':
         config.nombre_tienda    = request.POST.get('nombre_tienda', '').strip() or config.nombre_tienda
