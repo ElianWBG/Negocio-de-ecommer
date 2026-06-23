@@ -156,6 +156,29 @@ class ConfigNegocio(models.Model):
     color_fondo     = models.CharField(max_length=7, default='#F8F3EE', verbose_name='Color de fondo (hex)', help_text='Fondo general de la tienda')
     color_navbar    = models.CharField(max_length=7, default='#231A10', verbose_name='Color del navbar (hex)', help_text='Barra de navegación superior')
 
+    # Hero
+    hero_imagen     = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Imagen de fondo del hero', max_length=500)
+    hero_titulo     = models.CharField(max_length=100, blank=True, default='Encuentra lo que buscas', verbose_name='Título del hero')
+
+    # Sobre nosotros
+    sobre_activo    = models.BooleanField(default=False, verbose_name='Mostrar sección "Sobre nosotros"')
+    sobre_titulo    = models.CharField(max_length=100, blank=True, default='Sobre nosotros', verbose_name='Título')
+    sobre_texto     = models.TextField(blank=True, verbose_name='Texto')
+    sobre_imagen    = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Imagen', max_length=500)
+
+    # Por qué elegirnos
+    porque_activo   = models.BooleanField(default=False, verbose_name='Mostrar sección "Por qué elegirnos"')
+    porque_titulo   = models.CharField(max_length=100, blank=True, default='¿Por qué elegirnos?', verbose_name='Título')
+    porque_1_icono  = models.CharField(max_length=50, blank=True, default='bi-truck', verbose_name='Ícono 1 (Bootstrap Icons)')
+    porque_1_titulo = models.CharField(max_length=80, blank=True, default='Envío rápido', verbose_name='Título 1')
+    porque_1_texto  = models.CharField(max_length=200, blank=True, default='Entrega a domicilio en toda la ciudad.', verbose_name='Texto 1')
+    porque_2_icono  = models.CharField(max_length=50, blank=True, default='bi-shield-check', verbose_name='Ícono 2')
+    porque_2_titulo = models.CharField(max_length=80, blank=True, default='Garantía', verbose_name='Título 2')
+    porque_2_texto  = models.CharField(max_length=200, blank=True, default='Productos con garantía directa del fabricante.', verbose_name='Texto 2')
+    porque_3_icono  = models.CharField(max_length=50, blank=True, default='bi-headset', verbose_name='Ícono 3')
+    porque_3_titulo = models.CharField(max_length=80, blank=True, default='Soporte', verbose_name='Título 3')
+    porque_3_texto  = models.CharField(max_length=200, blank=True, default='Atención personalizada antes y después de tu compra.', verbose_name='Texto 3')
+
     # Banner promocional
     banner_activo   = models.BooleanField(default=True, verbose_name='Mostrar banner promocional')
     banner_titulo   = models.CharField(max_length=120, default='Envío gratis en pedidos mayores a $50', verbose_name='Título del banner')
@@ -181,12 +204,11 @@ class ConfigNegocio(models.Model):
         return f'Config: {self.nombre_tienda}'
 
     def save(self, *args, **kwargs):
-        # Singleton: siempre usa el id=1
         self.pk = 1
         super().save(*args, **kwargs)
 
     @classmethod
     def get(cls):
-        """Devuelve la config actual, creándola con valores por defecto si no existe."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+

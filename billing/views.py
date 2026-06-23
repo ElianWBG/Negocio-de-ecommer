@@ -2274,6 +2274,25 @@ def config_negocio_edit(request):
         config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()
         config.color_fondo      = request.POST.get('color_fondo', '#F8F3EE').strip()
         config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()
+        config.hero_titulo      = request.POST.get('hero_titulo', '').strip()
+        if 'hero_imagen' in request.FILES:
+            config.hero_imagen  = request.FILES['hero_imagen']
+        config.sobre_activo     = 'sobre_activo' in request.POST
+        config.sobre_titulo     = request.POST.get('sobre_titulo', '').strip()
+        config.sobre_texto      = request.POST.get('sobre_texto', '').strip()
+        if 'sobre_imagen' in request.FILES:
+            config.sobre_imagen = request.FILES['sobre_imagen']
+        config.porque_activo    = 'porque_activo' in request.POST
+        config.porque_titulo    = request.POST.get('porque_titulo', '').strip()
+        config.porque_1_icono   = request.POST.get('porque_1_icono', '').strip()
+        config.porque_1_titulo  = request.POST.get('porque_1_titulo', '').strip()
+        config.porque_1_texto   = request.POST.get('porque_1_texto', '').strip()
+        config.porque_2_icono   = request.POST.get('porque_2_icono', '').strip()
+        config.porque_2_titulo  = request.POST.get('porque_2_titulo', '').strip()
+        config.porque_2_texto   = request.POST.get('porque_2_texto', '').strip()
+        config.porque_3_icono   = request.POST.get('porque_3_icono', '').strip()
+        config.porque_3_titulo  = request.POST.get('porque_3_titulo', '').strip()
+        config.porque_3_texto   = request.POST.get('porque_3_texto', '').strip()
         config.banner_activo    = 'banner_activo' in request.POST
         config.banner_titulo    = request.POST.get('banner_titulo', '').strip()
         config.banner_subtitulo = request.POST.get('banner_subtitulo', '').strip()

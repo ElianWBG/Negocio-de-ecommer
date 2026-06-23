@@ -3,7 +3,27 @@
 
 {% block extra_css %}
 <style>
-  .hero-strip { background:var(--espresso); border-radius:var(--radius); padding:2.5rem 2rem; margin-bottom:2rem; text-align:center; }
+  .hero-strip {
+    background: var(--espresso);
+    border-radius: var(--radius);
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-strip.has-bg-img {
+    background-size: cover;
+    background-position: center;
+  }
+  .hero-strip.has-bg-img::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    border-radius: var(--radius);
+  }
+  .hero-strip > * { position: relative; z-index: 1; }
   .hero-strip h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:600; color:#fff; margin-bottom:.4rem; }
   .hero-strip p { color:rgba(255,255,255,.6); margin-bottom:1.5rem; font-size:.95rem; }
   .search-bar { display:flex; gap:.5rem; max-width:560px; margin:0 auto; }
@@ -30,7 +50,6 @@
   .section-head h2 { font-family:var(--font-head); font-size:1.5rem; font-weight:600; }
   .section-head a { font-size:.8rem; color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:.25rem; }
   .section-head a:hover { color:var(--rust); }
-
   .novedades-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2.5rem; }
   .nov-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; text-decoration:none; color:var(--text); display:block; transition:transform var(--transition), box-shadow var(--transition); }
   .nov-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); color:var(--text); }
@@ -41,6 +60,25 @@
   .nov-info { padding:.75rem; }
   .nov-name { font-weight:600; font-size:.9rem; margin-bottom:.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .nov-price { color:var(--rust); font-weight:700; font-size:.95rem; }
+
+  /* Sobre nosotros */
+  .sobre-section { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:center; margin:2.5rem 0; padding:2rem; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); }
+  .sobre-section.sin-imagen { grid-template-columns:1fr; }
+  .sobre-titulo { font-family:var(--font-head); font-size:2rem; font-weight:600; margin-bottom:1rem; }
+  .sobre-texto { color:var(--muted); line-height:1.8; font-size:.95rem; white-space:pre-line; }
+  .sobre-img { border-radius:var(--radius); overflow:hidden; }
+  .sobre-img img { width:100%; height:280px; object-fit:cover; }
+
+  /* Por qué elegirnos */
+  .porque-section { margin:2.5rem 0; }
+  .porque-titulo { font-family:var(--font-head); font-size:1.8rem; font-weight:600; text-align:center; margin-bottom:1.5rem; }
+  .porque-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+  .porque-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem 1.5rem; text-align:center; transition:transform var(--transition), box-shadow var(--transition); }
+  .porque-card:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
+  .porque-icono { width:56px; height:56px; border-radius:50%; background:var(--sand); display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; }
+  .porque-icono i { font-size:1.5rem; color:var(--rust); }
+  .porque-card h3 { font-family:var(--font-head); font-size:1.1rem; font-weight:600; margin-bottom:.5rem; }
+  .porque-card p { color:var(--muted); font-size:.875rem; line-height:1.6; }
 
   /* Divider */
   .section-divider { border:none; border-top:1px solid var(--border); margin:2rem 0 1.5rem; }
@@ -83,14 +121,17 @@
     .product-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; }
     .product-img { height:150px; }
     .card-overlay { opacity:1; background:rgba(35,26,16,.3); }
+    .sobre-section { grid-template-columns:1fr; }
+    .porque-grid { grid-template-columns:1fr; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Hero -->
-<div class="hero-strip">
-  <h1>Encuentra lo que buscas</h1>
+<div class="hero-strip{% if config.hero_imagen %} has-bg-img{% endif %}"
+     {% if config.hero_imagen %}style="background-image:url('{{ config.hero_imagen.url }}');"{% endif %}>
+  <h1>{{ config.hero_titulo|default:"Encuentra lo que buscas" }}</h1>
   <p>{{ config.slogan }}</p>
   <form method="get" class="search-bar">
     {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
@@ -138,6 +179,47 @@
     </div>
   </a>
   {% endfor %}
+</div>
+<hr class="section-divider">
+{% endif %}
+
+<!-- Sobre nosotros -->
+{% if config.sobre_activo and config.sobre_texto %}
+<div class="sobre-section{% if not config.sobre_imagen %} sin-imagen{% endif %}">
+  <div>
+    <h2 class="sobre-titulo">{{ config.sobre_titulo|default:"Sobre nosotros" }}</h2>
+    <p class="sobre-texto">{{ config.sobre_texto }}</p>
+  </div>
+  {% if config.sobre_imagen %}
+  <div class="sobre-img">
+    <img src="{{ config.sobre_imagen.url }}" alt="{{ config.sobre_titulo }}">
+  </div>
+  {% endif %}
+</div>
+<hr class="section-divider">
+{% endif %}
+
+<!-- Por qué elegirnos -->
+{% if config.porque_activo %}
+<div class="porque-section">
+  <h2 class="porque-titulo">{{ config.porque_titulo|default:"¿Por qué elegirnos?" }}</h2>
+  <div class="porque-grid">
+    <div class="porque-card">
+      <div class="porque-icono"><i class="bi {{ config.porque_1_icono|default:'bi-truck' }}"></i></div>
+      <h3>{{ config.porque_1_titulo|default:"Envío rápido" }}</h3>
+      <p>{{ config.porque_1_texto|default:"Entrega a domicilio en toda la ciudad." }}</p>
+    </div>
+    <div class="porque-card">
+      <div class="porque-icono"><i class="bi {{ config.porque_2_icono|default:'bi-shield-check' }}"></i></div>
+      <h3>{{ config.porque_2_titulo|default:"Garantía" }}</h3>
+      <p>{{ config.porque_2_texto|default:"Productos con garantía directa del fabricante." }}</p>
+    </div>
+    <div class="porque-card">
+      <div class="porque-icono"><i class="bi {{ config.porque_3_icono|default:'bi-headset' }}"></i></div>
+      <h3>{{ config.porque_3_titulo|default:"Soporte" }}</h3>
+      <p>{{ config.porque_3_texto|default:"Atención personalizada antes y después de tu compra." }}</p>
+    </div>
+  </div>
 </div>
 <hr class="section-divider">
 {% endif %}
