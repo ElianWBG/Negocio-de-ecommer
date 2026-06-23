@@ -62,6 +62,9 @@ def customer_register(request):
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
+            # Si el usuario ya existe, redirigir sin explotar
+            if User.objects.filter(email=d['email']).exists():
+                return redirect('storefront:verify_email_sent')
             # Crear el usuario de Django (inactivo hasta verificar el email)
             user = User.objects.create_user(
                 username=d['email'],
@@ -105,10 +108,6 @@ def customer_register(request):
                 fail_silently=True,
             )
             return redirect('storefront:verify_email_sent')
-    else:
-        form = CustomerRegistrationForm()
-
-    return render(request, 'storefront/register.html', {'form': form})
 
 
 def verify_email_sent(request):
