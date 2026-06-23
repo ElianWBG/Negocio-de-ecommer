@@ -3,3 +3,4 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "gunicorn config.wsgi --log-file -"
+preDeployCommand = "python manage.py migrate"
