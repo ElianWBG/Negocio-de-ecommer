@@ -150,7 +150,7 @@ class ConfigNegocio(models.Model):
     # Identidad
     nombre_tienda   = models.CharField(max_length=80, default='Nuestra Tienda', verbose_name='Nombre de la tienda')
     slogan          = models.CharField(max_length=160, blank=True, default='Explora nuestro catálogo y solicita tu pedido en minutos', verbose_name='Slogan')
-    logo            = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Logo')
+    logo = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Logo', max_length=500)
     color_primario  = models.CharField(max_length=7, default='#B5441B', verbose_name='Color principal (hex)', help_text='Ej: #B5441B')
     color_oscuro    = models.CharField(max_length=7, default='#231A10', verbose_name='Color oscuro (hex)', help_text='Ej: #231A10')
 
