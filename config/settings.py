@@ -58,7 +58,7 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@mititienda.com')
 # Email del proveedor que recibe la notificación cuando llega una solicitud nueva.
 # Déjalo vacío para desactivar las notificaciones.
 ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', default='')
-
+RESEND_API_KEY = env('RESEND_API_KEY', default='')
 
 # Application definition
 
