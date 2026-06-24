@@ -1646,6 +1646,7 @@ def product_import_template(request):
     """Descarga la plantilla Excel vacía con el formato correcto."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles.numbers import FORMAT_TEXT
     from django.http import HttpResponse
 
     wb = Workbook()
@@ -1848,6 +1849,7 @@ def customer_import_template(request):
     """Descarga la plantilla Excel para importar clientes."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles.numbers import FORMAT_TEXT
     from django.http import HttpResponse
 
     wb = Workbook()
@@ -1903,6 +1905,12 @@ def customer_import_template(request):
     for col_num, width in enumerate(widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=col_num).column_letter].width = width
     ws.row_dimensions[1].height = 22
+
+    # Formatear columna cédula como texto para evitar notación científica
+    from openpyxl.utils import get_column_letter
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=1):
+        for cell in row:
+            cell.number_format = FORMAT_TEXT
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1998,6 +2006,7 @@ def report_sales(request):
 def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles.numbers import FORMAT_TEXT
     from django.http import HttpResponse
 
     date_from, date_to = _get_report_dates(request)
