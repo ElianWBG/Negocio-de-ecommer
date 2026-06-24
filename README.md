@@ -90,4 +90,4 @@ ent_sales_A2\Scripts\python.exe manage.py migrate
 ent_sales_A2\Scripts\python.exe manage.py runserver
 ```
 
-Abre el navegador en: http://127.0.0.1:8000
+
