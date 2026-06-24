@@ -2,7 +2,7 @@
 
 Proyecto Django para gestión de ventas.
 
-## Funcionalidades
+## Funcionalidade
 
 Gestión de marcas, grupos, proveedores, productos, clientes y facturas. Además, el listado de **Productos** incluye:
 
