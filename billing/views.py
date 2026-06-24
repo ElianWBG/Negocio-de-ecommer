@@ -2307,9 +2307,46 @@ def config_negocio_edit(request):
 
         if 'logo' in request.FILES:
             config.logo = request.FILES['logo']
+        elif 'logo_clear' in request.POST:
+            config.logo = None
+
+        if 'hero_imagen_clear' in request.POST:
+            config.hero_imagen = None
+
+        if 'sobre_imagen_clear' in request.POST:
+            config.sobre_imagen = None
 
         config.save()
         messages.success(request, 'Configuración guardada correctamente.')
         return redirect('billing:config_negocio')
 
-    return render(request, 'billing/config_negocio.html', {'config': config})
+    iconos_disponibles = [
+        ('bi-truck', 'Envío'),
+        ('bi-shield-check', 'Garantía'),
+        ('bi-headset', 'Soporte'),
+        ('bi-star', 'Calidad'),
+        ('bi-heart', 'Confianza'),
+        ('bi-clock', 'Rapidez'),
+        ('bi-gift', 'Ofertas'),
+        ('bi-cash-coin', 'Precio'),
+        ('bi-patch-check', 'Certif.'),
+        ('bi-people', 'Equipo'),
+        ('bi-shop', 'Tienda'),
+        ('bi-geo-alt', 'Ubicación'),
+        ('bi-whatsapp', 'WhatsApp'),
+        ('bi-telephone', 'Teléfono'),
+        ('bi-bag-check', 'Compra'),
+        ('bi-award', 'Premio'),
+        ('bi-lightning', 'Velocidad'),
+        ('bi-box-seam', 'Producto'),
+    ]
+    porque_items = [
+        (1, config.porque_1_icono, config.porque_1_titulo, config.porque_1_texto),
+        (2, config.porque_2_icono, config.porque_2_titulo, config.porque_2_texto),
+        (3, config.porque_3_icono, config.porque_3_titulo, config.porque_3_texto),
+    ]
+    return render(request, 'billing/config_negocio.html', {
+        'config': config,
+        'iconos_disponibles': iconos_disponibles,
+        'porque_items': porque_items,
+    })

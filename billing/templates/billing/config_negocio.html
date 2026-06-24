@@ -24,9 +24,12 @@
       <div class="mb-3">
         <label class="form-label fw-semibold">Logo</label>
         {% if config.logo %}
-        <div class="mb-2">
+        <div class="mb-2 d-flex align-items-center gap-2">
           <img src="{{ config.logo.url }}" style="height:50px;border-radius:6px;border:1px solid #dee2e6;" alt="Logo actual">
-          <span class="text-muted ms-2" style="font-size:.8rem;">Logo actual</span>
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="logo_clear" id="logo_clear">
+            <label class="form-check-label text-danger" for="logo_clear">Eliminar logo</label>
+          </div>
         </div>
         {% endif %}
         <input type="file" name="logo" accept="image/*" class="form-control">
@@ -81,22 +84,25 @@
   <!-- Hero -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title mb-3"><i class="bi bi-image"></i> Hero (portada)</h5>
+      <h5 class="card-title mb-3"><i class="bi bi-image"></i> Portada (Hero)</h5>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Título del hero</label>
+        <label class="form-label fw-semibold">Título principal</label>
         <input type="text" name="hero_titulo" value="{{ config.hero_titulo }}" class="form-control" placeholder="Encuentra lo que buscas">
         <div class="form-text">Texto grande que aparece en la portada.</div>
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Imagen de fondo</label>
+        <label class="form-label fw-semibold">Imagen de fondo <span class="badge bg-secondary" style="font-size:.7rem;">Opcional</span></label>
         {% if config.hero_imagen %}
         <div class="mb-2">
-          <img src="{{ config.hero_imagen.url }}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;" alt="Hero actual">
-          <span class="text-muted" style="font-size:.8rem;">Imagen actual</span>
+          <img src="{{ config.hero_imagen.url }}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;" alt="Imagen actual">
+          <div class="form-check mt-1">
+            <input class="form-check-input" type="checkbox" name="hero_imagen_clear" id="hero_imagen_clear">
+            <label class="form-check-label text-danger" for="hero_imagen_clear">Eliminar imagen de fondo</label>
+          </div>
         </div>
         {% endif %}
         <input type="file" name="hero_imagen" accept="image/*" class="form-control">
-        <div class="form-text">Recomendado: JPG horizontal, mínimo 1200x400px. Sin imagen se usa el color oscuro.</div>
+        <div class="form-text">JPG horizontal, mínimo 1200×400px. Si no hay imagen se usa el color oscuro.</div>
       </div>
     </div>
   </div>
@@ -104,15 +110,15 @@
   <!-- Banner promocional -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title mb-3"><i class="bi bi-megaphone"></i> Banner promocional</h5>
-      <div class="mb-3">
-        <div class="form-check form-switch">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-megaphone"></i> Banner promocional</h5>
+        <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" name="banner_activo" id="banner_activo" {% if config.banner_activo %}checked{% endif %}>
-          <label class="form-check-label fw-semibold" for="banner_activo">Mostrar banner en el catálogo</label>
+          <label class="form-check-label fw-semibold" for="banner_activo">{{ config.banner_activo|yesno:"Visible,Oculto" }}</label>
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Título del banner</label>
+        <label class="form-label fw-semibold">Título</label>
         <input type="text" name="banner_titulo" value="{{ config.banner_titulo }}" class="form-control">
       </div>
       <div class="mb-3">
@@ -153,12 +159,15 @@
   <!-- Sobre nosotros -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title mb-3"><i class="bi bi-building"></i> Sobre nosotros</h5>
-      <div class="mb-3">
-        <div class="form-check form-switch">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-building"></i> Sobre nosotros</h5>
+        <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" name="sobre_activo" id="sobre_activo" {% if config.sobre_activo %}checked{% endif %}>
-          <label class="form-check-label fw-semibold" for="sobre_activo">Mostrar sección en la tienda</label>
+          <label class="form-check-label fw-semibold" for="sobre_activo">{{ config.sobre_activo|yesno:"Visible,Oculto" }}</label>
         </div>
+      </div>
+      <div class="alert alert-info py-2" style="font-size:.85rem;">
+        <i class="bi bi-info-circle"></i> Esta sección aparece en la tienda contando la historia de tu negocio.
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Título</label>
@@ -166,13 +175,17 @@
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Texto</label>
-        <textarea name="sobre_texto" class="form-control" rows="4" placeholder="Cuéntales a tus clientes quiénes son...">{{ config.sobre_texto }}</textarea>
+        <textarea name="sobre_texto" class="form-control" rows="4" placeholder="Cuéntales a tus clientes quiénes son, cuántos años llevan en el mercado, qué los hace especiales...">{{ config.sobre_texto }}</textarea>
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Imagen (opcional)</label>
+        <label class="form-label fw-semibold">Imagen <span class="badge bg-secondary" style="font-size:.7rem;">Opcional</span></label>
         {% if config.sobre_imagen %}
         <div class="mb-2">
-          <img src="{{ config.sobre_imagen.url }}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;" alt="Imagen sobre nosotros">
+          <img src="{{ config.sobre_imagen.url }}" style="width:100%;height:70px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">
+          <div class="form-check mt-1">
+            <input class="form-check-input" type="checkbox" name="sobre_imagen_clear" id="sobre_imagen_clear">
+            <label class="form-check-label text-danger" for="sobre_imagen_clear">Eliminar imagen</label>
+          </div>
         </div>
         {% endif %}
         <input type="file" name="sobre_imagen" accept="image/*" class="form-control">
@@ -183,45 +196,48 @@
   <!-- Por qué elegirnos -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title mb-3"><i class="bi bi-star"></i> ¿Por qué elegirnos?</h5>
-      <div class="mb-3">
-        <div class="form-check form-switch">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-star"></i> ¿Por qué elegirnos?</h5>
+        <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" name="porque_activo" id="porque_activo" {% if config.porque_activo %}checked{% endif %}>
-          <label class="form-check-label fw-semibold" for="porque_activo">Mostrar sección en la tienda</label>
+          <label class="form-check-label fw-semibold" for="porque_activo">{{ config.porque_activo|yesno:"Visible,Oculto" }}</label>
         </div>
+      </div>
+      <div class="alert alert-info py-2" style="font-size:.85rem;">
+        <i class="bi bi-info-circle"></i> Muestra 3 beneficios de tu negocio con íconos. Elige un ícono de la lista.
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Título de la sección</label>
         <input type="text" name="porque_titulo" value="{{ config.porque_titulo }}" class="form-control" placeholder="¿Por qué elegirnos?">
       </div>
-      <div class="form-text mb-2">Íconos en <a href="https://icons.getbootstrap.com/" target="_blank">Bootstrap Icons</a> — escribe solo el nombre, ej: <code>bi-truck</code></div>
 
+      {% for num, icono_val, titulo_val, texto_val in porque_items %}
       <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-bottom:.75rem;">
-        <p class="fw-semibold mb-2" style="font-size:.85rem;">Beneficio 1</p>
+        <p class="fw-semibold mb-2" style="font-size:.85rem;">Beneficio {{ num }}</p>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:.8rem;">Ícono</label>
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;margin-bottom:.5rem;">
+            {% for ic_name, ic_label in iconos_disponibles %}
+            <label style="cursor:pointer;text-align:center;padding:.4rem;border-radius:6px;border:2px solid {% if icono_val == ic_name %}#0d6efd{% else %}#dee2e6{% endif %};background:{% if icono_val == ic_name %}#e7f1ff{% else %}#fff{% endif %};" title="{{ ic_label }}">
+              <input type="radio" name="porque_{{ num }}_icono" value="{{ ic_name }}" {% if icono_val == ic_name %}checked{% endif %} style="display:none;" onchange="this.closest('.card-body').querySelectorAll('label[style]').forEach(l=>l.style.cssText=l.style.cssText.replace(/border:2px solid #0d6efd/,'border:2px solid #dee2e6').replace(/background:#e7f1ff/,'background:#fff')); this.parentElement.style.border='2px solid #0d6efd'; this.parentElement.style.background='#e7f1ff'">
+              <i class="bi {{ ic_name }}" style="font-size:1.2rem;display:block;"></i>
+              <span style="font-size:.65rem;color:#6c757d;">{{ ic_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
         <div class="row g-2">
-          <div class="col-4"><label class="form-label" style="font-size:.8rem;">Ícono</label><input type="text" name="porque_1_icono" value="{{ config.porque_1_icono }}" class="form-control form-control-sm" placeholder="bi-truck"></div>
-          <div class="col-8"><label class="form-label" style="font-size:.8rem;">Título</label><input type="text" name="porque_1_titulo" value="{{ config.porque_1_titulo }}" class="form-control form-control-sm"></div>
-          <div class="col-12"><label class="form-label" style="font-size:.8rem;">Descripción</label><input type="text" name="porque_1_texto" value="{{ config.porque_1_texto }}" class="form-control form-control-sm"></div>
+          <div class="col-12">
+            <label class="form-label" style="font-size:.8rem;">Título del beneficio</label>
+            <input type="text" name="porque_{{ num }}_titulo" value="{{ titulo_val }}" class="form-control form-control-sm" placeholder="Ej: Envío rápido">
+          </div>
+          <div class="col-12">
+            <label class="form-label" style="font-size:.8rem;">Descripción</label>
+            <input type="text" name="porque_{{ num }}_texto" value="{{ texto_val }}" class="form-control form-control-sm" placeholder="Ej: Entrega a domicilio en toda la ciudad.">
+          </div>
         </div>
       </div>
-
-      <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-bottom:.75rem;">
-        <p class="fw-semibold mb-2" style="font-size:.85rem;">Beneficio 2</p>
-        <div class="row g-2">
-          <div class="col-4"><label class="form-label" style="font-size:.8rem;">Ícono</label><input type="text" name="porque_2_icono" value="{{ config.porque_2_icono }}" class="form-control form-control-sm" placeholder="bi-shield-check"></div>
-          <div class="col-8"><label class="form-label" style="font-size:.8rem;">Título</label><input type="text" name="porque_2_titulo" value="{{ config.porque_2_titulo }}" class="form-control form-control-sm"></div>
-          <div class="col-12"><label class="form-label" style="font-size:.8rem;">Descripción</label><input type="text" name="porque_2_texto" value="{{ config.porque_2_texto }}" class="form-control form-control-sm"></div>
-        </div>
-      </div>
-
-      <div style="background:#f8f9fa;border-radius:8px;padding:1rem;">
-        <p class="fw-semibold mb-2" style="font-size:.85rem;">Beneficio 3</p>
-        <div class="row g-2">
-          <div class="col-4"><label class="form-label" style="font-size:.8rem;">Ícono</label><input type="text" name="porque_3_icono" value="{{ config.porque_3_icono }}" class="form-control form-control-sm" placeholder="bi-headset"></div>
-          <div class="col-8"><label class="form-label" style="font-size:.8rem;">Título</label><input type="text" name="porque_3_titulo" value="{{ config.porque_3_titulo }}" class="form-control form-control-sm"></div>
-          <div class="col-12"><label class="form-label" style="font-size:.8rem;">Descripción</label><input type="text" name="porque_3_texto" value="{{ config.porque_3_texto }}" class="form-control form-control-sm"></div>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 
@@ -272,6 +288,12 @@ document.querySelectorAll('input[type="color"]').forEach(picker => {
     if (document.getElementById(textId)) document.getElementById(textId).value = this.value;
     const prevMap = { 'color_primario':'prev_primario','color_oscuro':'prev_oscuro','color_fondo':'prev_fondo','color_navbar':'prev_navbar' };
     if (prevMap[name]) document.getElementById(prevMap[name]).style.background = this.value;
+  });
+});
+// Toggle label visible/oculto
+document.querySelectorAll('.form-switch input[type=checkbox]').forEach(sw => {
+  sw.addEventListener('change', function() {
+    this.nextElementSibling.textContent = this.checked ? 'Visible' : 'Oculto';
   });
 });
 </script>
