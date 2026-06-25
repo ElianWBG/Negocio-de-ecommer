@@ -798,10 +798,26 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        for f in self.request.FILES.getlist('extra_images'):
+            if f.size <= 5 * 1024 * 1024:
+                ProductImage.objects.create(product=self.object, image=f)
+        return response
+
 class ProductUpdateView(LoginRequiredMixin, UpdateView):
     model = Product; form_class = ProductForm
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        for pk in self.request.POST.getlist('delete_image'):
+            ProductImage.objects.filter(pk=pk, product=self.object).delete()
+        for f in self.request.FILES.getlist('extra_images'):
+            if f.size <= 5 * 1024 * 1024:
+                ProductImage.objects.create(product=self.object, image=f)
+        return response
 
 class ProductDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = Product
