@@ -597,7 +597,7 @@ def paypal_capture(request, pk):
     credentials = base64.b64encode(f'{client_id}:{secret}'.encode()).decode()
 
     token_req = urllib.request.Request(
-        'https://api-m.paypal.com/v1/oauth2/token',
+        'https://api-m.sandbox.paypal.com/v1/oauth2/token',
         data=b'grant_type=client_credentials',
         headers={
             'Authorization': f'Basic {credentials}',
@@ -613,7 +613,7 @@ def paypal_capture(request, pk):
 
     # Capturar el pago
     capture_req = urllib.request.Request(
-        f'https://api-m.paypal.com/v2/checkout/orders/{order_id}/capture',
+        f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{order_id}/capture',
         data=b'{}',
         headers={
             'Authorization': f'Bearer {access_token}',
