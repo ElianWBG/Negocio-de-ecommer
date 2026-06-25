@@ -8,7 +8,11 @@
       "PowerShell(py -m venv ent_sales_A2)",
       "PowerShell(py -0p)",
       "PowerShell(.\\\\ent_sales_A2\\\\Scripts\\\\python.exe -m pip install -r requirements.txt)",
-      "PowerShell(.\\\\ent_sales_A2\\\\Scripts\\\\python.exe manage.py migrate)"
+      "PowerShell(.\\\\ent_sales_A2\\\\Scripts\\\\python.exe manage.py migrate)",
+      "PowerShell(\"---\")",
+      "PowerShell(git add storefront/views.py)",
+      "PowerShell(git commit --no-edit)",
+      "PowerShell(if \\($?\\) { \"commit ok\" })"
     ]
   }
 }
