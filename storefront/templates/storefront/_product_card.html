@@ -1,0 +1,45 @@
+<article class="product-card reveal"
+         tabindex="0" role="button" aria-label="Vista rápida de {{ product.name }}"
+         data-name="{{ product.name }}"
+         data-store="{{ product.brand.name }}"
+         data-cat="{{ product.group.name }}"
+         data-price="{{ product.unit_price }}"
+         data-stock="{{ product.stock }}"
+         data-img="{% if product.image %}{{ product.image.url }}{% endif %}"
+         data-images="{% for u in product.gallery %}{{ u }}{% if not forloop.last %}|{% endif %}{% endfor %}"
+         data-detail="{% url 'storefront:product_detail' product.pk %}"
+         data-storeurl="?brand={{ product.brand.id }}">
+  <div class="product-media" data-slide="0">
+    {% for u in product.gallery %}
+      <img class="pm-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}" loading="lazy">
+    {% empty %}
+      <div class="placeholder"><i class="bi bi-image"></i></div>
+    {% endfor %}
+    {% if product.gallery|length > 1 %}
+      <button type="button" class="pm-nav prev" aria-label="Imagen anterior"><i class="bi bi-chevron-left"></i></button>
+      <button type="button" class="pm-nav next" aria-label="Imagen siguiente"><i class="bi bi-chevron-right"></i></button>
+      <div class="pm-dots">
+        {% for u in product.gallery %}<span class="pm-dot{% if forloop.first %} is-active{% endif %}"></span>{% endfor %}
+      </div>
+    {% endif %}
+    <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
+      {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
+    </span>
+    <a class="visit-store" href="?brand={{ product.brand.id }}">
+      <i class="bi bi-shop"></i> Visitar tienda
+    </a>
+  </div>
+  <div class="product-body">
+    <span class="sold-by">
+      <i class="bi bi-shop-window"></i> Vendido por: <span class="store-name">{{ product.brand.name }}</span>
+    </span>
+    <a class="product-name" href="{% url 'storefront:product_detail' product.pk %}">{{ product.name }}</a>
+    <div class="product-cat">{{ product.group.name }}</div>
+    <div class="product-foot">
+      <span class="product-price">${{ product.unit_price }}</span>
+      <a class="product-view" href="{% url 'storefront:product_detail' product.pk %}">
+        <i class="bi bi-eye"></i> Ver
+      </a>
+    </div>
+  </div>
+</article>

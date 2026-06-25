@@ -37,7 +37,7 @@
   }
 
   body { background: var(--bg); color: var(--ink); }
-  .page-wrap { max-width: 1140px; }
+  .page-wrap { max-width: 1340px; padding: 1.5rem 1.25rem; }
   .cat { font-family: var(--font-body); }
 
   /* ---------- Reveal en scroll (useInView, once:true) ---------- */
@@ -319,6 +319,127 @@
   .qv-btn.ghost:hover { background: var(--bg-soft); border-color: #cbd5e1; }
   body.qv-lock { overflow: hidden; }
 
+  /* ============================================================
+     APP-SHELL (sidebar izq · centro · carrito der)
+     ============================================================ */
+  .shop-shell { display: grid; grid-template-columns: 210px minmax(0,1fr) 312px; gap: 1.25rem; align-items: start; }
+
+  /* ---- Sidebar izquierdo ---- */
+  .shop-nav { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 1.1rem; }
+  .snav { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: .6rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: .1rem; }
+  .snav-link { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 9px; font-size: .9rem; font-weight: 500; color: var(--ink-soft); text-decoration: none; transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out); }
+  .snav-link:hover { background: var(--bg-soft); color: var(--brand); }
+  .snav-link.active { background: var(--brand); color: #fff; }
+  .snav-link i { font-size: 1.05rem; }
+  .snav-badge { margin-left: auto; background: var(--brand); color: #fff; font-size: .7rem; font-weight: 700; border-radius: 999px; padding: 1px 7px; }
+  .snav-link.active .snav-badge { background: #fff; color: var(--brand); }
+  .snav-sep { height: 1px; background: var(--line); margin: .35rem .2rem; }
+  .snav-block { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: .9rem; box-shadow: var(--shadow-sm); }
+  .snav-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-mute); margin-bottom: .6rem; }
+  .snav-store { display: block; padding: .4rem .55rem; border-radius: 8px; font-size: .86rem; font-weight: 500; color: var(--ink-soft); text-decoration: none; transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out); }
+  .snav-store:hover { background: var(--bg-soft); color: var(--brand); }
+  .snav-store.active { background: var(--brand-50); color: var(--brand-600); font-weight: 600; }
+  .snav-block .price-filter { flex-direction: column; align-items: stretch; gap: .8rem; padding: 0; margin: 0; background: transparent; border: none; box-shadow: none; }
+  .snav-block .price-filter .pf-control { min-width: 0; width: 100%; }
+  .snav-block .price-filter .pf-values { text-align: center; }
+
+  /* ---- Centro ---- */
+  .shop-main { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .shop-search { display: flex; align-items: center; gap: .5rem; background: var(--panel); border: 1.5px solid var(--line); border-radius: 999px; padding: .4rem .4rem .4rem 1.1rem; box-shadow: var(--shadow-sm); transition: border-color var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out); }
+  .shop-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
+  .shop-search i { color: var(--ink-mute); }
+  .shop-search input { flex: 1; border: none; outline: none; background: transparent; font-family: var(--font-body); font-size: .95rem; color: var(--ink); }
+  .shop-search button { border: none; cursor: pointer; background: var(--brand); color: #fff; font-weight: 600; font-family: var(--font-body); font-size: .88rem; border-radius: 999px; padding: .55rem 1.2rem; transition: background var(--d-fast) var(--ease-out); }
+  .shop-search button:hover { background: var(--brand-600); }
+
+  /* Hero banner */
+  .hero-banner { position: relative; overflow: hidden; border-radius: 18px; padding: 2.2rem 2rem; color: #fff;
+    background: linear-gradient(120deg, #4f46e5 0%, #6366f1 45%, #7c3aed 100%); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .hb-text { position: relative; z-index: 1; max-width: 70%; }
+  .hb-eyebrow { display: inline-block; background: rgba(255,255,255,.18); border-radius: 999px; padding: .25rem .8rem; font-size: .72rem; font-weight: 600; margin-bottom: .8rem; }
+  .hero-banner h1 { font-family: var(--font-body); font-weight: 600; font-size: clamp(1.4rem, 3vw, 2.1rem); line-height: 1.12; letter-spacing: -0.02em; margin-bottom: .5rem; }
+  .hero-banner p { color: rgba(255,255,255,.82); font-size: .92rem; margin-bottom: 1.2rem; }
+  .hb-cta { display: inline-flex; align-items: center; gap: .45rem; background: #fff; color: var(--brand-600); border-radius: 999px; padding: .6rem 1.3rem; font-size: .88rem; font-weight: 600; text-decoration: none; transition: transform var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out); }
+  .hb-cta:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); color: var(--brand-600); }
+  .hb-art { position: relative; z-index: 1; font-size: 5rem; color: rgba(255,255,255,.85); }
+  .hero-banner::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.10); }
+
+  /* Círculos de categoría */
+  .cat-circles { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
+  .cat-circles::-webkit-scrollbar { display: none; }
+  .cc { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-decoration: none; min-width: 72px; }
+  .cc-ic { width: 60px; height: 60px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: var(--ink-soft); transition: transform var(--d-fast) var(--ease-out), background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out); }
+  .cc:hover .cc-ic { transform: translateY(-3px); color: var(--brand); border-color: #c7d2fe; }
+  .cc.active .cc-ic { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .cc-lb { font-size: .78rem; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+  .cc.active .cc-lb { color: var(--brand-600); font-weight: 600; }
+
+  /* Promo cards */
+  .promos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .promo { border-radius: var(--r); padding: 1.1rem 1.25rem; min-height: 92px; display: flex; flex-direction: column; justify-content: center; border: 1px solid var(--line); }
+  .promo.p1 { background: linear-gradient(135deg, #fdf2f8, #fce7f3); }
+  .promo.p2 { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+  .promo.p3 { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+  .promo-tag { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-mute); margin-bottom: .3rem; }
+  .promo-h { font-size: 1rem; font-weight: 700; color: var(--ink); }
+  .promo-s { font-size: .8rem; color: var(--ink-mute); }
+
+  /* Bloques de sección */
+  .block-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
+  .block-head h2 { font-family: var(--font-body); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.01em; }
+  .block-meta { font-size: .85rem; color: var(--ink-mute); }
+  .active-filters { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: -.4rem 0 1rem; }
+  .active-filters .chip { display: inline-flex; align-items: center; gap: .35rem; background: var(--brand-50); border: 1px solid #e0e7ff; color: var(--brand-600); border-radius: 999px; padding: .25rem .7rem; font-size: .8rem; font-weight: 600; }
+
+  /* ---- Carrito derecho ---- */
+  .shop-cart { position: sticky; top: 84px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-sm); padding: 1.1rem; display: flex; flex-direction: column; gap: 1rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .cart-head { font-weight: 600; font-size: 1.05rem; }
+  .cart-items { display: flex; flex-direction: column; gap: .85rem; }
+  .cart-item { display: flex; gap: .65rem; align-items: flex-start; }
+  .ci-img { width: 52px; height: 52px; border-radius: 9px; background: var(--bg-soft); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
+  .ci-img img { width: 100%; height: 100%; object-fit: cover; }
+  .ci-info { flex: 1; min-width: 0; }
+  .ci-name { font-size: .82rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ci-store { font-size: .72rem; color: var(--ink-mute); margin: .1rem 0 .25rem; }
+  .ci-row { display: flex; align-items: center; justify-content: space-between; }
+  .ci-price { font-size: .88rem; font-weight: 700; }
+  .ci-qty { font-size: .78rem; color: var(--ink-mute); }
+  .ci-del { background: none; border: none; cursor: pointer; color: var(--ink-mute); padding: .2rem; border-radius: 6px; transition: color var(--d-fast) var(--ease-out), background var(--d-fast) var(--ease-out); }
+  .ci-del:hover { color: #b91c1c; background: #fef2f2; }
+  .cart-sum { border-top: 1px solid var(--line); padding-top: .85rem; display: flex; flex-direction: column; gap: .45rem; }
+  .cs-row { display: flex; justify-content: space-between; font-size: .85rem; color: var(--ink-soft); }
+  .cs-row .free { color: var(--ok); font-weight: 600; }
+  .cs-row.total { font-size: 1rem; font-weight: 700; color: var(--ink); border-top: 1px solid var(--line); padding-top: .5rem; }
+  .cart-checkout { display: flex; align-items: center; justify-content: center; gap: .5rem; background: var(--brand); color: #fff; border-radius: var(--r-sm); padding: .8rem; font-weight: 600; font-size: .92rem; text-decoration: none; transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out); }
+  .cart-checkout:hover { background: var(--brand-600); color: #fff; transform: translateY(-1px); }
+  .cart-empty { text-align: center; color: var(--ink-mute); padding: 1.5rem 0; }
+  .cart-empty i { font-size: 2rem; opacity: .5; }
+  .cart-empty p { font-size: .85rem; margin-top: .5rem; }
+  .cart-extra { border-top: 1px solid var(--line); padding-top: .9rem; }
+  .ce-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-mute); margin-bottom: .7rem; }
+  .ce-item { display: flex; gap: .6rem; align-items: center; text-decoration: none; color: var(--ink); padding: .35rem; border-radius: 9px; transition: background var(--d-fast) var(--ease-out); }
+  .ce-item:hover { background: var(--bg-soft); }
+  .ce-img { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--bg-soft); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
+  .ce-img img { width: 100%; height: 100%; object-fit: cover; }
+  .ce-name { font-size: .8rem; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .ce-price { font-size: .8rem; color: var(--brand-600); font-weight: 700; }
+
+  /* Grid: en el shell, tarjetas más compactas */
+  #catalogGrid, .product-grid.rail { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+  /* Responsive: colapsar carrito y luego sidebar */
+  @media (max-width: 1100px) {
+    .shop-shell { grid-template-columns: 200px 1fr; }
+    .shop-cart { display: none; }
+  }
+  @media (max-width: 760px) {
+    .shop-shell { grid-template-columns: 1fr; }
+    .shop-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+    .snav { flex-direction: row; flex-wrap: wrap; }
+    .snav-sep { display: none; }
+    .snav-block { display: none; }
+  }
+
   /* =========== prefers-reduced-motion (SAFETY-CRITICAL) =========== */
   @media (prefers-reduced-motion: reduce) {
     .reveal, .reveal.in-view { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -340,122 +461,166 @@
 
 {% block content %}
 <div class="cat">
+  <div class="shop-shell">
 
-  <!-- ===================== HERO BUSCADOR GLOBAL ===================== -->
-  <section class="search-hero">
-    <div class="kicker reveal">Marketplace de tiendas asociadas</div>
-    <h1 class="reveal">Encuentra productos de nuestras tiendas asociadas</h1>
-    <p class="reveal">Explora el catálogo unificado de las empresas que operan en nuestra plataforma.</p>
-    <form method="get" class="search-box reveal" role="search">
-      {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
-      <i class="bi bi-search"></i>
-      <input type="text" name="q" value="{{ query }}" placeholder="Buscar producto, marca o categoría…" aria-label="Buscar productos">
-      <button type="submit">Buscar</button>
-    </form>
-  </section>
-
-  <!-- ===================== FILTRO CATEGORÍAS ===================== -->
-  <div class="cat-pills reveal">
-    <a href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}"
-       class="cat-pill {% if not selected_group and not selected_brand %}active{% endif %}">Todas</a>
-    {% for g in groups %}
-    <a href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}"
-       class="cat-pill {% if selected_group == g.id|stringformat:'s' %}active{% endif %}">{{ g.name }}</a>
-    {% endfor %}
-  </div>
-
-  <!-- ===================== FILTRO PRECIO (slider doble) ===================== -->
-  {% if products and price_max > price_min %}
-  <div class="price-filter reveal"
-       data-min="{{ price_min }}" data-max="{{ price_max }}">
-    <div class="pf-label"><i class="bi bi-sliders"></i> Rango de precio</div>
-    <div class="pf-control">
-      <div class="pf-track"><div class="pf-fill"></div></div>
-      <input type="range" class="pf-min" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_min }}" step="1" aria-label="Precio mínimo">
-      <input type="range" class="pf-max" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_max }}" step="1" aria-label="Precio máximo">
-    </div>
-    <div class="pf-values"><span class="pf-lo">${{ price_min }}</span> <span class="pf-sep">–</span> <span class="pf-hi">${{ price_max }}</span></div>
-  </div>
-  {% endif %}
-
-  <!-- ===================== TOOLBAR ===================== -->
-  <div class="toolbar reveal">
-    <div class="count">
-      <strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span>
-      {% if query %} para "<strong>{{ query }}</strong>"{% endif %}
-      {% if selected_brand %} ·{% endif %}
-    </div>
-    <div style="display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;">
-      {% if selected_brand %}
-      <span class="store-chip"><i class="bi bi-shop"></i> {{ selected_brand.name }}</span>
-      {% endif %}
-      {% if query or selected_group or selected_brand %}
-      <a href="{% url 'storefront:catalog_list' %}" class="clear-link"><i class="bi bi-x-lg"></i> Limpiar filtros</a>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- ===================== GRID ===================== -->
-  {% if products %}
-  <div class="product-grid">
-    {% for product in products %}
-    <article class="product-card reveal"
-             tabindex="0" role="button" aria-label="Vista rápida de {{ product.name }}"
-             data-name="{{ product.name }}"
-             data-store="{{ product.brand.name }}"
-             data-cat="{{ product.group.name }}"
-             data-price="{{ product.unit_price }}"
-             data-stock="{{ product.stock }}"
-             data-img="{% if product.image %}{{ product.image.url }}{% endif %}"
-             data-images="{% for u in product.gallery %}{{ u }}{% if not forloop.last %}|{% endif %}{% endfor %}"
-             data-detail="{% url 'storefront:product_detail' product.pk %}"
-             data-storeurl="?brand={{ product.brand.id }}">
-      <div class="product-media" data-slide="0">
-        {% for u in product.gallery %}
-          <img class="pm-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}" loading="lazy">
-        {% empty %}
-          <div class="placeholder"><i class="bi bi-image"></i></div>
-        {% endfor %}
-        {% if product.gallery|length > 1 %}
-          <button type="button" class="pm-nav prev" aria-label="Imagen anterior"><i class="bi bi-chevron-left"></i></button>
-          <button type="button" class="pm-nav next" aria-label="Imagen siguiente"><i class="bi bi-chevron-right"></i></button>
-          <div class="pm-dots">
-            {% for u in product.gallery %}<span class="pm-dot{% if forloop.first %} is-active{% endif %}"></span>{% endfor %}
-          </div>
+    <!-- ===================== SIDEBAR IZQUIERDO ===================== -->
+    <aside class="shop-nav">
+      <nav class="snav">
+        <a class="snav-link active" href="{% url 'storefront:catalog_list' %}"><i class="bi bi-house-door"></i> Inicio</a>
+        <a class="snav-link" href="#categorias"><i class="bi bi-grid"></i> Categorías</a>
+        <a class="snav-link" href="#novedades"><i class="bi bi-stars"></i> Novedades</a>
+        <a class="snav-link" href="#recomendados"><i class="bi bi-fire"></i> Recomendados</a>
+        <a class="snav-link" href="#tiendas"><i class="bi bi-shop"></i> Tiendas</a>
+        <div class="snav-sep"></div>
+        {% if user.is_authenticated and user.customer_profile %}
+        <a class="snav-link" href="{% url 'storefront:my_orders' %}"><i class="bi bi-bag-check"></i> Mis pedidos</a>
+        <a class="snav-link" href="{% url 'storefront:profile' %}"><i class="bi bi-person"></i> Mi perfil</a>
+        {% else %}
+        <a class="snav-link" href="{% url 'storefront:customer_login' %}"><i class="bi bi-box-arrow-in-right"></i> Entrar</a>
         {% endif %}
-        <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
-          {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
-        </span>
-        <!-- Microinteracción: aparece en hover -->
-        <a class="visit-store" href="?brand={{ product.brand.id }}">
-          <i class="bi bi-shop"></i> Visitar tienda
-        </a>
+        <a class="snav-link" href="{% url 'storefront:cart_view' %}"><i class="bi bi-bag"></i> Carrito {% if cart_count %}<span class="snav-badge">{{ cart_count }}</span>{% endif %}</a>
+      </nav>
+
+      <div class="snav-block" id="tiendas">
+        <div class="snav-title">Tiendas</div>
+        {% for b in sidebar_brands %}
+        <a class="snav-store {% if selected_brand and selected_brand.id == b.id %}active{% endif %}" href="?brand={{ b.id }}">{{ b.name }}</a>
+        {% endfor %}
       </div>
-      <div class="product-body">
-        <span class="sold-by">
-          <i class="bi bi-shop-window"></i> Vendido por: <span class="store-name">{{ product.brand.name }}</span>
-        </span>
-        <a class="product-name" href="{% url 'storefront:product_detail' product.pk %}">{{ product.name }}</a>
-        <div class="product-cat">{{ product.group.name }}</div>
-        <div class="product-foot">
-          <span class="product-price">${{ product.unit_price }}</span>
-          <a class="product-view" href="{% url 'storefront:product_detail' product.pk %}">
-            <i class="bi bi-eye"></i> Ver
-          </a>
+
+      {% if products and price_max > price_min %}
+      <div class="snav-block">
+        <div class="snav-title">Precio</div>
+        <div class="price-filter" data-min="{{ price_min }}" data-max="{{ price_max }}">
+          <div class="pf-control">
+            <div class="pf-track"><div class="pf-fill"></div></div>
+            <input type="range" class="pf-min" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_min }}" step="1" aria-label="Precio mínimo">
+            <input type="range" class="pf-max" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_max }}" step="1" aria-label="Precio máximo">
+          </div>
+          <div class="pf-values"><span class="pf-lo">${{ price_min }}</span> <span class="pf-sep">–</span> <span class="pf-hi">${{ price_max }}</span></div>
         </div>
       </div>
-    </article>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="empty reveal">
-    <i class="bi bi-search"></i>
-    <h3>Sin resultados</h3>
-    <p>No encontramos productos con esos criterios. Prueba con otra búsqueda o categoría.</p>
-    <a href="{% url 'storefront:catalog_list' %}">Ver todo el catálogo</a>
-  </div>
-  {% endif %}
+      {% endif %}
+    </aside>
 
+    <!-- ===================== CENTRO ===================== -->
+    <main class="shop-main">
+      <form method="get" class="shop-search reveal" role="search">
+        {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" value="{{ query }}" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos">
+        <button type="submit">Buscar</button>
+      </form>
+
+      <!-- Hero banner -->
+      <section class="hero-banner reveal">
+        <div class="hb-text">
+          <span class="hb-eyebrow">{{ config.nombre_tienda|default:"Marketplace" }}</span>
+          <h1>{{ config.hero_titulo|default:"Encuentra tu estilo, descubre tus tiendas" }}</h1>
+          <p>{{ config.slogan|default:"Productos de todas nuestras tiendas asociadas en un solo lugar." }}</p>
+          <a class="hb-cta" href="#novedades">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="hb-art"><i class="bi bi-bag-heart"></i></div>
+      </section>
+
+      <!-- Círculos de categoría -->
+      <section class="cat-circles" id="categorias">
+        <a class="cc {% if not selected_group and not selected_brand %}active{% endif %}" href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}">
+          <span class="cc-ic"><i class="bi bi-grid-3x3-gap"></i></span><span class="cc-lb">Todas</span>
+        </a>
+        {% for g in groups %}
+        <a class="cc {% if selected_group == g.id|stringformat:'s' %}active{% endif %}" href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}">
+          <span class="cc-ic"><i class="bi bi-tag"></i></span><span class="cc-lb">{{ g.name }}</span>
+        </a>
+        {% endfor %}
+      </section>
+
+      <!-- Promo cards -->
+      <section class="promos reveal">
+        <div class="promo p1"><div class="promo-tag">Catálogo</div><div class="promo-h">Mejores precios</div><div class="promo-s">De todas las tiendas</div></div>
+        <div class="promo p2"><div class="promo-tag">Entrega</div><div class="promo-h">Coordina envío</div><div class="promo-s">Directo con la tienda</div></div>
+        <div class="promo p3"><div class="promo-tag">Nuevo</div><div class="promo-h">Recién llegados</div><div class="promo-s">Lo último del catálogo</div></div>
+      </section>
+
+      <!-- Grilla principal / resultados -->
+      <section class="block">
+        <div class="block-head">
+          <h2 id="novedades">{% if has_filter %}Resultados de búsqueda{% else %}Productos para ti{% endif %}</h2>
+          <span class="block-meta"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span>
+        </div>
+        {% if has_filter %}
+        <div class="active-filters">
+          {% if query %}<span class="chip">"{{ query }}"</span>{% endif %}
+          {% if selected_brand %}<span class="chip"><i class="bi bi-shop"></i> {{ selected_brand.name }}</span>{% endif %}
+          <a href="{% url 'storefront:catalog_list' %}" class="clear-link"><i class="bi bi-x-lg"></i> Limpiar</a>
+        </div>
+        {% endif %}
+        {% if products %}
+        <div class="product-grid" id="catalogGrid">
+          {% for product in products %}{% include 'storefront/_product_card.html' %}{% endfor %}
+        </div>
+        {% else %}
+        <div class="empty reveal">
+          <i class="bi bi-search"></i>
+          <h3>Sin resultados</h3>
+          <p>No encontramos productos con esos criterios. Prueba con otra búsqueda o categoría.</p>
+          <a href="{% url 'storefront:catalog_list' %}">Ver todo el catálogo</a>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Recomendados -->
+      {% if recommended %}
+      <section class="block" id="recomendados">
+        <div class="block-head"><h2>Recomendados para ti</h2></div>
+        <div class="product-grid rail">
+          {% for product in recommended %}{% include 'storefront/_product_card.html' %}{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </main>
+
+    <!-- ===================== CARRITO DERECHO ===================== -->
+    <aside class="shop-cart">
+      <div class="cart-head">Mi carrito{% if cart_count %} ({{ cart_count }}){% endif %}</div>
+      {% if cart_items %}
+      <div class="cart-items">
+        {% for it in cart_items %}
+        <div class="cart-item">
+          <div class="ci-img">{% if it.product.image %}<img src="{{ it.product.image.url }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
+          <div class="ci-info">
+            <div class="ci-name">{{ it.product.name }}</div>
+            <div class="ci-store">{{ it.product.brand.name }}</div>
+            <div class="ci-row"><span class="ci-price">${{ it.subtotal }}</span><span class="ci-qty">x{{ it.quantity }}</span></div>
+          </div>
+          <form method="post" action="{% url 'storefront:cart_remove' it.product.pk %}">{% csrf_token %}<button class="ci-del" title="Quitar"><i class="bi bi-trash"></i></button></form>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="cart-sum">
+        <div class="cs-row"><span>Subtotal</span><span>${{ cart_subtotal }}</span></div>
+        <div class="cs-row"><span>Envío</span><span class="free">Coordinado</span></div>
+        <div class="cs-row total"><span>Total</span><span>${{ cart_subtotal }}</span></div>
+      </div>
+      <a class="cart-checkout" href="{% url 'storefront:checkout' %}"><i class="bi bi-bag-check"></i> Continuar compra</a>
+      {% else %}
+      <div class="cart-empty"><i class="bi bi-bag"></i><p>Tu carrito está vacío</p></div>
+      {% endif %}
+
+      {% if recommended %}
+      <div class="cart-extra">
+        <div class="ce-title">También te puede interesar</div>
+        {% for p in recommended|slice:":3" %}
+        <a class="ce-item" href="{% url 'storefront:product_detail' p.pk %}">
+          <div class="ce-img">{% if p.image %}<img src="{{ p.image.url }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
+          <div class="ce-info"><div class="ce-name">{{ p.name }}</div><div class="ce-price">${{ p.unit_price }}</div></div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+
+  </div>
 </div>
 {% endblock %}
 
@@ -655,7 +820,7 @@
         d.addEventListener('click', function (e) { e.stopPropagation(); show(k); });
       });
     };
-    document.querySelectorAll('.product-grid .product-media').forEach(window.__initCarousel);
+    document.querySelectorAll('.product-media').forEach(window.__initCarousel);
   })();
 
   // ====== Filtro de precio (slider doble, filtrado en vivo y suave) ======
@@ -666,7 +831,7 @@
     var inMin = pf.querySelector('.pf-min'), inMax = pf.querySelector('.pf-max');
     var fill = pf.querySelector('.pf-fill');
     var labLo = pf.querySelector('.pf-lo'), labHi = pf.querySelector('.pf-hi');
-    var cards = Array.prototype.slice.call(document.querySelectorAll('.product-grid .product-card'));
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#catalogGrid .product-card'));
     var countEl = document.querySelector('.js-count'), wordEl = document.querySelector('.js-count-word');
     var span = (hi - lo) || 1;
 

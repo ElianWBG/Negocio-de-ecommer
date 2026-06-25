@@ -12,7 +12,9 @@
       "PowerShell(\"---\")",
       "PowerShell(git add storefront/views.py)",
       "PowerShell(git commit --no-edit)",
-      "PowerShell(if \\($?\\) { \"commit ok\" })"
+      "PowerShell(if \\($?\\) { \"commit ok\" })",
+      "Bash(rm -rf .venv)",
+      "Bash(ls -d .venv)"
     ]
   }
 }

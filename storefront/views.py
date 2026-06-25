@@ -207,14 +207,31 @@ def catalog_list(request):
     price_min = int(bounds['lo'] or 0)
     price_max = int((bounds['hi'] or 0)) + (1 if bounds['hi'] else 0)
 
+    has_filter = bool(query or group_id or brand_id)
+
     # Novedades: últimos 4 productos con stock, solo en la vista principal
     novedades = []
-    if not query and not group_id:
+    recommended = []
+    if not has_filter:
         novedades = list(
             Product.objects.filter(is_active=True, stock__gt=0)
             .select_related('brand', 'group')
             .order_by('-id')[:4]
         )
+        # "Recomendados para ti": muestra aleatoria de productos activos
+        recommended = list(
+            Product.objects.filter(is_active=True)
+            .select_related('brand', 'group')
+            .prefetch_related('images')
+            .order_by('?')[:8]
+        )
+
+    # Carrito (para el panel lateral derecho del shell)
+    cart_items, cart_subtotal = _cart_items(request)
+
+    # Tiendas (marcas) con productos, para el nav lateral izquierdo
+    sidebar_brands = (Brand.objects.filter(is_active=True, products__is_active=True)
+                      .distinct().order_by('name')[:8])
 
     return render(request, 'storefront/catalog.html', {
         'products': products,
@@ -222,10 +239,15 @@ def catalog_list(request):
         'query': query,
         'selected_group': group_id,
         'selected_brand': selected_brand,
+        'has_filter': has_filter,
         'price_min': price_min,
         'price_max': price_max,
         'cart_count': cart_count,
+        'cart_items': cart_items,
+        'cart_subtotal': cart_subtotal,
         'novedades': novedades,
+        'recommended': recommended,
+        'sidebar_brands': sidebar_brands,
     })
 
 
