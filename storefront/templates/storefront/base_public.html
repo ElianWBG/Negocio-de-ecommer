@@ -116,6 +116,29 @@
       .nav-link span.label { display: none; }
       .page-wrap { padding: 1.25rem 1rem; }
     }
+
+    /* ── FOOTER ── */
+    .site-footer { background: var(--espresso); color: rgba(255,255,255,.6); padding: 0 1.5rem; margin-top: 3rem; }
+    .site-footer .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; padding: 3rem 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .footer-col-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem; }
+    .footer-brand-name { font-family: var(--font-head); font-size: 1.5rem; color: #fff; margin-bottom: .45rem; line-height: 1.2; }
+    .footer-brand-slogan { font-size: .875rem; color: rgba(255,255,255,.45); margin-bottom: 1.35rem; line-height: 1.55; }
+    .footer-social-row { display: flex; gap: .45rem; flex-wrap: wrap; }
+    .footer-social { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.65); font-size: 1rem; text-decoration: none; transition: background .2s, color .2s, border-color .2s; }
+    .footer-social:hover { background: var(--rust); color: #fff; border-color: var(--rust); }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+    .footer-links li a, .footer-links li span { color: rgba(255,255,255,.55); text-decoration: none; font-size: .875rem; display: flex; align-items: flex-start; gap: .5rem; line-height: 1.45; transition: color .2s; }
+    .footer-links li a:hover { color: #fff; }
+    .footer-links li i { margin-top: .15rem; flex-shrink: 0; }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; padding: 1.25rem 0; }
+    .footer-copyright { font-size: .8rem; color: rgba(255,255,255,.3); }
+    @media (max-width: 760px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    }
+    @media (max-width: 480px) {
+      .footer-grid { grid-template-columns: 1fr; gap: 1.75rem; padding: 2rem 0; }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -187,39 +210,82 @@
   {% block content %}{% endblock %}
 </div>
 
-{% if config.whatsapp or config.facebook_url or config.instagram_url or config.tiktok_url or config.email_contacto %}
-<footer style="background:var(--espresso);color:rgba(255,255,255,.7);padding:2rem 1.5rem;margin-top:2rem;">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-    <div>
-      <p style="font-family:var(--font-head);font-size:1.1rem;color:#fff;margin-bottom:.25rem;">{{ config.nombre_tienda }}</p>
-      {% if config.email_contacto %}<p style="font-size:.8rem;margin:0;">{{ config.email_contacto }}</p>{% endif %}
-      {% if config.telefono %}<p style="font-size:.8rem;margin:0;">{{ config.telefono }}</p>{% endif %}
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+
+      <!-- Brand + social -->
+      <div>
+        {% if config.logo %}
+        <img src="{{ config.logo.url }}" style="height:38px;object-fit:contain;margin-bottom:1rem;" alt="{{ config.nombre_tienda }}">
+        {% else %}
+        <p class="footer-brand-name">{{ config.nombre_tienda }}</p>
+        {% endif %}
+        {% if config.slogan %}
+        <p class="footer-brand-slogan">{{ config.slogan }}</p>
+        {% endif %}
+        {% if config.whatsapp or config.facebook_url or config.instagram_url or config.tiktok_url %}
+        <div class="footer-social-row">
+          {% if config.whatsapp %}
+          <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" class="footer-social" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+          {% endif %}
+          {% if config.facebook_url %}
+          <a href="{{ config.facebook_url }}" target="_blank" class="footer-social" title="Facebook"><i class="bi bi-facebook"></i></a>
+          {% endif %}
+          {% if config.instagram_url %}
+          <a href="{{ config.instagram_url }}" target="_blank" class="footer-social" title="Instagram"><i class="bi bi-instagram"></i></a>
+          {% endif %}
+          {% if config.tiktok_url %}
+          <a href="{{ config.tiktok_url }}" target="_blank" class="footer-social" title="TikTok"><i class="bi bi-tiktok"></i></a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Contact -->
+      <div>
+        <p class="footer-col-title">Contacto</p>
+        <ul class="footer-links">
+          {% if config.email_contacto %}
+          <li><a href="mailto:{{ config.email_contacto }}"><i class="bi bi-envelope"></i> {{ config.email_contacto }}</a></li>
+          {% endif %}
+          {% if config.telefono %}
+          <li><span><i class="bi bi-telephone"></i> {{ config.telefono }}</span></li>
+          {% endif %}
+          {% if config.whatsapp %}
+          <li><a href="https://wa.me/{{ config.whatsapp }}" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a></li>
+          {% endif %}
+          {% if config.direccion %}
+          <li><span><i class="bi bi-geo-alt"></i> {{ config.direccion }}</span></li>
+          {% endif %}
+          {% if not config.email_contacto and not config.telefono and not config.whatsapp and not config.direccion %}
+          <li><span style="color:rgba(255,255,255,.25);font-size:.8rem;">Sin información de contacto</span></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- Quick links -->
+      <div>
+        <p class="footer-col-title">Tienda</p>
+        <ul class="footer-links">
+          <li><a href="{% url 'storefront:catalog_list' %}"><i class="bi bi-grid"></i> Catálogo</a></li>
+          <li><a href="{% url 'storefront:cart_view' %}"><i class="bi bi-bag"></i> Carrito</a></li>
+          {% if user.is_authenticated and user.customer_profile %}
+          <li><a href="{% url 'storefront:my_orders' %}"><i class="bi bi-bag-check"></i> Mis pedidos</a></li>
+          <li><a href="{% url 'storefront:profile' %}"><i class="bi bi-person"></i> Mi perfil</a></li>
+          {% else %}
+          <li><a href="{% url 'storefront:customer_login' %}"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+          <li><a href="{% url 'storefront:customer_register' %}"><i class="bi bi-person-plus"></i> Registrarse</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
     </div>
-    <div style="display:flex;gap:.75rem;align-items:center;">
-      {% if config.whatsapp %}
-      <a href="https://wa.me/{{ config.whatsapp }}" target="_blank"
-         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
-         title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
-      {% endif %}
-      {% if config.facebook_url %}
-      <a href="{{ config.facebook_url }}" target="_blank"
-         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
-         title="Facebook"><i class="bi bi-facebook"></i></a>
-      {% endif %}
-      {% if config.instagram_url %}
-      <a href="{{ config.instagram_url }}" target="_blank"
-         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
-         title="Instagram"><i class="bi bi-instagram"></i></a>
-      {% endif %}
-      {% if config.tiktok_url %}
-      <a href="{{ config.tiktok_url }}" target="_blank"
-         style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;text-decoration:none;"
-         title="TikTok"><i class="bi bi-tiktok"></i></a>
-      {% endif %}
+    <div class="footer-bottom">
+      <p class="footer-copyright">© {% now "Y" %} {{ config.nombre_tienda }}. Todos los derechos reservados.</p>
     </div>
   </div>
 </footer>
-{% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% block extra_js %}{% endblock %}
