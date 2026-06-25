@@ -245,27 +245,20 @@
   }
   .pf-label { font-size: .85rem; font-weight: 600; color: var(--ink-soft); display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
   .pf-label i { color: var(--brand); }
-  .pf-control { position: relative; flex: 1; min-width: 200px; height: 26px; }
-  .pf-track { position: absolute; top: 50%; left: 0; right: 0; height: 5px; transform: translateY(-50%); background: var(--bg-soft); border-radius: 999px; }
-  .pf-fill { position: absolute; height: 100%; background: var(--brand); border-radius: 999px; }
-  /* dos range superpuestos, fondo transparente, solo thumbs activos */
-  .pf-control input[type=range] {
-    position: absolute; top: 0; left: 0; width: 100%; height: 26px; margin: 0;
-    -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none;
+  .pf-inputs { display: flex; align-items: center; gap: .4rem; flex: 1; min-width: 180px; }
+  .pf-pre { font-size: .85rem; font-weight: 600; color: var(--ink-mute); }
+  .pf-inputs input[type=number] {
+    width: 100%; min-width: 0; padding: .5rem .55rem; border: 1.5px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--ink); font-size: .88rem; font-weight: 600; font-family: inherit;
+    transition: border-color var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out);
   }
-  .pf-control input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: pointer;
-    width: 18px; height: 18px; border-radius: 50%; background: #fff;
-    border: 2px solid var(--brand); box-shadow: var(--shadow-sm);
-    transition: transform var(--d-fast) var(--ease-out);
-  }
-  .pf-control input[type=range]::-webkit-slider-thumb:active { transform: scale(1.15); }
-  .pf-control input[type=range]::-moz-range-thumb {
-    pointer-events: auto; cursor: pointer; width: 18px; height: 18px; border-radius: 50%;
-    background: #fff; border: 2px solid var(--brand); box-shadow: var(--shadow-sm);
-  }
-  .pf-values { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
-  .pf-values .pf-sep { color: var(--ink-mute); margin: 0 .15rem; }
+  .pf-inputs input[type=number]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .pf-inputs input.pf-invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+  .pf-inputs input[type=number]::-webkit-outer-spin-button,
+  .pf-inputs input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pf-inputs input[type=number] { -moz-appearance: textfield; }
+  .pf-sep { color: var(--ink-mute); }
+  .pf-range-hint { width: 100%; font-size: .75rem; color: var(--ink-mute); margin-top: .15rem; }
 
   /* Ocultar/mostrar tarjetas con transición suave (filtro en vivo) */
   .product-card.is-filtered {
@@ -381,6 +374,24 @@
   .hero-banner::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.10); }
   .hb-typed-row { color: rgba(255,255,255,.65); font-size: .83rem; margin-top: -.7rem; margin-bottom: 1.3rem; }
   .hb-typed-row .typed-cursor { color: rgba(255,255,255,.45); }
+
+  /* Rotador de productos destacados (1 por marca, en bucle) */
+  .hb-rotator { position: relative; z-index: 1; width: 220px; height: 200px; flex-shrink: 0; }
+  .hb-slide { position: absolute; inset: 0; display: flex; flex-direction: column; gap: .6rem;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: .9rem;
+    text-decoration: none; color: #fff; backdrop-filter: blur(4px);
+    opacity: 0; transform: translateY(10px) scale(.97); pointer-events: none;
+    transition: opacity .5s var(--ease-out), transform .5s var(--ease-out); }
+  .hb-slide.is-active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .hb-slide-img { flex: 1; border-radius: 11px; overflow: hidden; background: rgba(255,255,255,.16);
+    display: flex; align-items: center; justify-content: center; }
+  .hb-slide-img img { width: 100%; height: 100%; object-fit: cover; }
+  .hb-slide-img i { font-size: 2.2rem; color: rgba(255,255,255,.6); }
+  .hb-slide-info { display: flex; flex-direction: column; gap: .12rem; }
+  .hb-slide-brand { font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,.7); }
+  .hb-slide-name { font-size: .9rem; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hb-slide-price { font-size: .95rem; font-weight: 700; }
+  @media (max-width: 640px) { .hb-rotator { display: none; } }
 
   /* Círculos de categoría */
   .cat-circles { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
@@ -510,12 +521,14 @@
       <div class="snav-block">
         <div class="snav-title">Precio</div>
         <div class="price-filter" data-min="{{ price_min }}" data-max="{{ price_max }}">
-          <div class="pf-control">
-            <div class="pf-track"><div class="pf-fill"></div></div>
-            <input type="range" class="pf-min" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_min }}" step="1" aria-label="Precio mínimo">
-            <input type="range" class="pf-max" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_max }}" step="1" aria-label="Precio máximo">
+          <div class="pf-inputs">
+            <span class="pf-pre">$</span>
+            <input type="number" class="pf-min" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_min }}" aria-label="Precio mínimo">
+            <span class="pf-sep">–</span>
+            <span class="pf-pre">$</span>
+            <input type="number" class="pf-max" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_max }}" aria-label="Precio máximo">
           </div>
-          <div class="pf-values"><span class="pf-lo">${{ price_min }}</span> <span class="pf-sep">–</span> <span class="pf-hi">${{ price_max }}</span></div>
+          <p class="pf-range-hint">Rango: ${{ price_min }} – ${{ price_max }}</p>
         </div>
       </div>
       {% endif %}
@@ -539,7 +552,24 @@
           {% if groups %}<p class="hb-typed-row" data-typed="{% for g in groups %}{{ g.name|escapejs }}{% if not forloop.last %}|{% endif %}{% endfor %}">Lo mejor en <span id="typed-hero"></span></p>{% endif %}
           <a class="hb-cta" href="#novedades">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
         </div>
+        {% if featured_rotation %}
+        <div class="hb-rotator" id="hbRotator" aria-live="polite">
+          {% for p in featured_rotation %}
+          <a class="hb-slide {% if forloop.first %}is-active{% endif %}" href="{% url 'storefront:product_detail' p.pk %}">
+            <div class="hb-slide-img">
+              {% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.name }}">{% else %}<i class="bi bi-image"></i>{% endif %}
+            </div>
+            <div class="hb-slide-info">
+              <span class="hb-slide-brand">{{ p.brand.name }}</span>
+              <span class="hb-slide-name">{{ p.name }}</span>
+              <span class="hb-slide-price">${{ p.unit_price }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
         <div class="hb-art"><i class="bi bi-bag-heart"></i></div>
+        {% endif %}
       </section>
 
       <!-- Círculos de categoría -->
@@ -846,23 +876,14 @@
     document.querySelectorAll('.product-media').forEach(window.__initCarousel);
   })();
 
-  // ====== Filtro de precio (slider doble, filtrado en vivo y suave) ======
+  // ====== Filtro de precio (min/max tecleados, filtrado en vivo) ======
   (function () {
     var pf = document.querySelector('.price-filter');
     if (!pf) return;
     var lo = +pf.dataset.min, hi = +pf.dataset.max;
     var inMin = pf.querySelector('.pf-min'), inMax = pf.querySelector('.pf-max');
-    var fill = pf.querySelector('.pf-fill');
-    var labLo = pf.querySelector('.pf-lo'), labHi = pf.querySelector('.pf-hi');
     var cards = Array.prototype.slice.call(document.querySelectorAll('#catalogGrid .product-card'));
     var countEl = document.querySelector('.js-count'), wordEl = document.querySelector('.js-count-word');
-    var span = (hi - lo) || 1;
-
-    function paint(a, b) {
-      var l = ((a - lo) / span) * 100, r = ((b - lo) / span) * 100;
-      fill.style.left = l + '%'; fill.style.width = (r - l) + '%';
-      labLo.textContent = '$' + a; labHi.textContent = '$' + b;
-    }
 
     function filter(a, b) {
       var visible = 0;
@@ -897,18 +918,23 @@
       if (wordEl) wordEl.textContent = 'producto' + (visible === 1 ? '' : 's');
     }
 
+    var t;
     function update() {
-      var a = +inMin.value, b = +inMax.value;
-      if (a > b) { // no se cruzan los thumbs
-        if (this === inMin) { a = b; inMin.value = a; }
-        else { b = a; inMax.value = b; }
-      }
-      paint(a, b); filter(a, b);
+      // Vacío => usa el límite del rango. Tecleado => respeta lo escrito.
+      var a = inMin.value === '' ? lo : parseFloat(inMin.value);
+      var b = inMax.value === '' ? hi : parseFloat(inMax.value);
+      if (isNaN(a)) a = lo;
+      if (isNaN(b)) b = hi;
+      var invalid = a > b;
+      inMin.classList.toggle('pf-invalid', invalid);
+      inMax.classList.toggle('pf-invalid', invalid);
+      if (invalid) return; // no filtra hasta que el rango sea coherente
+      clearTimeout(t);
+      t = setTimeout(function () { filter(a, b); }, 180);
     }
 
     inMin.addEventListener('input', update);
     inMax.addEventListener('input', update);
-    paint(lo, hi);
   })();
 
   // ====== AJAX — Agregar al carrito ======
@@ -1038,6 +1064,20 @@
         }, 1800);
       });
     });
+  })();
+
+  // ====== Rotador hero — productos destacados (1 por marca, bucle 2.5s) ======
+  (function () {
+    var box = document.getElementById('hbRotator');
+    if (!box) return;
+    var slides = box.querySelectorAll('.hb-slide');
+    if (slides.length < 2) return;
+    var i = 0;
+    setInterval(function () {
+      slides[i].classList.remove('is-active');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('is-active');
+    }, 2500);
   })();
 
   // ====== Typewriter — hero subtitle ======

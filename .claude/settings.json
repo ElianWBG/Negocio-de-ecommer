@@ -14,7 +14,8 @@
       "PowerShell(git commit --no-edit)",
       "PowerShell(if \\($?\\) { \"commit ok\" })",
       "Bash(rm -rf .venv)",
-      "Bash(ls -d .venv)"
+      "Bash(ls -d .venv)",
+      "PowerShell(git pull --no-edit)"
     ]
   }
 }

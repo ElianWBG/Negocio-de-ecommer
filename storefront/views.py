@@ -217,6 +217,18 @@ def catalog_list(request):
     sidebar_brands = (Brand.objects.filter(is_active=True, products__is_active=True)
                       .distinct().order_by('name')[:8])
 
+    # Rotación destacada del hero: 1 producto por marca, en bucle (solo portada)
+    featured_rotation = []
+    if not has_filter:
+        seen_brands = set()
+        for p in (Product.objects.filter(is_active=True, stock__gt=0)
+                  .select_related('brand', 'group')
+                  .order_by('brand__name', '-id')):
+            if p.brand_id in seen_brands:
+                continue
+            seen_brands.add(p.brand_id)
+            featured_rotation.append(p)
+
     return render(request, 'storefront/catalog.html', {
         'products': products,
         'groups': ProductGroup.objects.filter(is_active=True),
@@ -232,6 +244,7 @@ def catalog_list(request):
         'novedades': novedades,
         'recommended': recommended,
         'sidebar_brands': sidebar_brands,
+        'featured_rotation': featured_rotation,
     })
 
 
