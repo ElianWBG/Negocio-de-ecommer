@@ -31,6 +31,9 @@
   .order-total { display:flex; justify-content:space-between; margin-top:.85rem; padding-top:.85rem; border-top:2px solid var(--border); font-weight:700; font-size:1.05rem; }
   .order-total span:last-child { color:var(--rust); }
 
+  .form-error-box { background:#fef2f0; border:1px solid #f5b8ad; color:#7a1a0d; border-radius:8px; padding:.75rem 1rem; font-size:.875rem; margin-bottom:1.25rem; display:flex; align-items:flex-start; gap:.5rem; }
+  .field-error { color:var(--rust); font-size:.8rem; margin-top:.3rem; }
+
   @media(max-width:768px) {
     .checkout-layout { grid-template-columns:1fr; }
     .form-row-2 { grid-template-columns:1fr; }
@@ -62,11 +65,18 @@
   <div>
     <form method="post" novalidate>
       {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="form-error-box">
+        <i class="bi bi-exclamation-circle" style="flex-shrink:0;margin-top:.1rem;"></i>
+        <span>{{ form.non_field_errors|striptags }}</span>
+      </div>
+      {% endif %}
       <div class="section-card">
         <h3>Datos de contacto</h3>
         <div class="form-group">
           <label class="form-label">Cédula / RUC</label>
           {{ form.dni }}
+          {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors|striptags }}</p>{% endif %}
         </div>
         <div class="form-row-2">
           <div class="form-group">
@@ -84,15 +94,18 @@
           <div class="form-group">
             <label class="form-label">Correo</label>
             {{ form.email }}
+            {% if form.email.errors %}<p class="field-error">{{ form.email.errors|striptags }}</p>{% endif %}
           </div>
           <div class="form-group">
             <label class="form-label">Teléfono</label>
             {{ form.phone }}
+            {% if form.phone.errors %}<p class="field-error">{{ form.phone.errors|striptags }}</p>{% endif %}
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Dirección de entrega</label>
           {{ form.address }}
+          {% if form.address.errors %}<p class="field-error">{{ form.address.errors|striptags }}</p>{% endif %}
         </div>
       </div>
       <div class="section-card">

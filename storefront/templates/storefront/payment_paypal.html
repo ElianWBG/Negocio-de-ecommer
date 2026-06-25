@@ -11,6 +11,10 @@
   #paypal-button-container { margin-top: 1rem; }
   .back-link { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .875rem; text-decoration: none; margin-bottom: 1.5rem; }
   .back-link:hover { color: var(--rust); }
+  .paypal-processing { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem 1rem; }
+  .paypal-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--rust); border-radius: 50%; animation: pp-spin .7s linear infinite; }
+  @keyframes pp-spin { to { transform: rotate(360deg); } }
+  .paypal-processing p { color: var(--muted); font-size: .9rem; margin: 0; text-align: center; }
 </style>
 {% endblock %}
 
@@ -62,8 +66,14 @@ paypal.Buttons({
     });
   },
   onApprove: function(data, actions) {
-    document.getElementById('paypal-msg').style.display = 'block';
-    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando pago...';
+    var btnContainer = document.getElementById('paypal-button-container');
+    var msgEl = document.getElementById('paypal-msg');
+
+    // Lock UI immediately — hide button so the user cannot click again
+    btnContainer.style.display = 'none';
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div class="paypal-processing"><div class="paypal-spinner"></div><p>Procesando pago, no cierres esta ventana&hellip;</p></div>';
+
     return fetch(captureUrl, {
       method: 'POST',
       headers: {
@@ -72,25 +82,30 @@ paypal.Buttons({
       },
       body: JSON.stringify({ orderID: data.orderID })
     })
-    .then(res => res.json())
-    .then(result => {
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
       if (result.status === 'ok') {
         window.location.href = result.redirect;
       } else {
-        document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Error: ' + (result.error || 'Pago no completado');
+        // Restore button so the user can retry
+        btnContainer.style.display = 'block';
+        msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> ' + (result.error || 'El pago no fue completado. Intenta de nuevo.') + '</div>';
       }
     })
-    .catch(err => {
-      document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Error procesando el pago.';
+    .catch(function() {
+      btnContainer.style.display = 'block';
+      msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Error de conexión. Verifica tu internet e intenta de nuevo.</div>';
     });
   },
   onError: function(err) {
-    document.getElementById('paypal-msg').style.display = 'block';
-    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Ocurrió un error con PayPal. Intenta de nuevo.';
+    var msgEl = document.getElementById('paypal-msg');
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Ocurrió un error con PayPal. Intenta de nuevo.</div>';
   },
   onCancel: function() {
-    document.getElementById('paypal-msg').style.display = 'block';
-    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo.';
+    var msgEl = document.getElementById('paypal-msg');
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo cuando quieras.</div>';
   }
 }).render('#paypal-button-container');
 </script>

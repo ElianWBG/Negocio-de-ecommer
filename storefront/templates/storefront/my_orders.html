@@ -41,8 +41,7 @@
   .dot-pendiente  { background:#f5a623; }
   .dot-confirmada { background:#27ae60; }
   .dot-rechazada  { background:#c0392b; }
-  .order-invoice-link { margin-left:auto; font-size:.8rem; color:var(--rust); text-decoration:none; font-weight:600; }
-  .order-invoice-link:hover { text-decoration:underline; }
+  .order-invoice-ref { margin-left:auto; font-size:.8rem; color:var(--muted); display:flex; align-items:center; gap:.35rem; }
 
   @media(max-width:768px) {
     .orders-layout { grid-template-columns:1fr; }
@@ -122,7 +121,7 @@
               Pedido rechazado. Puedes hacer uno nuevo desde el catálogo.
             {% endif %}
             {% if r.invoice %}
-            <a href="#" class="order-invoice-link">Factura #{{ r.invoice.id }}</a>
+            <span class="order-invoice-ref"><i class="bi bi-receipt"></i> Factura #{{ r.invoice.id }}</span>
             {% endif %}
           </div>
         </div>
