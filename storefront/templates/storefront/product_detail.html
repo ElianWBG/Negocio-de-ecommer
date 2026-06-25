@@ -26,6 +26,7 @@
   .g-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .g-thumb:hover { border-color:var(--muted); }
   .g-thumb.is-active { border-color:var(--rust); }
+  .g-progress { position:absolute; bottom:0; left:0; width:0%; height:3px; background:rgba(255,255,255,.75); z-index:3; pointer-events:none; }
   .product-img-wrap .no-img { display:flex; flex-direction:column; align-items:center; gap:.75rem; }
   .product-img-wrap .no-img i { font-size:3.5rem; color:var(--border); }
   .product-img-wrap .no-img span { font-size:.8rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
@@ -50,6 +51,9 @@
 
   .product-desc { color:var(--muted); line-height:1.75; padding-top:1.25rem; border-top:1px solid var(--border); margin-top:1.5rem; }
   .product-desc h4 { font-family:var(--font-head); font-size:1rem; color:var(--text); margin-bottom:.5rem; }
+
+  .btn-whatsapp { background:#25D366; color:#fff; border-color:#25D366; width:100%; justify-content:center; margin-top:.75rem; }
+  .btn-whatsapp:hover { background:#1ebe5d; border-color:#1ebe5d; color:#fff; }
 
   @media(max-width:700px) {
     .product-layout { grid-template-columns:1fr; gap:1.5rem; }
@@ -129,6 +133,12 @@
       </div>
     {% endif %}
 
+    {% if config.whatsapp %}
+    <a id="wa-product-btn" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-lg">
+      <i class="bi bi-whatsapp"></i> Consultar por WhatsApp
+    </a>
+    {% endif %}
+
     {% if product.description %}
     <div class="product-desc">
       <h4>Descripción</h4>
@@ -148,25 +158,93 @@ function changeQty(delta) {
   input.value = val;
 }
 
-// Galería del producto: flechas + miniaturas con transición suave
+// WhatsApp product inquiry link
+(function () {
+  var btn = document.getElementById('wa-product-btn');
+  if (!btn) return;
+  var msg = 'Hola, estoy interesado en el producto: {{ product.name|escapejs }} - ${{ product.unit_price }}. ¿Tienen disponibilidad?';
+  btn.href = 'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' + encodeURIComponent(msg);
+})();
+
+// Galería del producto: flechas + miniaturas + auto-play
 (function () {
   var stage = document.querySelector('.gallery-stage');
   if (!stage) return;
   var slides = stage.querySelectorAll('.g-slide');
   if (slides.length < 2) return;
+
   var thumbs = document.querySelectorAll('.g-thumb');
-  var i = 0;
-  function show(n) {
-    i = (n + slides.length) % slides.length;
-    slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
-    thumbs.forEach(function (t, k) { t.classList.toggle('is-active', k === i); });
+  var current = 0;
+  var timer = null;
+  var hovered = false;
+  var DELAY = 4000;
+
+  // Progress bar
+  var bar = document.createElement('div');
+  bar.className = 'g-progress';
+  stage.appendChild(bar);
+
+  function goTo(n) {
+    current = (n + slides.length) % slides.length;
+    slides.forEach(function (s, k) { s.classList.toggle('is-active', k === current); });
+    thumbs.forEach(function (t, k) { t.classList.toggle('is-active', k === current); });
   }
+
+  function resetBar() {
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    void bar.offsetWidth; // force reflow so transition restarts cleanly
+    bar.style.transition = 'width ' + DELAY + 'ms linear';
+    bar.style.width = '100%';
+  }
+
+  function freezeBar() {
+    var w = parseFloat(getComputedStyle(bar).width);
+    var sw = stage.offsetWidth || 1;
+    bar.style.transition = 'none';
+    bar.style.width = (w / sw * 100).toFixed(1) + '%';
+  }
+
+  function play() {
+    clearInterval(timer);
+    resetBar();
+    timer = setInterval(function () {
+      goTo(current + 1);
+      resetBar();
+    }, DELAY);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    freezeBar();
+  }
+
+  // Arrow buttons — also restart auto-play (unless mouse is still over)
   stage.querySelectorAll('.g-nav').forEach(function (b) {
-    b.addEventListener('click', function () { show(i + (b.classList.contains('next') ? 1 : -1)); });
+    b.addEventListener('click', function () {
+      goTo(current + (b.classList.contains('next') ? 1 : -1));
+      if (!hovered) play();
+    });
   });
+
+  // Thumb buttons
   thumbs.forEach(function (t) {
-    t.addEventListener('click', function () { show(+t.dataset.i); });
+    t.addEventListener('click', function () {
+      goTo(+t.dataset.i);
+      if (!hovered) play();
+    });
   });
+
+  // Hover pause / resume
+  var wrap = stage.closest('.gallery') || stage;
+  wrap.addEventListener('mouseenter', function () { hovered = true; stop(); });
+  wrap.addEventListener('mouseleave', function () { hovered = false; play(); });
+
+  // Respect prefers-reduced-motion
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  play();
 })();
 </script>
 {% endblock %}

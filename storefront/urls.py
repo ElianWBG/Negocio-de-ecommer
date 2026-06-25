@@ -30,6 +30,7 @@ urlpatterns = [
     path('solicitud/<int:pk>/pago/manual/', views.pay_manual, name='pay_manual'),
     path('solicitud/<int:pk>/pago/tarjeta/', views.pay_with_card, name='pay_with_card'),
     path('solicitud/<int:pk>/pago/paypal/', views.pay_with_paypal, name='pay_with_paypal'),
+    path('solicitud/<int:pk>/pago/paypal/create-order/', views.paypal_create_order, name='paypal_create_order'),
     path('solicitud/<int:pk>/pago/paypal/capture/', views.paypal_capture, name='paypal_capture'),
     path('solicitud/<int:pk>/pago/exito/', views.payment_success, name='payment_success'),
     path('pago/payphone/respuesta/', views.payphone_response, name='payphone_response'),

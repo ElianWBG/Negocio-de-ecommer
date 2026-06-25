@@ -213,6 +213,38 @@
           </div>
         </div>
 
+        <!-- Card de Galería de Imágenes -->
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header bg-light border-0 py-3">
+            <h5 class="mb-0 fs-6">🖼️ Galería de imágenes</h5>
+          </div>
+          <div class="card-body p-3">
+
+            {% if form.instance.pk %}
+            <div class="d-flex flex-wrap gap-2 mb-3" id="existingGallery">
+              {% for img in form.instance.images.all %}
+              <div class="position-relative" id="gw-{{ img.pk }}">
+                <img src="{{ img.image.url }}" alt="" class="rounded border" style="width:72px;height:72px;object-fit:cover;">
+                <button type="button"
+                        class="position-absolute top-0 end-0 btn btn-danger p-0 lh-1"
+                        style="width:20px;height:20px;font-size:.7rem;"
+                        onclick="deleteGalleryImg({{ img.pk }})">×</button>
+              </div>
+              {% empty %}
+              <p class="text-muted small mb-0">Sin imágenes adicionales todavía.</p>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <label class="form-label fw-semibold text-secondary small mb-1 d-block">Agregar imágenes al carrusel</label>
+            <input type="file" name="extra_images" id="extraImagesInput" multiple accept="image/*"
+                   class="form-control form-control-sm mb-1">
+            <small class="text-muted" style="font-size:.75rem;">Máx. 5 MB · Aparecen en el carrusel del producto</small>
+            <div class="d-flex flex-wrap gap-2 mt-2" id="newGalleryPreview"></div>
+
+          </div>
+        </div>
+
         <!-- Card de Balance Calculado -->
         <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
           <div class="card-header bg-dark border-0 py-3 text-center border-bottom border-secondary">
@@ -402,25 +434,56 @@ document.addEventListener('DOMContentLoaded', function() {
   // Eliminar Imagen
   clearImageBtn?.addEventListener('click', function(e) {
     e.stopPropagation(); // Evitar disparar el click del dropZone
-    
+
     // Resetear el input file
     if (imageInput) imageInput.value = '';
-    
+
     // Ocultar vista previa
     if (imagePreview) {
       imagePreview.src = '';
       imagePreview.classList.add('d-none');
     }
-    
+
     // Mostrar placeholder
     if (noImagePlaceholder) noImagePlaceholder.classList.remove('d-none');
-    
+
     // Marcar checkbox oculto de Django para borrar imagen en base de datos
     if (imageClearCheckbox) imageClearCheckbox.checked = true;
-    
+
     // Ocultar este botón
     clearImageBtn.classList.add('d-none');
   });
+
+  // ===== GALERÍA DE IMÁGENES ADICIONALES =====
+  window.deleteGalleryImg = function(pk) {
+    var wrap = document.getElementById('gw-' + pk);
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = 'delete_image';
+    hidden.value = pk;
+    form.appendChild(hidden);
+    if (wrap) wrap.remove();
+  };
+
+  var extraInput = document.getElementById('extraImagesInput');
+  var newPreview = document.getElementById('newGalleryPreview');
+  if (extraInput && newPreview) {
+    extraInput.addEventListener('change', function() {
+      newPreview.innerHTML = '';
+      Array.from(this.files).forEach(function(file) {
+        if (!file.type.startsWith('image/')) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'rounded border';
+          img.style.cssText = 'width:72px;height:72px;object-fit:cover;';
+          newPreview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
 });
 </script>
 {% endblock %}

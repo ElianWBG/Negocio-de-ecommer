@@ -8,7 +8,8 @@
          data-img="{% if product.image %}{{ product.image.url }}{% endif %}"
          data-images="{% for u in product.gallery %}{{ u }}{% if not forloop.last %}|{% endif %}{% endfor %}"
          data-detail="{% url 'storefront:product_detail' product.pk %}"
-         data-storeurl="?brand={{ product.brand.id }}">
+         data-storeurl="?brand={{ product.brand.id }}"
+         data-cart-url="{% url 'storefront:cart_add' product.pk %}">
   <div class="product-media" data-slide="0">
     {% for u in product.gallery %}
       <img class="pm-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}" loading="lazy">
@@ -25,8 +26,8 @@
     <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
       {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
     </span>
-    <a class="visit-store" href="?brand={{ product.brand.id }}">
-      <i class="bi bi-shop"></i> Visitar tienda
+    <a class="visit-store" href="{% url 'storefront:product_detail' product.pk %}">
+      <i class="bi bi-eye"></i> Ver detalle
     </a>
   </div>
   <div class="product-body">
@@ -37,9 +38,16 @@
     <div class="product-cat">{{ product.group.name }}</div>
     <div class="product-foot">
       <span class="product-price">${{ product.unit_price }}</span>
-      <a class="product-view" href="{% url 'storefront:product_detail' product.pk %}">
-        <i class="bi bi-eye"></i> Ver
-      </a>
+      <div class="product-foot-actions">
+        {% if product.stock > 0 %}
+        <button type="button" class="btn-add-cart" title="Agregar al carrito">
+          <i class="bi bi-bag-plus"></i> Agregar
+        </button>
+        {% endif %}
+        <a class="product-view" href="{% url 'storefront:product_detail' product.pk %}" title="Ver detalle">
+          <i class="bi bi-eye"></i>
+        </a>
+      </div>
     </div>
   </div>
 </article>

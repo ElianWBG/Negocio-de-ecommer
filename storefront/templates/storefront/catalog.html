@@ -132,7 +132,7 @@
     will-change: transform;
   }
   .product-card { cursor: pointer; }
-  .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: #e0e7ff; }
+  .product-card:hover { transform: translateY(-7px); box-shadow: 0 28px 64px rgba(15,23,42,.18); border-color: #e0e7ff; }
   .product-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.4), var(--shadow-lg); }
   /* squash & stretch al aplastar (tap) — rápido y elástico */
   .product-card.is-squash { transform: scale(0.93); transition: transform 110ms var(--ease-bouncy) !important; }
@@ -177,7 +177,7 @@
   .product-name {
     font-family: var(--font-body); font-size: 1rem; font-weight: 600; line-height: 1.35;
     color: var(--ink); margin: 0 0 .2rem; text-decoration: none;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     transition: color var(--d-fast) var(--ease-out);
   }
   a.product-name:hover { color: var(--brand); }
@@ -187,16 +187,32 @@
     margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--line);
   }
   .product-price { font-size: 1.12rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .product-foot-actions { display: flex; align-items: center; gap: .4rem; }
   .product-view {
-    display: inline-flex; align-items: center; gap: .3rem;
-    font-size: .8rem; font-weight: 600; text-decoration: none; color: var(--brand);
-    padding: .35rem .7rem; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .88rem; text-decoration: none; color: var(--ink-mute);
+    width: 32px; height: 32px; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    flex-shrink: 0;
     transition: background var(--d-fast) var(--ease-out),
                 border-color var(--d-fast) var(--ease-out),
                 color var(--d-fast) var(--ease-out);
   }
-  .product-view:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
-  .product-view:active { transform: scale(.97); }
+  .product-view:hover { background: var(--bg-soft); border-color: #cbd5e1; color: var(--brand); }
+
+  .btn-add-cart {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .78rem; font-weight: 600; font-family: var(--font-body);
+    background: var(--brand); color: #fff;
+    padding: .35rem .7rem; border-radius: var(--r-sm);
+    border: none; cursor: pointer;
+    transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn-add-cart:hover:not(:disabled) { background: var(--brand-600); }
+  .btn-add-cart:active:not(:disabled) { transform: scale(.96); }
+  .btn-add-cart:disabled { opacity: .65; cursor: default; }
+  .btn-add-cart.is-added { background: var(--ok); }
+  .btn-add-cart.is-error  { background: #b91c1c; }
 
   /* ===================== CARRUSEL EN CARD ===================== */
   .pm-slide {
@@ -363,6 +379,8 @@
   .hb-cta:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); color: var(--brand-600); }
   .hb-art { position: relative; z-index: 1; font-size: 5rem; color: rgba(255,255,255,.85); }
   .hero-banner::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.10); }
+  .hb-typed-row { color: rgba(255,255,255,.65); font-size: .83rem; margin-top: -.7rem; margin-bottom: 1.3rem; }
+  .hb-typed-row .typed-cursor { color: rgba(255,255,255,.45); }
 
   /* Círculos de categoría */
   .cat-circles { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
@@ -399,7 +417,7 @@
   .ci-img { width: 52px; height: 52px; border-radius: 9px; background: var(--bg-soft); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
   .ci-img img { width: 100%; height: 100%; object-fit: cover; }
   .ci-info { flex: 1; min-width: 0; }
-  .ci-name { font-size: .82rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ci-name { font-size: .82rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .ci-store { font-size: .72rem; color: var(--ink-mute); margin: .1rem 0 .25rem; }
   .ci-row { display: flex; align-items: center; justify-content: space-between; }
   .ci-price { font-size: .88rem; font-weight: 700; }
@@ -421,7 +439,7 @@
   .ce-item:hover { background: var(--bg-soft); }
   .ce-img { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--bg-soft); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
   .ce-img img { width: 100%; height: 100%; object-fit: cover; }
-  .ce-name { font-size: .8rem; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .ce-name { font-size: .8rem; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
   .ce-price { font-size: .8rem; color: var(--brand-600); font-weight: 700; }
 
   /* Grid: en el shell, tarjetas más compactas */
@@ -518,6 +536,7 @@
           <span class="hb-eyebrow">{{ config.nombre_tienda|default:"Marketplace" }}</span>
           <h1>{{ config.hero_titulo|default:"Encuentra tu estilo, descubre tus tiendas" }}</h1>
           <p>{{ config.slogan|default:"Productos de todas nuestras tiendas asociadas en un solo lugar." }}</p>
+          {% if groups %}<p class="hb-typed-row" data-typed="{% for g in groups %}{{ g.name|escapejs }}{% if not forloop.last %}|{% endif %}{% endfor %}">Lo mejor en <span id="typed-hero"></span></p>{% endif %}
           <a class="hb-cta" href="#novedades">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="hb-art"><i class="bi bi-bag-heart"></i></div>
@@ -625,6 +644,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/dist/typed.min.js"></script>
 <script>
   // Reveal en scroll — useInView({ once:true }) de interaction-design.
   // Respeta prefers-reduced-motion: muestra todo sin animar.
@@ -788,7 +808,10 @@
     }
 
     document.querySelectorAll('.product-card').forEach(function (card) {
-      card.addEventListener('click', function () { activate(card); });
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-add-cart')) return; // handled by AJAX
+        activate(card);
+      });
       card.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(card); }
       });
@@ -886,6 +909,158 @@
     inMin.addEventListener('input', update);
     inMax.addEventListener('input', update);
     paint(lo, hi);
+  })();
+
+  // ====== AJAX — Agregar al carrito ======
+  (function () {
+    function getCsrf() {
+      var m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function h(s) {
+      var d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    function updateSidebar(data) {
+      var aside = document.querySelector('.shop-cart');
+      if (!aside) return;
+
+      // Preserve checkout URL before removing elements
+      var ckEl = aside.querySelector('.cart-checkout');
+      var ckUrl = ckEl ? ckEl.getAttribute('href') : '/solicitar/';
+
+      // Update header count
+      var head = aside.querySelector('.cart-head');
+      if (head) head.textContent = data.cart_count > 0 ? 'Mi carrito (' + data.cart_count + ')' : 'Mi carrito';
+
+      // Remove dynamic sections, keep .cart-extra
+      ['.cart-items', '.cart-sum', '.cart-checkout', '.cart-empty'].forEach(function (sel) {
+        var el = aside.querySelector(sel);
+        if (el) el.remove();
+      });
+
+      var extra = aside.querySelector('.cart-extra');
+      var csrf  = getCsrf();
+
+      function insertHtml(html) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        while (tmp.firstChild) {
+          var node = tmp.firstChild;
+          tmp.removeChild(node);
+          extra ? aside.insertBefore(node, extra) : aside.appendChild(node);
+        }
+      }
+
+      if (data.cart_items && data.cart_items.length) {
+        var itemsHtml = data.cart_items.map(function (it) {
+          var img = it.image ? '<img src="' + h(it.image) + '" alt="">' : '<i class="bi bi-image"></i>';
+          return '<div class="cart-item">' +
+            '<div class="ci-img">' + img + '</div>' +
+            '<div class="ci-info">' +
+              '<div class="ci-name">' + h(it.name) + '</div>' +
+              '<div class="ci-store">' + h(it.store) + '</div>' +
+              '<div class="ci-row"><span class="ci-price">$' + h(it.subtotal) + '</span>' +
+              '<span class="ci-qty">x' + it.quantity + '</span></div>' +
+            '</div>' +
+            '<form method="post" action="' + h(it.remove_url) + '">' +
+              '<input type="hidden" name="csrfmiddlewaretoken" value="' + h(csrf) + '">' +
+              '<button class="ci-del" title="Quitar"><i class="bi bi-trash"></i></button>' +
+            '</form>' +
+          '</div>';
+        }).join('');
+
+        insertHtml(
+          '<div class="cart-items">' + itemsHtml + '</div>' +
+          '<div class="cart-sum">' +
+            '<div class="cs-row"><span>Subtotal</span><span>$' + h(data.cart_subtotal) + '</span></div>' +
+            '<div class="cs-row"><span>Envío</span><span class="free">Coordinado</span></div>' +
+            '<div class="cs-row total"><span>Total</span><span>$' + h(data.cart_subtotal) + '</span></div>' +
+          '</div>' +
+          '<a class="cart-checkout" href="' + h(ckUrl) + '"><i class="bi bi-bag-check"></i> Continuar compra</a>'
+        );
+      } else {
+        insertHtml('<div class="cart-empty"><i class="bi bi-bag"></i><p>Tu carrito está vacío</p></div>');
+      }
+
+      // Update all count badges
+      document.querySelectorAll('.snav-badge, .nav-cart-badge').forEach(function (b) {
+        b.textContent = data.cart_count;
+        b.style.display = data.cart_count > 0 ? '' : 'none';
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.btn-add-cart');
+      if (!btn || btn.disabled) return;
+      e.stopPropagation();
+
+      var card = btn.closest('.product-card');
+      var url  = card && card.dataset.cartUrl;
+      if (!url) return;
+
+      var original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Agregando…';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrf(),
+        },
+        body: 'quantity=1',
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === 'ok') {
+          btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
+          btn.classList.add('is-added');
+          updateSidebar(data);
+        } else {
+          btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
+          btn.classList.add('is-error');
+        }
+      })
+      .catch(function () {
+        btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
+        btn.classList.add('is-error');
+      })
+      .finally(function () {
+        setTimeout(function () {
+          btn.innerHTML = original;
+          btn.disabled = false;
+          btn.classList.remove('is-added', 'is-error');
+        }, 1800);
+      });
+    });
+  })();
+
+  // ====== Typewriter — hero subtitle ======
+  (function () {
+    var el = document.getElementById('typed-hero');
+    if (!el) return;
+    var row = el.closest('[data-typed]');
+    var raw = row ? row.dataset.typed : '';
+    var strings = raw ? raw.split('|').filter(Boolean) : [];
+    if (!strings.length) strings = ['lo mejor en tecnología', 'accesorios premium', 'productos de calidad'];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = strings[0];
+      return;
+    }
+    new Typed(el, {
+      strings: strings,
+      typeSpeed: 60,
+      backSpeed: 30,
+      loop: true,
+      smartBackspace: true,
+      showCursor: true,
+      cursorChar: '|'
+    });
   })();
 </script>
 {% endblock %}
