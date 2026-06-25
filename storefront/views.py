@@ -347,6 +347,20 @@ def _whatsapp_links(request, purchase_request):
     config = ConfigNegocio.objects.first()
     fallback = (config.whatsapp if config else '') or ''
 
+    def normalize_ec(raw):
+        """Normaliza a formato internacional para wa.me (solo dígitos, con
+        código de país). Ecuador: 09XXXXXXXX -> 5939XXXXXXXX."""
+        digits = ''.join(ch for ch in (raw or '') if ch.isdigit())
+        if not digits:
+            return ''
+        if digits.startswith('593'):
+            return digits
+        if digits.startswith('0'):            # 0991509228 -> 593991509228
+            return '593' + digits[1:]
+        if len(digits) == 9:                  # 991509228  -> 593991509228
+            return '593' + digits
+        return digits
+
     panel_url = request.build_absolute_uri(
         reverse('storefront:purchase_request_detail', args=[purchase_request.pk])
     )
@@ -360,10 +374,7 @@ def _whatsapp_links(request, purchase_request):
 
     links = []
     for brand, details in by_brand.items():
-        number = (brand.whatsapp or fallback).strip()
-        if not number:
-            continue
-        number = ''.join(ch for ch in number if ch.isdigit())
+        number = normalize_ec(brand.whatsapp or fallback)
         if not number:
             continue
 
