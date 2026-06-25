@@ -43,11 +43,11 @@
   <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
 </div>
 
-<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture"></script>
 <script>
 const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
 const csrfToken = "{{ csrf_token }}";
-const total = "{{ purchase_request.total_estimado }}";
+const total = parseFloat("{{ purchase_request.total_estimado }}").toFixed(2);
 
 paypal.Buttons({
   createOrder: function(data, actions) {
