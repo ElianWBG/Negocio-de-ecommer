@@ -662,9 +662,11 @@ def pay_with_paypal(request, pk):
     """Muestra la página con el botón de PayPal."""
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     paypal_client_id = settings.PAYPAL_CLIENT_ID
+    paypal_total = '{:.2f}'.format(purchase_request.total_estimado)
     return render(request, 'storefront/payment_paypal.html', {
         'purchase_request': purchase_request,
         'paypal_client_id': paypal_client_id,
+        'paypal_total': paypal_total,
     })
 
 

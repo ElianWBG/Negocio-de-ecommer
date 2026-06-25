@@ -47,7 +47,7 @@
 <script>
 const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
 const csrfToken = "{{ csrf_token }}";
-const total = parseFloat("{{ purchase_request.total_estimado }}").toFixed(2);
+const total = "{{ paypal_total }}";
 
 paypal.Buttons({
   createOrder: function(data, actions) {
