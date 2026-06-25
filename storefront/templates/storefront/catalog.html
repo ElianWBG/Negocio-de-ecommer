@@ -132,7 +132,7 @@
     will-change: transform;
   }
   .product-card { cursor: pointer; }
-  .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: #e0e7ff; }
+  .product-card:hover { transform: translateY(-7px); box-shadow: 0 28px 64px rgba(15,23,42,.18); border-color: #e0e7ff; }
   .product-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.4), var(--shadow-lg); }
   /* squash & stretch al aplastar (tap) — rápido y elástico */
   .product-card.is-squash { transform: scale(0.93); transition: transform 110ms var(--ease-bouncy) !important; }
@@ -363,6 +363,8 @@
   .hb-cta:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); color: var(--brand-600); }
   .hb-art { position: relative; z-index: 1; font-size: 5rem; color: rgba(255,255,255,.85); }
   .hero-banner::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.10); }
+  .hb-typed-row { color: rgba(255,255,255,.65); font-size: .83rem; margin-top: -.7rem; margin-bottom: 1.3rem; }
+  .hb-typed-row .typed-cursor { color: rgba(255,255,255,.45); }
 
   /* Círculos de categoría */
   .cat-circles { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: none; }
@@ -518,6 +520,7 @@
           <span class="hb-eyebrow">{{ config.nombre_tienda|default:"Marketplace" }}</span>
           <h1>{{ config.hero_titulo|default:"Encuentra tu estilo, descubre tus tiendas" }}</h1>
           <p>{{ config.slogan|default:"Productos de todas nuestras tiendas asociadas en un solo lugar." }}</p>
+          {% if groups %}<p class="hb-typed-row" data-typed="{% for g in groups %}{{ g.name|escapejs }}{% if not forloop.last %}|{% endif %}{% endfor %}">Lo mejor en <span id="typed-hero"></span></p>{% endif %}
           <a class="hb-cta" href="#novedades">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="hb-art"><i class="bi bi-bag-heart"></i></div>
@@ -625,6 +628,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/dist/typed.min.js"></script>
 <script>
   // Reveal en scroll — useInView({ once:true }) de interaction-design.
   // Respeta prefers-reduced-motion: muestra todo sin animar.
@@ -886,6 +890,29 @@
     inMin.addEventListener('input', update);
     inMax.addEventListener('input', update);
     paint(lo, hi);
+  })();
+
+  // ====== Typewriter — hero subtitle ======
+  (function () {
+    var el = document.getElementById('typed-hero');
+    if (!el) return;
+    var row = el.closest('[data-typed]');
+    var raw = row ? row.dataset.typed : '';
+    var strings = raw ? raw.split('|').filter(Boolean) : [];
+    if (!strings.length) strings = ['lo mejor en tecnología', 'accesorios premium', 'productos de calidad'];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = strings[0];
+      return;
+    }
+    new Typed(el, {
+      strings: strings,
+      typeSpeed: 60,
+      backSpeed: 30,
+      loop: true,
+      smartBackspace: true,
+      showCursor: true,
+      cursorChar: '|'
+    });
   })();
 </script>
 {% endblock %}

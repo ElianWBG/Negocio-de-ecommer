@@ -25,8 +25,8 @@
     <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
       {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
     </span>
-    <a class="visit-store" href="?brand={{ product.brand.id }}">
-      <i class="bi bi-shop"></i> Visitar tienda
+    <a class="visit-store" href="{% url 'storefront:product_detail' product.pk %}">
+      <i class="bi bi-eye"></i> Ver detalle
     </a>
   </div>
   <div class="product-body">
