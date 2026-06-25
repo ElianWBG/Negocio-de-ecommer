@@ -1,288 +1,524 @@
 {% extends 'storefront/base_public.html' %}
-{% block title %}Catálogo{% endblock %}
+{% block title %}Catálogo — {{ config.nombre_tienda|default:"Tiendas asociadas" }}{% endblock %}
 
 {% block extra_css %}
 <style>
-  .hero-strip {
-    background: var(--espresso);
-    border-radius: var(--radius);
-    padding: 2.5rem 2rem;
-    margin-bottom: 2rem;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
+  /* ============================================================
+     Catálogo neutro — paleta blanca / gris claro (scope página)
+     Timing/easing: skill interaction-design
+       enter = ease-out · exit = ease-in · límite duro 500ms
+     ============================================================ */
+  :root {
+    --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+    --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --d-fast:   100ms;   /* hover / tap / focus */
+    --d-quick:  150ms;   /* aparición microinteracción */
+    --d-normal: 200ms;   /* lift de tarjeta */
+    --d-slow:   320ms;   /* reveal en scroll */
+    --ease-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);  /* expansión elástica */
+
+    --bg:        #f8fafc;
+    --bg-soft:   #f1f5f9;
+    --panel:     #ffffff;
+    --ink:       #0f172a;
+    --ink-soft:  #334155;
+    --ink-mute:  #64748b;
+    --line:      #e2e8f0;
+    --brand:     #4f46e5;
+    --brand-600: #4338ca;
+    --brand-50:  #eef2ff;
+    --ok:        #059669;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+    --shadow-md: 0 10px 30px rgba(15,23,42,.10);
+    --shadow-lg: 0 24px 60px rgba(15,23,42,.16);
+    --r:  14px;
+    --r-sm: 10px;
   }
-  .hero-strip.has-bg-img {
-    background-size: cover;
-    background-position: center;
+
+  body { background: var(--bg); color: var(--ink); }
+  .page-wrap { max-width: 1140px; }
+  .cat { font-family: var(--font-body); }
+
+  /* ---------- Reveal en scroll (useInView, once:true) ---------- */
+  .reveal { opacity: 0; transform: translateY(18px); }
+  .reveal.in-view {
+    opacity: 1; transform: none;
+    transition: opacity var(--d-slow) var(--ease-out),
+                transform var(--d-slow) var(--ease-out);
   }
-  .hero-strip.has-bg-img::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,.55);
-    border-radius: var(--radius);
+
+  /* ===================== HERO BUSCADOR ===================== */
+  .search-hero { text-align: center; padding: 3rem 1rem 2.5rem; }
+  .search-hero .kicker {
+    text-transform: uppercase; letter-spacing: .14em; font-size: .72rem;
+    font-weight: 700; color: var(--brand); margin-bottom: .75rem;
   }
-  .hero-strip > * { position: relative; z-index: 1; }
-  .hero-strip h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:600; color:#fff; margin-bottom:.4rem; }
-  .hero-strip p { color:rgba(255,255,255,.6); margin-bottom:1.5rem; font-size:.95rem; }
-  .search-bar { display:flex; gap:.5rem; max-width:560px; margin:0 auto; }
-  .search-bar input { flex:1; padding:.75rem 1.1rem; border:none; border-radius:8px; font-family:var(--font-body); font-size:.95rem; background:rgba(255,255,255,.12); color:#fff; }
-  .search-bar input::placeholder { color:rgba(255,255,255,.4); }
-  .search-bar input:focus { outline:none; background:rgba(255,255,255,.18); }
-  .search-bar button { padding:.75rem 1.3rem; background:var(--rust); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-family:var(--font-body); white-space:nowrap; }
-  .search-bar button:hover { background:var(--rust-dark); }
+  .search-hero h1 {
+    font-family: var(--font-body); font-weight: 600; letter-spacing: -0.02em;
+    font-size: clamp(1.9rem, 4.5vw, 2.9rem); line-height: 1.12;
+    color: var(--ink); max-width: 680px; margin: 0 auto .75rem;
+  }
+  .search-hero p { color: var(--ink-mute); font-size: 1rem; max-width: 520px; margin: 0 auto 2rem; }
 
-  /* Banner promo */
-  .promo-banner { background:linear-gradient(135deg,#2d1a0e 0%,#4a2a12 100%); border-radius:var(--radius); padding:1.25rem 1.75rem; margin-bottom:2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; overflow:hidden; position:relative; }
-  .promo-banner::before { content:''; position:absolute; right:-30px; top:-30px; width:120px; height:120px; border-radius:50%; background:rgba(181,68,27,.2); }
-  .promo-banner::after { content:''; position:absolute; right:50px; bottom:-40px; width:80px; height:80px; border-radius:50%; background:rgba(181,68,27,.15); }
-  .promo-text { position:relative; z-index:1; }
-  .promo-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--rust); margin-bottom:.3rem; }
-  .promo-title { font-family:var(--font-head); font-size:1.3rem; font-weight:600; color:#fff; margin-bottom:.2rem; }
-  .promo-sub { font-size:.85rem; color:rgba(255,255,255,.55); }
-  .promo-cta { position:relative; z-index:1; flex-shrink:0; }
-  .promo-cta a { background:var(--rust); color:#fff; border-radius:7px; padding:.55rem 1.1rem; text-decoration:none; font-size:.85rem; font-weight:600; white-space:nowrap; display:inline-block; }
-  .promo-cta a:hover { background:var(--rust-dark); }
+  /* Barra de búsqueda minimalista */
+  .search-box {
+    display: flex; align-items: center; gap: .5rem;
+    max-width: 560px; margin: 0 auto;
+    background: var(--panel); border: 1.5px solid var(--line);
+    border-radius: 999px; padding: .35rem .35rem .35rem 1.1rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--d-fast) var(--ease-out),
+                box-shadow var(--d-fast) var(--ease-out);
+  }
+  .search-box:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px rgba(79,70,229,.12), var(--shadow-md);
+  }
+  .search-box .bi-search { color: var(--ink-mute); font-size: 1.05rem; flex-shrink: 0; }
+  .search-box input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-family: var(--font-body); font-size: .98rem; color: var(--ink);
+    padding: .55rem .25rem;
+  }
+  .search-box input::placeholder { color: var(--ink-mute); }
+  .search-box button {
+    flex-shrink: 0; border: none; cursor: pointer;
+    background: var(--brand); color: #fff; font-weight: 600;
+    font-family: var(--font-body); font-size: .9rem;
+    border-radius: 999px; padding: .6rem 1.3rem;
+    transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+  }
+  .search-box button:hover { background: var(--brand-600); }
+  .search-box button:active { transform: scale(.97); }
+  .search-box button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.4); }
 
-  /* Novedades */
-  .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
-  .section-head h2 { font-family:var(--font-head); font-size:1.5rem; font-weight:600; }
-  .section-head a { font-size:.8rem; color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:.25rem; }
-  .section-head a:hover { color:var(--rust); }
-  .novedades-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2.5rem; }
-  .nov-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; text-decoration:none; color:var(--text); display:block; transition:transform var(--transition), box-shadow var(--transition); }
-  .nov-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); color:var(--text); }
-  .nov-img { height:150px; background:var(--sand-dark); overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; }
-  .nov-img img { width:100%; height:100%; object-fit:cover; }
-  .nov-img i { font-size:2rem; color:var(--border); }
-  .nov-new-badge { position:absolute; top:.5rem; right:.5rem; background:var(--rust); color:#fff; font-size:.65rem; font-weight:700; padding:.2rem .55rem; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; }
-  .nov-info { padding:.75rem; }
-  .nov-name { font-weight:600; font-size:.9rem; margin-bottom:.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .nov-price { color:var(--rust); font-weight:700; font-size:.95rem; }
+  /* ===================== FILTROS / TOOLBAR ===================== */
+  .cat-pills { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; margin-bottom: 1.25rem; scrollbar-width: none; }
+  .cat-pills::-webkit-scrollbar { display: none; }
+  .cat-pill {
+    display: inline-flex; align-items: center; white-space: nowrap; text-decoration: none;
+    padding: .45rem 1rem; border-radius: 999px; font-size: .85rem; font-weight: 500;
+    border: 1.5px solid var(--line); background: var(--panel); color: var(--ink-soft);
+    transition: border-color var(--d-fast) var(--ease-out),
+                color var(--d-fast) var(--ease-out),
+                background var(--d-fast) var(--ease-out);
+  }
+  .cat-pill:hover { border-color: #c7d2fe; color: var(--brand); }
+  .cat-pill.active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
-  /* Sobre nosotros */
-  .sobre-section { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:center; margin:2.5rem 0; padding:2rem; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); }
-  .sobre-section.sin-imagen { grid-template-columns:1fr; }
-  .sobre-titulo { font-family:var(--font-head); font-size:2rem; font-weight:600; margin-bottom:1rem; }
-  .sobre-texto { color:var(--muted); line-height:1.8; font-size:.95rem; white-space:pre-line; }
-  .sobre-img { border-radius:var(--radius); overflow:hidden; }
-  .sobre-img img { width:100%; height:280px; object-fit:cover; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .toolbar .count { color: var(--ink-mute); font-size: .9rem; }
+  .toolbar .count strong { color: var(--ink); }
+  .store-chip {
+    display: inline-flex; align-items: center; gap: .45rem;
+    background: var(--brand-50); border: 1px solid #e0e7ff; color: var(--brand-600);
+    border-radius: 999px; padding: .3rem .85rem; font-size: .82rem; font-weight: 600;
+  }
+  .clear-link { color: var(--ink-mute); font-size: .85rem; text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; transition: color var(--d-fast) var(--ease-out); }
+  .clear-link:hover { color: var(--ink); }
 
-  /* Por qué elegirnos */
-  .porque-section { margin:2.5rem 0; }
-  .porque-titulo { font-family:var(--font-head); font-size:1.8rem; font-weight:600; text-align:center; margin-bottom:1.5rem; }
-  .porque-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
-  .porque-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem 1.5rem; text-align:center; transition:transform var(--transition), box-shadow var(--transition); }
-  .porque-card:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
-  .porque-icono { width:56px; height:56px; border-radius:50%; background:var(--sand); display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; }
-  .porque-icono i { font-size:1.5rem; color:var(--rust); }
-  .porque-card h3 { font-family:var(--font-head); font-size:1.1rem; font-weight:600; margin-bottom:.5rem; }
-  .porque-card p { color:var(--muted); font-size:.875rem; line-height:1.6; }
+  /* ===================== GRID DE PRODUCTOS ===================== */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1.4rem; }
 
-  /* Divider */
-  .section-divider { border:none; border-top:1px solid var(--border); margin:2rem 0 1.5rem; }
+  .product-card {
+    position: relative; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    /* microinteracción: sombra + lift suaves (200ms ease-out) */
+    transition: transform var(--d-normal) var(--ease-out),
+                box-shadow var(--d-normal) var(--ease-out),
+                border-color var(--d-normal) var(--ease-out);
+    will-change: transform;
+  }
+  .product-card { cursor: pointer; }
+  .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: #e0e7ff; }
+  .product-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.4), var(--shadow-lg); }
+  /* squash & stretch al aplastar (tap) — rápido y elástico */
+  .product-card.is-squash { transform: scale(0.93); transition: transform 110ms var(--ease-bouncy) !important; }
 
-  /* Categorías */
-  .cat-pills { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem; margin-bottom:1.5rem; scrollbar-width:none; }
-  .cat-pills::-webkit-scrollbar { display:none; }
-  .cat-pill { display:inline-flex; align-items:center; padding:.4rem 1rem; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:.85rem; font-weight:500; white-space:nowrap; text-decoration:none; transition:all var(--transition); }
-  .cat-pill:hover { border-color:var(--rust); color:var(--rust); }
-  .cat-pill.active { background:var(--espresso); border-color:var(--espresso); color:#fff; }
+  .product-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-soft); overflow: hidden; }
+  .product-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--d-slow) var(--ease-out); }
+  .product-card:hover .product-media img { transform: scale(1.05); }
+  .product-media .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 2.2rem; }
 
-  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
-  .toolbar p { color:var(--muted); font-size:.875rem; }
+  .stock-tag {
+    position: absolute; top: .65rem; left: .65rem;
+    font-size: .7rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(4px); border: 1px solid var(--line);
+  }
+  .stock-tag.in { color: var(--ok); }
+  .stock-tag.out { color: #b91c1c; }
 
-  /* Productos */
-  .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1.25rem; }
-  .product-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; transition:transform var(--transition), box-shadow var(--transition); display:flex; flex-direction:column; position:relative; }
-  .product-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); }
-  .product-card:hover .card-overlay { opacity:1; }
-  .product-img { height:210px; overflow:hidden; background:var(--sand-dark); position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem; }
-  .product-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; position:absolute; inset:0; }
-  .product-card:hover .product-img img { transform:scale(1.06); }
-  .product-img i { font-size:2rem; color:var(--border); }
-  .product-img .cat-label { font-size:.7rem; color:var(--muted); font-weight:600; letter-spacing:.07em; text-transform:uppercase; }
-  .stock-badge { position:absolute; top:.65rem; left:.65rem; z-index:1; }
-  .card-overlay { position:absolute; inset:0; background:rgba(35,26,16,.45); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition); }
-  .card-overlay a { background:#fff; color:var(--espresso); border-radius:8px; padding:.6rem 1.25rem; font-weight:700; font-size:.85rem; text-decoration:none; }
-  .card-overlay a:hover { background:var(--rust); color:#fff; }
-  .card-info { padding:1rem; flex:1; display:flex; flex-direction:column; }
-  .card-brand { font-size:.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin-bottom:.3rem; }
-  .card-name { font-family:var(--font-head); font-size:1.1rem; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:auto; }
-  .card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:.75rem; padding-top:.75rem; border-top:1px solid var(--sand-dark); }
-  .card-price { font-size:1.15rem; font-weight:700; color:var(--rust); }
-  .card-action { display:inline-flex; align-items:center; gap:.3rem; font-size:.8rem; font-weight:600; color:var(--espresso); text-decoration:none; padding:.35rem .75rem; border:1.5px solid var(--border); border-radius:6px; transition:all var(--transition); }
-  .card-action:hover { background:var(--espresso); color:#fff; border-color:var(--espresso); }
+  /* "Visitar tienda" — discreto, aparece en hover (150ms ease-out) */
+  .visit-store {
+    position: absolute; bottom: .65rem; right: .65rem; z-index: 2;
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .76rem; font-weight: 600; text-decoration: none;
+    color: var(--ink); background: rgba(255,255,255,.95); backdrop-filter: blur(4px);
+    border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem;
+    box-shadow: var(--shadow-sm);
+    opacity: 0; transform: translateY(6px); pointer-events: none;
+    transition: opacity var(--d-quick) var(--ease-out),
+                transform var(--d-quick) var(--ease-out),
+                background var(--d-fast) var(--ease-out),
+                color var(--d-fast) var(--ease-out);
+  }
+  .product-card:hover .visit-store { opacity: 1; transform: none; pointer-events: auto; }
+  .visit-store:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
 
-  @media(max-width:700px) {
-    .novedades-grid { grid-template-columns:repeat(2,1fr); }
-    .promo-banner { flex-direction:column; text-align:center; }
-    .product-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; }
-    .product-img { height:150px; }
-    .card-overlay { opacity:1; background:rgba(35,26,16,.3); }
-    .sobre-section { grid-template-columns:1fr; }
-    .porque-grid { grid-template-columns:1fr; }
+  .product-body { padding: .95rem 1rem 1.1rem; display: flex; flex-direction: column; flex: 1; }
+  .sold-by {
+    display: inline-flex; align-items: center; gap: .35rem;
+    font-size: .72rem; color: var(--ink-mute); margin-bottom: .45rem;
+  }
+  .sold-by i { font-size: .8rem; opacity: .8; }
+  .sold-by .store-name { color: var(--ink-soft); font-weight: 600; }
+  .product-name {
+    font-family: var(--font-body); font-size: 1rem; font-weight: 600; line-height: 1.35;
+    color: var(--ink); margin: 0 0 .2rem; text-decoration: none;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    transition: color var(--d-fast) var(--ease-out);
+  }
+  a.product-name:hover { color: var(--brand); }
+  .product-cat { font-size: .76rem; color: var(--ink-mute); margin-bottom: auto; }
+  .product-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--line);
+  }
+  .product-price { font-size: 1.12rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .product-view {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .8rem; font-weight: 600; text-decoration: none; color: var(--brand);
+    padding: .35rem .7rem; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    transition: background var(--d-fast) var(--ease-out),
+                border-color var(--d-fast) var(--ease-out),
+                color var(--d-fast) var(--ease-out);
+  }
+  .product-view:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .product-view:active { transform: scale(.97); }
+
+  /* ===================== EMPTY ===================== */
+  .empty { text-align: center; padding: 4rem 1.5rem; }
+  .empty i { font-size: 2.6rem; color: #cbd5e1; }
+  .empty h3 { font-family: var(--font-body); font-weight: 600; font-size: 1.25rem; margin: 1rem 0 .4rem; }
+  .empty p { color: var(--ink-mute); max-width: 360px; margin: 0 auto 1.4rem; }
+  .empty a { color: var(--brand); font-weight: 600; text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: .9rem; }
+    .visit-store { opacity: 1; transform: none; pointer-events: auto; } /* sin hover en touch */
+  }
+
+  /* ===================== QUICK-VIEW (efecto Genie) ===================== */
+  .qv-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+    background: rgba(15,23,42,.48); opacity: 0;
+    /* backdrop: fade-in/out propio, easeInOut 0.3s (independiente del panel) */
+    transition: opacity 300ms var(--ease-in-out);
+  }
+  .qv-overlay.is-open { opacity: 1; }
+  .qv-overlay.is-closing { opacity: 0; }
+
+  .qv-panel {
+    background: var(--panel); border-radius: 18px; overflow: hidden;
+    width: min(560px, 94vw); max-height: 88vh; display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg); transform-origin: top left; will-change: transform, opacity;
+  }
+  .qv-media { position: relative; aspect-ratio: 16 / 10; background: var(--bg-soft); }
+  .qv-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .qv-media .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 3rem; }
+  .qv-close {
+    position: absolute; top: .7rem; right: .7rem; width: 38px; height: 38px;
+    border: none; cursor: pointer; border-radius: 50%; font-size: 1.05rem;
+    background: rgba(255,255,255,.95); color: var(--ink); box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+  }
+  .qv-close:hover { background: #fff; transform: scale(1.06); }
+  .qv-close:active { transform: scale(.95); }
+  .qv-stock { position: absolute; top: .7rem; left: .7rem; font-size: .72rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px; background: rgba(255,255,255,.95); }
+  .qv-stock.in { color: var(--ok); } .qv-stock.out { color: #b91c1c; }
+  .qv-body { padding: 1.4rem 1.5rem 1.5rem; overflow-y: auto; }
+  .qv-store { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--ink-mute); margin-bottom: .5rem; }
+  .qv-store b { color: var(--ink-soft); }
+  .qv-title { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: .25rem; }
+  .qv-cat { font-size: .82rem; color: var(--ink-mute); margin-bottom: 1rem; }
+  .qv-price { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1.3rem; }
+  .qv-actions { display: flex; gap: .65rem; flex-wrap: wrap; }
+  .qv-btn { display: inline-flex; align-items: center; gap: .45rem; padding: .7rem 1.2rem; border-radius: var(--r-sm); font-size: .9rem; font-weight: 600; text-decoration: none; cursor: pointer; border: 1.5px solid transparent; transition: background var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out); }
+  .qv-btn:active { transform: scale(.97); }
+  .qv-btn.primary { background: var(--brand); color: #fff; }
+  .qv-btn.primary:hover { background: var(--brand-600); }
+  .qv-btn.ghost { background: var(--panel); color: var(--ink); border-color: var(--line); }
+  .qv-btn.ghost:hover { background: var(--bg-soft); border-color: #cbd5e1; }
+  body.qv-lock { overflow: hidden; }
+
+  /* =========== prefers-reduced-motion (SAFETY-CRITICAL) =========== */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal.in-view { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .product-card, .product-media img, .visit-store, .product-view,
+    .search-box, .search-box button, .cat-pill, .product-name { transition: none !important; }
+    .product-card:hover { transform: none !important; }
+    .product-card.is-squash { transform: none !important; transition: none !important; }
+    .product-card:hover .product-media img { transform: none !important; }
+    .visit-store { opacity: 1 !important; transform: none !important; pointer-events: auto !important; }
+    /* Genie sin transform: solo fundido */
+    .qv-overlay, .qv-panel { transition: opacity 120ms linear !important; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero -->
-<div class="hero-strip{% if config.hero_imagen %} has-bg-img{% endif %}"
-     {% if config.hero_imagen %}style="background-image:url('{{ config.hero_imagen.url }}');"{% endif %}>
-  <h1>{{ config.hero_titulo|default:"Encuentra lo que buscas" }}</h1>
-  <p>{{ config.slogan }}</p>
-  <form method="get" class="search-bar">
-    {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
-    <input type="text" name="q" value="{{ query }}" placeholder="Buscar producto...">
-    <button type="submit"><i class="bi bi-search"></i> Buscar</button>
-  </form>
-</div>
+<div class="cat">
 
-{% if not query and not selected_group %}
+  <!-- ===================== HERO BUSCADOR GLOBAL ===================== -->
+  <section class="search-hero">
+    <div class="kicker reveal">Marketplace de tiendas asociadas</div>
+    <h1 class="reveal">Encuentra productos de nuestras tiendas asociadas</h1>
+    <p class="reveal">Explora el catálogo unificado de las empresas que operan en nuestra plataforma.</p>
+    <form method="get" class="search-box reveal" role="search">
+      {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ query }}" placeholder="Buscar producto, marca o categoría…" aria-label="Buscar productos">
+      <button type="submit">Buscar</button>
+    </form>
+  </section>
 
-<!-- Banner promocional -->
-{% if config.banner_activo %}
-<div class="promo-banner">
-  <div class="promo-text">
-    <div class="promo-label">✦ Oferta especial</div>
-    <div class="promo-title">{{ config.banner_titulo }}</div>
-    {% if config.banner_subtitulo %}<div class="promo-sub">{{ config.banner_subtitulo }}</div>{% endif %}
+  <!-- ===================== FILTRO CATEGORÍAS ===================== -->
+  <div class="cat-pills reveal">
+    <a href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}"
+       class="cat-pill {% if not selected_group and not selected_brand %}active{% endif %}">Todas</a>
+    {% for g in groups %}
+    <a href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}"
+       class="cat-pill {% if selected_group == g.id|stringformat:'s' %}active{% endif %}">{{ g.name }}</a>
+    {% endfor %}
   </div>
-  <div class="promo-cta">
-    <a href="{% url 'storefront:catalog_list' %}">{{ config.banner_cta }}</a>
-  </div>
-</div>
-{% endif %}
 
-<!-- Novedades -->
-{% if novedades %}
-<div class="section-head">
-  <h2>✦ Novedades</h2>
-  <a href="{% url 'storefront:catalog_list' %}">Ver todos <i class="bi bi-arrow-right"></i></a>
-</div>
-<div class="novedades-grid">
-  {% for p in novedades %}
-  <a href="{% url 'storefront:product_detail' p.pk %}" class="nov-card">
-    <div class="nov-img">
-      {% if p.image %}
-        <img src="{{ p.image.url }}" alt="{{ p.name }}">
-      {% else %}
-        <i class="bi bi-image"></i>
+  <!-- ===================== TOOLBAR ===================== -->
+  <div class="toolbar reveal">
+    <div class="count">
+      <strong>{{ products|length }}</strong> producto{% if products|length != 1 %}s{% endif %}
+      {% if query %} para "<strong>{{ query }}</strong>"{% endif %}
+      {% if selected_brand %} ·{% endif %}
+    </div>
+    <div style="display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;">
+      {% if selected_brand %}
+      <span class="store-chip"><i class="bi bi-shop"></i> {{ selected_brand.name }}</span>
       {% endif %}
-      <span class="nov-new-badge">Nuevo</span>
-    </div>
-    <div class="nov-info">
-      <p class="nov-name">{{ p.name }}</p>
-      <p class="nov-price">${{ p.unit_price }}</p>
-    </div>
-  </a>
-  {% endfor %}
-</div>
-<hr class="section-divider">
-{% endif %}
-
-<!-- Sobre nosotros -->
-{% if config.sobre_activo and config.sobre_texto %}
-<div class="sobre-section{% if not config.sobre_imagen %} sin-imagen{% endif %}">
-  <div>
-    <h2 class="sobre-titulo">{{ config.sobre_titulo|default:"Sobre nosotros" }}</h2>
-    <p class="sobre-texto">{{ config.sobre_texto }}</p>
-  </div>
-  {% if config.sobre_imagen %}
-  <div class="sobre-img">
-    <img src="{{ config.sobre_imagen.url }}" alt="{{ config.sobre_titulo }}">
-  </div>
-  {% endif %}
-</div>
-<hr class="section-divider">
-{% endif %}
-
-<!-- Por qué elegirnos -->
-{% if config.porque_activo %}
-<div class="porque-section">
-  <h2 class="porque-titulo">{{ config.porque_titulo|default:"¿Por qué elegirnos?" }}</h2>
-  <div class="porque-grid">
-    <div class="porque-card">
-      <div class="porque-icono"><i class="bi {{ config.porque_1_icono|default:'bi-truck' }}"></i></div>
-      <h3>{{ config.porque_1_titulo|default:"Envío rápido" }}</h3>
-      <p>{{ config.porque_1_texto|default:"Entrega a domicilio en toda la ciudad." }}</p>
-    </div>
-    <div class="porque-card">
-      <div class="porque-icono"><i class="bi {{ config.porque_2_icono|default:'bi-shield-check' }}"></i></div>
-      <h3>{{ config.porque_2_titulo|default:"Garantía" }}</h3>
-      <p>{{ config.porque_2_texto|default:"Productos con garantía directa del fabricante." }}</p>
-    </div>
-    <div class="porque-card">
-      <div class="porque-icono"><i class="bi {{ config.porque_3_icono|default:'bi-headset' }}"></i></div>
-      <h3>{{ config.porque_3_titulo|default:"Soporte" }}</h3>
-      <p>{{ config.porque_3_texto|default:"Atención personalizada antes y después de tu compra." }}</p>
-    </div>
-  </div>
-</div>
-<hr class="section-divider">
-{% endif %}
-
-{% endif %}
-
-<!-- Filtro por categoría -->
-<div class="cat-pills">
-  <a href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}"
-     class="cat-pill {% if not selected_group %}active{% endif %}">Todos</a>
-  {% for g in groups %}
-  <a href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}"
-     class="cat-pill {% if selected_group == g.id|stringformat:'s' %}active{% endif %}">
-    {{ g.name }}
-  </a>
-  {% endfor %}
-</div>
-
-<div class="toolbar">
-  <p>{{ products|length }} producto{% if products|length != 1 %}s{% endif %}{% if query %} para "<strong>{{ query }}</strong>"{% endif %}</p>
-  {% if query or selected_group %}
-  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-outline btn-sm"><i class="bi bi-x"></i> Limpiar</a>
-  {% endif %}
-</div>
-
-{% if products %}
-<div class="product-grid">
-  {% for product in products %}
-  <article class="product-card">
-    <div class="product-img">
-      {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}">
-      {% else %}
-        <i class="bi bi-image"></i>
-        <span class="cat-label">{{ product.group.name }}</span>
+      {% if query or selected_group or selected_brand %}
+      <a href="{% url 'storefront:catalog_list' %}" class="clear-link"><i class="bi bi-x-lg"></i> Limpiar filtros</a>
       {% endif %}
-      <div class="stock-badge">
-        {% if product.stock > 0 %}<span class="badge badge-success">En stock</span>
-        {% else %}<span class="badge badge-danger">Agotado</span>{% endif %}
-      </div>
-      <div class="card-overlay">
-        <a href="{% url 'storefront:product_detail' product.pk %}">Ver detalle</a>
-      </div>
     </div>
-    <div class="card-info">
-      <p class="card-brand">{{ product.brand.name }}</p>
-      <h2 class="card-name">{{ product.name }}</h2>
-      <div class="card-footer">
-        <span class="card-price">${{ product.unit_price }}</span>
-        <a href="{% url 'storefront:product_detail' product.pk %}" class="card-action">
-          <i class="bi bi-eye"></i> Ver
+  </div>
+
+  <!-- ===================== GRID ===================== -->
+  {% if products %}
+  <div class="product-grid">
+    {% for product in products %}
+    <article class="product-card reveal"
+             tabindex="0" role="button" aria-label="Vista rápida de {{ product.name }}"
+             data-name="{{ product.name }}"
+             data-store="{{ product.brand.name }}"
+             data-cat="{{ product.group.name }}"
+             data-price="{{ product.unit_price }}"
+             data-stock="{{ product.stock }}"
+             data-img="{% if product.image %}{{ product.image.url }}{% endif %}"
+             data-detail="{% url 'storefront:product_detail' product.pk %}"
+             data-storeurl="?brand={{ product.brand.id }}">
+      <div class="product-media">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+        {% else %}
+          <div class="placeholder"><i class="bi bi-image"></i></div>
+        {% endif %}
+        <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
+          {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
+        </span>
+        <!-- Microinteracción: aparece en hover -->
+        <a class="visit-store" href="?brand={{ product.brand.id }}">
+          <i class="bi bi-shop"></i> Visitar tienda
         </a>
       </div>
-    </div>
-  </article>
-  {% endfor %}
+      <div class="product-body">
+        <span class="sold-by">
+          <i class="bi bi-shop-window"></i> Vendido por: <span class="store-name">{{ product.brand.name }}</span>
+        </span>
+        <a class="product-name" href="{% url 'storefront:product_detail' product.pk %}">{{ product.name }}</a>
+        <div class="product-cat">{{ product.group.name }}</div>
+        <div class="product-foot">
+          <span class="product-price">${{ product.unit_price }}</span>
+          <a class="product-view" href="{% url 'storefront:product_detail' product.pk %}">
+            <i class="bi bi-eye"></i> Ver
+          </a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty reveal">
+    <i class="bi bi-search"></i>
+    <h3>Sin resultados</h3>
+    <p>No encontramos productos con esos criterios. Prueba con otra búsqueda o categoría.</p>
+    <a href="{% url 'storefront:catalog_list' %}">Ver todo el catálogo</a>
+  </div>
+  {% endif %}
+
 </div>
-{% else %}
-<div class="empty-state">
-  <i class="bi bi-search"></i>
-  <h3>Sin resultados</h3>
-  <p>No encontramos productos con esos criterios.</p>
-  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark">Ver todo</a>
-</div>
-{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Reveal en scroll — useInView({ once:true }) de interaction-design.
+  // Respeta prefers-reduced-motion: muestra todo sin animar.
+  (function () {
+    var nodes = document.querySelectorAll('.reveal');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduce || !('IntersectionObserver' in window)) {
+      nodes.forEach(function (n) { n.classList.add('in-view'); });
+      return;
+    }
+
+    // stagger ~60ms entre tarjetas del grid (staggerChildren)
+    document.querySelectorAll('.product-grid .reveal').forEach(function (el, i) {
+      el.dataset.stagger = Math.min(i, 8) * 60;
+    });
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        var delay = el.dataset.stagger ? +el.dataset.stagger : 0;
+        setTimeout(function () { el.classList.add('in-view'); }, delay);
+        io.unobserve(el); // once:true
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+
+    nodes.forEach(function (n) { io.observe(n); });
+  })();
+
+  // ====== Quick-view con efecto "Genie" (FLIP shared-element) ======
+  // squash al tap -> expansión bouncy desde la tarjeta -> absorción al cerrar.
+  (function () {
+    var REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var open = false, lastCard = null;
+
+    // Enlaces internos navegan directo (no abren el modal)
+    document.querySelectorAll('.product-card a').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.stopPropagation(); });
+    });
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+    function buildPanel(d) {
+      var inStock = (+d.stock) > 0;
+      var media = d.img
+        ? '<img src="' + esc(d.img) + '" alt="' + esc(d.name) + '">'
+        : '<div class="placeholder"><i class="bi bi-image"></i></div>';
+      return '' +
+        '<div class="qv-panel" role="dialog" aria-modal="true" aria-label="' + esc(d.name) + '">' +
+          '<div class="qv-media">' + media +
+            '<span class="qv-stock ' + (inStock ? 'in' : 'out') + '">' + (inStock ? 'En stock' : 'Agotado') + '</span>' +
+            '<button class="qv-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>' +
+          '</div>' +
+          '<div class="qv-body">' +
+            '<span class="qv-store"><i class="bi bi-shop-window"></i> Vendido por: <b>' + esc(d.store) + '</b></span>' +
+            '<h2 class="qv-title">' + esc(d.name) + '</h2>' +
+            '<div class="qv-cat">' + esc(d.cat) + '</div>' +
+            '<div class="qv-price">$' + esc(d.price) + '</div>' +
+            '<div class="qv-actions">' +
+              '<a class="qv-btn primary" href="' + esc(d.detail) + '"><i class="bi bi-eye"></i> Ver detalle</a>' +
+              '<a class="qv-btn ghost" href="' + esc(d.storeurl) + '"><i class="bi bi-shop"></i> Visitar tienda</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function openGenie(card) {
+      if (open) return;
+      open = true; lastCard = card;
+      document.body.classList.add('qv-lock');
+
+      var overlay = document.createElement('div');
+      overlay.className = 'qv-overlay';
+      overlay.innerHTML = buildPanel(card.dataset);
+      document.body.appendChild(overlay);
+      var panel = overlay.querySelector('.qv-panel');
+
+      function finish() { overlay.classList.add('is-open'); panel.querySelector('.qv-close').focus(); }
+
+      if (REDUCE) { requestAnimationFrame(finish); }
+      else {
+        // layoutId-equivalent: FLIP shared-element. La card se "estira" al modal.
+        // opacity se mantiene en 1 (morph de layout, no fade) — el backdrop hace el fade.
+        var c = card.getBoundingClientRect();
+        var f = panel.getBoundingClientRect();
+        var sx = c.width / f.width, sy = c.height / f.height;
+        var dx = c.left - f.left, dy = c.top - f.top;
+        panel.style.transition = 'none';
+        panel.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')';
+        panel.getBoundingClientRect(); // reflow
+        requestAnimationFrame(function () {
+          overlay.classList.add('is-open'); // backdrop fade-in 300ms easeInOut
+          // escalado de apertura: easeOut sin rebote, 250ms
+          panel.style.transition = 'transform 250ms cubic-bezier(0.25, 1, 0.5, 1)';
+          panel.style.transform = 'none';
+          panel.querySelector('.qv-close').focus();
+        });
+      }
+
+      function close() {
+        if (overlay.dataset.closing) return;
+        overlay.dataset.closing = '1';
+        overlay.classList.add('is-closing');
+
+        function done() {
+          overlay.remove();
+          document.body.classList.remove('qv-lock');
+          open = false;
+          if (lastCard) lastCard.focus();
+        }
+
+        if (REDUCE) { setTimeout(done, 140); return; }
+        // Absorción inversa: el modal se encoge de vuelta a la card (easeIn rápido).
+        var c = card.getBoundingClientRect();
+        var f = panel.getBoundingClientRect();
+        var sx = c.width / f.width, sy = c.height / f.height;
+        var dx = c.left - f.left, dy = c.top - f.top;
+        panel.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 1, 1)'; // easeIn
+        panel.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')';
+        // Desmontaje cuando TERMINA el fade del backdrop (la transición más larga),
+        // así la salida se ejecuta completa antes de destruir el nodo (AnimatePresence).
+        var ended = false;
+        overlay.addEventListener('transitionend', function h(e) {
+          if (e.target !== overlay || e.propertyName !== 'opacity' || ended) return;
+          ended = true; done();
+        });
+        setTimeout(function () { if (!ended) { ended = true; done(); } }, 360); // respaldo
+      }
+
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+      overlay.querySelector('.qv-close').addEventListener('click', close);
+      document.addEventListener('keydown', function onKey(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
+      });
+    }
+
+    function activate(card) {
+      if (REDUCE) { openGenie(card); return; }
+      card.classList.add('is-squash');
+      setTimeout(function () { card.classList.remove('is-squash'); openGenie(card); }, 110);
+    }
+
+    document.querySelectorAll('.product-card').forEach(function (card) {
+      card.addEventListener('click', function () { activate(card); });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(card); }
+      });
+    });
+  })();
+</script>
 {% endblock %}

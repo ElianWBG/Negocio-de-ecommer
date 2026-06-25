@@ -7,11 +7,12 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 
-from billing.models import Product, ProductGroup, Customer
+from billing.models import Product, ProductGroup, Customer, Brand
 from . import payphone
 from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
@@ -180,10 +181,20 @@ def catalog_list(request):
     products = Product.objects.filter(is_active=True).select_related('brand', 'group')
     query = request.GET.get('q', '').strip()
     if query:
-        products = products.filter(name__icontains=query)
+        products = products.filter(
+            Q(name__icontains=query)
+            | Q(brand__name__icontains=query)
+            | Q(group__name__icontains=query)
+        )
     group_id = request.GET.get('group', '').strip()
     if group_id:
         products = products.filter(group_id=group_id)
+    # Filtro por "tienda": la marca actúa como vendedor/tienda asociada
+    brand_id = request.GET.get('brand', '').strip()
+    selected_brand = None
+    if brand_id:
+        products = products.filter(brand_id=brand_id)
+        selected_brand = Brand.objects.filter(pk=brand_id).first()
     cart_count = sum(_get_cart(request).values())
 
     # Novedades: últimos 4 productos con stock, solo en la vista principal
@@ -200,6 +211,7 @@ def catalog_list(request):
         'groups': ProductGroup.objects.filter(is_active=True),
         'query': query,
         'selected_group': group_id,
+        'selected_brand': selected_brand,
         'cart_count': cart_count,
         'novedades': novedades,
     })
