@@ -14,6 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from billing.models import Product, ProductGroup, Customer, Brand
 from . import payphone
@@ -35,7 +36,7 @@ def _cart_items(request):
     cart = _get_cart(request)
     if not cart:
         return [], Decimal('0')
-    products = Product.objects.filter(pk__in=cart.keys(), is_active=True)
+    products = Product.objects.select_related('brand').filter(pk__in=cart.keys(), is_active=True)
     products_by_id = {str(p.pk): p for p in products}
     items = []
     total = Decimal('0')
@@ -268,9 +269,23 @@ def cart_add(request, pk):
         request.session.modified = True
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            fresh_items, subtotal = _cart_items(request)
             return JsonResponse({
                 'status': 'ok',
                 'cart_count': sum(cart.values()),
+                'cart_subtotal': str(subtotal),
+                'cart_items': [
+                    {
+                        'pk': it['product'].pk,
+                        'name': it['product'].name,
+                        'store': it['product'].brand.name,
+                        'subtotal': str(it['subtotal']),
+                        'quantity': it['quantity'],
+                        'image': it['product'].image.url if it['product'].image else None,
+                        'remove_url': reverse('storefront:cart_remove', args=[it['product'].pk]),
+                    }
+                    for it in fresh_items
+                ],
                 'warning': warning,
             })
 
@@ -686,66 +701,86 @@ def purchase_request_reject(request, pk):
 # PayPal
 # ---------------------------------------------------------------------
 
-def pay_with_paypal(request, pk):
-    """Muestra la página con el botón de PayPal."""
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
-    paypal_client_id = settings.PAYPAL_CLIENT_ID
-    paypal_total = '{:.2f}'.format(purchase_request.total_estimado)
-    return render(request, 'storefront/payment_paypal.html', {
-        'purchase_request': purchase_request,
-        'paypal_client_id': paypal_client_id,
-        'paypal_total': paypal_total,
-    })
-
-
-def paypal_capture(request, pk):
-    """Captura el pago después de que PayPal lo aprueba."""
-    import json, urllib.request, urllib.parse, base64
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
-
-    if request.method != 'POST':
-        return redirect('storefront:payment_choice', pk=pk)
-
-    data = json.loads(request.body)
-    order_id = data.get('orderID')
-
-    # Obtener access token
-    client_id = settings.PAYPAL_CLIENT_ID
-    secret = settings.PAYPAL_SECRET
-    credentials = base64.b64encode(f'{client_id}:{secret}'.encode()).decode()
-
-    token_req = urllib.request.Request(
+def _paypal_access_token():
+    """Obtiene un access token de la API de PayPal sandbox."""
+    import json, urllib.request, base64
+    credentials = base64.b64encode(
+        f'{settings.PAYPAL_CLIENT_ID}:{settings.PAYPAL_SECRET}'.encode()
+    ).decode()
+    req = urllib.request.Request(
         'https://api-m.sandbox.paypal.com/v1/oauth2/token',
         data=b'grant_type=client_credentials',
         headers={
             'Authorization': f'Basic {credentials}',
             'Content-Type': 'application/x-www-form-urlencoded',
-        }
+        },
     )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())['access_token']
+
+
+def pay_with_paypal(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    return render(request, 'storefront/payment_paypal.html', {
+        'purchase_request': purchase_request,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    })
+
+
+@require_POST
+def paypal_create_order(request, pk):
+    """Crea una orden en PayPal server-side y devuelve el order ID."""
+    import json, urllib.request
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    total = '{:.2f}'.format(purchase_request.total_estimado)
     try:
-        with urllib.request.urlopen(token_req) as resp:
-            token_data = json.loads(resp.read())
-            access_token = token_data['access_token']
+        token = _paypal_access_token()
+        req = urllib.request.Request(
+            'https://api-m.sandbox.paypal.com/v2/checkout/orders',
+            data=json.dumps({
+                'intent': 'CAPTURE',
+                'purchase_units': [{
+                    'amount': {'currency_code': 'USD', 'value': total},
+                    'description': f'Pedido #{purchase_request.pk}',
+                }],
+            }).encode(),
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+        with urllib.request.urlopen(req) as resp:
+            order = json.loads(resp.read())
+        return JsonResponse({'id': order['id']})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-    # Capturar el pago
-    capture_req = urllib.request.Request(
-        f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{order_id}/capture',
-        data=b'{}',
-        headers={
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-        }
-    )
+
+def paypal_capture(request, pk):
+    """Captura el pago después de que PayPal lo aprueba."""
+    import json, urllib.request
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+
+    if request.method != 'POST':
+        return redirect('storefront:payment_choice', pk=pk)
+
+    order_id = json.loads(request.body).get('orderID')
     try:
-        with urllib.request.urlopen(capture_req) as resp:
+        token = _paypal_access_token()
+        req = urllib.request.Request(
+            f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{order_id}/capture',
+            data=b'{}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+        with urllib.request.urlopen(req) as resp:
             capture_data = json.loads(resp.read())
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-    status = capture_data.get('status')
-    if status == 'COMPLETED':
+    if capture_data.get('status') == 'COMPLETED':
         purchase_request.payment_method = 'tarjeta'
         purchase_request.payphone_transaction_id = order_id
         try:
@@ -755,8 +790,7 @@ def paypal_capture(request, pk):
         return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
             reverse('storefront:payment_success', args=[purchase_request.pk])
         )})
-    else:
-        return JsonResponse({'error': 'Pago no completado', 'status': status}, status=400)
+    return JsonResponse({'error': 'Pago no completado', 'status': capture_data.get('status')}, status=400)
 
 
 def payment_success(request, pk):

@@ -177,7 +177,7 @@
   .product-name {
     font-family: var(--font-body); font-size: 1rem; font-weight: 600; line-height: 1.35;
     color: var(--ink); margin: 0 0 .2rem; text-decoration: none;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     transition: color var(--d-fast) var(--ease-out);
   }
   a.product-name:hover { color: var(--brand); }
@@ -417,7 +417,7 @@
   .ci-img { width: 52px; height: 52px; border-radius: 9px; background: var(--bg-soft); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
   .ci-img img { width: 100%; height: 100%; object-fit: cover; }
   .ci-info { flex: 1; min-width: 0; }
-  .ci-name { font-size: .82rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ci-name { font-size: .82rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .ci-store { font-size: .72rem; color: var(--ink-mute); margin: .1rem 0 .25rem; }
   .ci-row { display: flex; align-items: center; justify-content: space-between; }
   .ci-price { font-size: .88rem; font-weight: 700; }
@@ -439,7 +439,7 @@
   .ce-item:hover { background: var(--bg-soft); }
   .ce-img { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--bg-soft); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #cbd5e1; }
   .ce-img img { width: 100%; height: 100%; object-fit: cover; }
-  .ce-name { font-size: .8rem; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .ce-name { font-size: .8rem; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
   .ce-price { font-size: .8rem; color: var(--brand-600); font-weight: 700; }
 
   /* Grid: en el shell, tarjetas más compactas */
@@ -918,6 +918,81 @@
       return m ? decodeURIComponent(m[1]) : '';
     }
 
+    function h(s) {
+      var d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    function updateSidebar(data) {
+      var aside = document.querySelector('.shop-cart');
+      if (!aside) return;
+
+      // Preserve checkout URL before removing elements
+      var ckEl = aside.querySelector('.cart-checkout');
+      var ckUrl = ckEl ? ckEl.getAttribute('href') : '/solicitar/';
+
+      // Update header count
+      var head = aside.querySelector('.cart-head');
+      if (head) head.textContent = data.cart_count > 0 ? 'Mi carrito (' + data.cart_count + ')' : 'Mi carrito';
+
+      // Remove dynamic sections, keep .cart-extra
+      ['.cart-items', '.cart-sum', '.cart-checkout', '.cart-empty'].forEach(function (sel) {
+        var el = aside.querySelector(sel);
+        if (el) el.remove();
+      });
+
+      var extra = aside.querySelector('.cart-extra');
+      var csrf  = getCsrf();
+
+      function insertHtml(html) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        while (tmp.firstChild) {
+          var node = tmp.firstChild;
+          tmp.removeChild(node);
+          extra ? aside.insertBefore(node, extra) : aside.appendChild(node);
+        }
+      }
+
+      if (data.cart_items && data.cart_items.length) {
+        var itemsHtml = data.cart_items.map(function (it) {
+          var img = it.image ? '<img src="' + h(it.image) + '" alt="">' : '<i class="bi bi-image"></i>';
+          return '<div class="cart-item">' +
+            '<div class="ci-img">' + img + '</div>' +
+            '<div class="ci-info">' +
+              '<div class="ci-name">' + h(it.name) + '</div>' +
+              '<div class="ci-store">' + h(it.store) + '</div>' +
+              '<div class="ci-row"><span class="ci-price">$' + h(it.subtotal) + '</span>' +
+              '<span class="ci-qty">x' + it.quantity + '</span></div>' +
+            '</div>' +
+            '<form method="post" action="' + h(it.remove_url) + '">' +
+              '<input type="hidden" name="csrfmiddlewaretoken" value="' + h(csrf) + '">' +
+              '<button class="ci-del" title="Quitar"><i class="bi bi-trash"></i></button>' +
+            '</form>' +
+          '</div>';
+        }).join('');
+
+        insertHtml(
+          '<div class="cart-items">' + itemsHtml + '</div>' +
+          '<div class="cart-sum">' +
+            '<div class="cs-row"><span>Subtotal</span><span>$' + h(data.cart_subtotal) + '</span></div>' +
+            '<div class="cs-row"><span>Envío</span><span class="free">Coordinado</span></div>' +
+            '<div class="cs-row total"><span>Total</span><span>$' + h(data.cart_subtotal) + '</span></div>' +
+          '</div>' +
+          '<a class="cart-checkout" href="' + h(ckUrl) + '"><i class="bi bi-bag-check"></i> Continuar compra</a>'
+        );
+      } else {
+        insertHtml('<div class="cart-empty"><i class="bi bi-bag"></i><p>Tu carrito está vacío</p></div>');
+      }
+
+      // Update all count badges
+      document.querySelectorAll('.snav-badge, .nav-cart-badge').forEach(function (b) {
+        b.textContent = data.cart_count;
+        b.style.display = data.cart_count > 0 ? '' : 'none';
+      });
+    }
+
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.btn-add-cart');
       if (!btn || btn.disabled) return;
@@ -945,14 +1020,7 @@
         if (data.status === 'ok') {
           btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
           btn.classList.add('is-added');
-          // Update cart count badges (sidebar + navbar)
-          var count = data.cart_count;
-          document.querySelectorAll('.snav-badge').forEach(function (b) {
-            b.textContent = count; b.style.display = count > 0 ? '' : 'none';
-          });
-          document.querySelectorAll('.nav-cart-badge').forEach(function (b) {
-            b.textContent = count; b.style.display = count > 0 ? '' : 'none';
-          });
+          updateSidebar(data);
         } else {
           btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
           btn.classList.add('is-error');
