@@ -7,9 +7,12 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from billing.models import Product, ProductGroup, Customer
 from . import payphone
@@ -563,3 +566,82 @@ def purchase_request_reject(request, pk):
         purchase_request.save()
         messages.success(request, f'Solicitud #{purchase_request.id} rechazada.')
     return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
+
+# PayPal
+# ---------------------------------------------------------------------
+
+def pay_with_paypal(request, pk):
+    """Muestra la página con el botón de PayPal."""
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    paypal_client_id = settings.PAYPAL_CLIENT_ID
+    return render(request, 'storefront/payment_paypal.html', {
+        'purchase_request': purchase_request,
+        'paypal_client_id': paypal_client_id,
+    })
+
+
+def paypal_capture(request, pk):
+    """Captura el pago después de que PayPal lo aprueba."""
+    import json, urllib.request, urllib.parse, base64
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+
+    if request.method != 'POST':
+        return redirect('storefront:payment_choice', pk=pk)
+
+    data = json.loads(request.body)
+    order_id = data.get('orderID')
+
+    # Obtener access token
+    client_id = settings.PAYPAL_CLIENT_ID
+    secret = settings.PAYPAL_SECRET
+    credentials = base64.b64encode(f'{client_id}:{secret}'.encode()).decode()
+
+    token_req = urllib.request.Request(
+        'https://api-m.paypal.com/v1/oauth2/token',
+        data=b'grant_type=client_credentials',
+        headers={
+            'Authorization': f'Basic {credentials}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    )
+    try:
+        with urllib.request.urlopen(token_req) as resp:
+            token_data = json.loads(resp.read())
+            access_token = token_data['access_token']
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+    # Capturar el pago
+    capture_req = urllib.request.Request(
+        f'https://api-m.paypal.com/v2/checkout/orders/{order_id}/capture',
+        data=b'{}',
+        headers={
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json',
+        }
+    )
+    try:
+        with urllib.request.urlopen(capture_req) as resp:
+            capture_data = json.loads(resp.read())
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+    status = capture_data.get('status')
+    if status == 'COMPLETED':
+        purchase_request.payment_method = 'tarjeta'
+        purchase_request.payphone_transaction_id = order_id
+        try:
+            confirm_purchase_request(purchase_request)
+        except InsufficientStockError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
+            reverse('storefront:payment_success', args=[purchase_request.pk])
+        )})
+    else:
+        return JsonResponse({'error': 'Pago no completado', 'status': status}, status=400)
+
+
+def payment_success(request, pk):
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk)
+    return render(request, 'storefront/payment_success.html', {'purchase_request': purchase_request})
+
