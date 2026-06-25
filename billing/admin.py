@@ -3,9 +3,10 @@ from .models import *
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ['name', 'is_active', 'created_at']
+    list_display = ['name', 'whatsapp', 'is_active', 'created_at']
     search_fields = ['name']
     list_filter = ['is_active']
+    fields = ['name', 'description', 'whatsapp', 'is_active']
 
 @admin.register(ProductGroup)
 class ProductGroupAdmin(admin.ModelAdmin):
@@ -15,11 +16,16 @@ class ProductGroupAdmin(admin.ModelAdmin):
 class SupplierAdmin(admin.ModelAdmin):
     list_display = ['name', 'contact_name', 'email', 'is_active']
 
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 3
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'brand', 'group', 'unit_price', 'stock']
     list_filter = ['brand', 'group']
     filter_horizontal = ['suppliers']
+    inlines = [ProductImageInline]
 
 class CustomerProfileInline(admin.StackedInline):
     model = CustomerProfile

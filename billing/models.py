@@ -2,9 +2,15 @@ from django.db import models
 from shared.validators import validate_cedula_ec
 
 class Brand(models.Model):
-    """Marcas de productos."""
+    """Marcas de productos. En la plataforma multi-tienda, la marca actúa
+    como la "tienda asociada" (vendedor)."""
     name = models.CharField(max_length=100, unique=True, verbose_name='Nombre de marca')
     description = models.TextField(blank=True, null=True, verbose_name='Descripción')
+    whatsapp = models.CharField(
+        max_length=20, blank=True, default='',
+        verbose_name='WhatsApp de la tienda',
+        help_text='Con código de país, ej: 593999999999. Recibe los pedidos de esta tienda.',
+    )
     is_active = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -67,6 +73,36 @@ class Product(models.Model):
         price = self.unit_price or 0
         stock = self.stock or 0
         return round(price * stock, 2)
+
+    @property
+    def gallery(self):
+        """Imágenes para el carrusel: portada (image) primero, luego las extra
+        del modelo ProductImage en orden. Devuelve lista de URLs."""
+        urls = []
+        if self.image:
+            urls.append(self.image.url)
+        for extra in self.images.all():
+            if extra.image:
+                urls.append(extra.image.url)
+        return urls
+
+
+class ProductImage(models.Model):
+    """Imágenes adicionales de un producto (galería / carrusel)."""
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='images', verbose_name='Producto'
+    )
+    image = models.ImageField(upload_to='products/', verbose_name='Imagen', max_length=500)
+    order = models.PositiveIntegerField(default=0, verbose_name='Orden')
+
+    class Meta:
+        verbose_name = 'Imagen de producto'
+        verbose_name_plural = 'Imágenes de producto'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f'Imagen de {self.product.name} (#{self.order})'
+
 
 class Customer(models.Model):
     """Clientes. OneToOne con CustomerProfile."""

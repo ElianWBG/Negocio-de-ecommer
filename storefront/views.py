@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Min, Max
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -181,7 +181,9 @@ def customer_logout(request):
 # ---------------------------------------------------------------------
 
 def catalog_list(request):
-    products = Product.objects.filter(is_active=True).select_related('brand', 'group')
+    products = (Product.objects.filter(is_active=True)
+                .select_related('brand', 'group')
+                .prefetch_related('images'))
     query = request.GET.get('q', '').strip()
     if query:
         products = products.filter(
@@ -200,6 +202,12 @@ def catalog_list(request):
         selected_brand = Brand.objects.filter(pk=brand_id).first()
     cart_count = sum(_get_cart(request).values())
 
+    # Límites de precio para el slider (sobre el conjunto ya filtrado).
+    # El slider filtra en vivo del lado cliente; aquí solo damos el rango.
+    bounds = products.aggregate(lo=Min('unit_price'), hi=Max('unit_price'))
+    price_min = int(bounds['lo'] or 0)
+    price_max = int((bounds['hi'] or 0)) + (1 if bounds['hi'] else 0)
+
     # Novedades: últimos 4 productos con stock, solo en la vista principal
     novedades = []
     if not query and not group_id:
@@ -215,13 +223,17 @@ def catalog_list(request):
         'query': query,
         'selected_group': group_id,
         'selected_brand': selected_brand,
+        'price_min': price_min,
+        'price_max': price_max,
         'cart_count': cart_count,
         'novedades': novedades,
     })
 
 
 def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk, is_active=True)
+    product = get_object_or_404(
+        Product.objects.prefetch_related('images'), pk=pk, is_active=True
+    )
     cart_count = sum(_get_cart(request).values())
     return render(request, 'storefront/product_detail.html', {
         'product': product, 'cart_count': cart_count,
@@ -316,7 +328,72 @@ def checkout(request):
 
 def request_success(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk)
-    return render(request, 'storefront/request_success.html', {'purchase_request': purchase_request})
+    return render(request, 'storefront/request_success.html', {
+        'purchase_request': purchase_request,
+        'whatsapp_links': _whatsapp_links(request, purchase_request),
+    })
+
+
+def _whatsapp_links(request, purchase_request):
+    """Arma un enlace wa.me por cada tienda (marca) presente en el pedido.
+
+    El mensaje va preformateado: cliente, productos de esa tienda con precio,
+    total de la tienda y un enlace directo al pedido en el panel para gestión.
+    El destino es el WhatsApp configurado en la marca; si la marca no tiene,
+    cae al WhatsApp global de la configuración del negocio.
+    """
+    from urllib.parse import quote
+    from billing.models import ConfigNegocio
+
+    config = ConfigNegocio.objects.first()
+    fallback = (config.whatsapp if config else '') or ''
+
+    panel_url = request.build_absolute_uri(
+        reverse('storefront:purchase_request_detail', args=[purchase_request.pk])
+    )
+    customer = purchase_request.customer
+
+    # Agrupar líneas por marca/tienda
+    by_brand = {}
+    for d in purchase_request.details.select_related('product__brand'):
+        brand = d.product.brand
+        by_brand.setdefault(brand, []).append(d)
+
+    links = []
+    for brand, details in by_brand.items():
+        number = (brand.whatsapp or fallback).strip()
+        if not number:
+            continue
+        number = ''.join(ch for ch in number if ch.isdigit())
+        if not number:
+            continue
+
+        lines = [
+            f'*Nuevo pedido #{purchase_request.id}*',
+            f'Tienda: {brand.name}',
+            '',
+            f'*Cliente:* {customer.full_name}',
+        ]
+        if getattr(customer, 'phone', ''):
+            lines.append(f'*Teléfono:* {customer.phone}')
+        lines.append('')
+        lines.append('*Productos:*')
+        subtotal = 0
+        for d in details:
+            lines.append(f'• {d.product.name} x{d.quantity} — ${d.subtotal}')
+            subtotal += d.subtotal
+        lines.append('')
+        lines.append(f'*Total de esta tienda:* ${round(subtotal, 2)}')
+        lines.append('')
+        lines.append(f'Gestionar pedido: {panel_url}')
+
+        message = '\n'.join(lines)
+        links.append({
+            'brand': brand.name,
+            'url': f'https://wa.me/{number}?text={quote(message)}',
+        })
+
+    return links
 
 
 def _notify_provider_new_order(request, purchase_request):

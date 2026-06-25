@@ -1,10 +1,40 @@
 {% extends 'storefront/base_public.html' %}
 {% block title %}Solicitud enviada{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wa-block { max-width:440px; margin:1.5rem auto 0; }
+  .wa-hint { font-size:.85rem; color:var(--muted); margin-bottom:.85rem; }
+  .wa-btn { display:flex; align-items:center; justify-content:center; gap:.55rem; width:100%; margin-bottom:.6rem;
+            background:#25D366; color:#fff; border:none; border-radius:10px; padding:.85rem 1.25rem;
+            font-family:var(--font-body); font-size:.95rem; font-weight:600; text-decoration:none;
+            transition:background .12s ease, transform .1s ease, box-shadow .12s ease; }
+  .wa-btn:hover { background:#1da851; color:#fff; transform:translateY(-1px); box-shadow:0 8px 20px rgba(37,211,102,.3); }
+  .wa-btn:active { transform:scale(.98); }
+  .wa-btn i { font-size:1.2rem; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="result-center">
   <div class="icon" style="color:#1a5c35;">✓</div>
   <h2>¡Solicitud #{{ purchase_request.id }} enviada!</h2>
   <p>Gracias, {{ purchase_request.customer.first_name }}. El negocio revisará tu solicitud y se pondrá en contacto contigo pronto.</p>
-  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark btn-lg">Volver al catálogo</a>
+
+  {% if whatsapp_links %}
+  <div class="wa-block">
+    <p class="wa-hint">
+      <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+      Confirma tu pedido directo con {% if whatsapp_links|length > 1 %}cada tienda{% else %}la tienda{% endif %} por WhatsApp:
+    </p>
+    {% for link in whatsapp_links %}
+    <a class="wa-btn" href="{{ link.url }}" target="_blank" rel="noopener">
+      <i class="bi bi-whatsapp"></i> Enviar pedido a {{ link.brand }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark btn-lg" style="margin-top:1.25rem;">Volver al catálogo</a>
 </div>
 {% endblock %}

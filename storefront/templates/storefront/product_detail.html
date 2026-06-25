@@ -12,7 +12,20 @@
 
   .product-img-wrap { background:var(--sand-dark); border-radius:var(--radius); overflow:hidden; aspect-ratio:1; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); position:relative; }
   .product-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; }
-  .product-img-wrap:hover img { transform:scale(1.04); }
+
+  /* Galería / carrusel */
+  .gallery-stage { position:relative; }
+  .g-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .22s cubic-bezier(0,0,.2,1); }
+  .g-slide.is-active { opacity:1; }
+  .gallery-stage:hover .g-slide.is-active { transform:scale(1.04); }
+  .g-nav { position:absolute; top:50%; transform:translateY(-50%); z-index:2; width:38px; height:38px; border:none; cursor:pointer; border-radius:50%; background:rgba(255,255,255,.92); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.12); transition:background .15s ease, transform .1s ease; }
+  .g-nav.prev { left:.6rem; } .g-nav.next { right:.6rem; }
+  .g-nav:hover { background:#fff; } .g-nav:active { transform:translateY(-50%) scale(.92); }
+  .gallery-thumbs { display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap; }
+  .g-thumb { width:64px; height:64px; padding:0; border:2px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; background:none; transition:border-color .15s ease, transform .1s ease; }
+  .g-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .g-thumb:hover { border-color:var(--muted); }
+  .g-thumb.is-active { border-color:var(--rust); }
   .product-img-wrap .no-img { display:flex; flex-direction:column; align-items:center; gap:.75rem; }
   .product-img-wrap .no-img i { font-size:3.5rem; color:var(--border); }
   .product-img-wrap .no-img span { font-size:.8rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
@@ -55,14 +68,29 @@
 </nav>
 
 <div class="product-layout">
-  <div class="product-img-wrap">
-    {% if product.image %}
-      <img src="{{ product.image.url }}" alt="{{ product.name }}">
-    {% else %}
-      <div class="no-img">
-        <i class="bi bi-image"></i>
-        <span>Sin imagen</span>
-      </div>
+  <div class="gallery">
+    <div class="product-img-wrap gallery-stage">
+      {% for u in product.gallery %}
+        <img class="g-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}">
+      {% empty %}
+        <div class="no-img">
+          <i class="bi bi-image"></i>
+          <span>Sin imagen</span>
+        </div>
+      {% endfor %}
+      {% if product.gallery|length > 1 %}
+        <button type="button" class="g-nav prev" aria-label="Imagen anterior"><i class="bi bi-chevron-left"></i></button>
+        <button type="button" class="g-nav next" aria-label="Imagen siguiente"><i class="bi bi-chevron-right"></i></button>
+      {% endif %}
+    </div>
+    {% if product.gallery|length > 1 %}
+    <div class="gallery-thumbs">
+      {% for u in product.gallery %}
+        <button type="button" class="g-thumb{% if forloop.first %} is-active{% endif %}" data-i="{{ forloop.counter0 }}" aria-label="Ver imagen {{ forloop.counter }}">
+          <img src="{{ u }}" alt="">
+        </button>
+      {% endfor %}
+    </div>
     {% endif %}
   </div>
 
@@ -119,5 +147,26 @@ function changeQty(delta) {
   if (val > max) val = max;
   input.value = val;
 }
+
+// Galería del producto: flechas + miniaturas con transición suave
+(function () {
+  var stage = document.querySelector('.gallery-stage');
+  if (!stage) return;
+  var slides = stage.querySelectorAll('.g-slide');
+  if (slides.length < 2) return;
+  var thumbs = document.querySelectorAll('.g-thumb');
+  var i = 0;
+  function show(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
+    thumbs.forEach(function (t, k) { t.classList.toggle('is-active', k === i); });
+  }
+  stage.querySelectorAll('.g-nav').forEach(function (b) {
+    b.addEventListener('click', function () { show(i + (b.classList.contains('next') ? 1 : -1)); });
+  });
+  thumbs.forEach(function (t) {
+    t.addEventListener('click', function () { show(+t.dataset.i); });
+  });
+})();
 </script>
 {% endblock %}

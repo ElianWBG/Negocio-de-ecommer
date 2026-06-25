@@ -1,4 +1,4 @@
-"""Genera imágenes placeholder (Pillow) para los productos demo. Idempotente."""
+"""Imágenes placeholder (Pillow) + galería multi-imagen + WhatsApp demo. Idempotente."""
 import os
 import django
 
@@ -8,13 +8,12 @@ django.setup()
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
-from billing.models import Product
+from billing.models import Product, ProductImage, Brand
 
 W, H = 800, 600
 OUT = Path(settings.MEDIA_ROOT) / "products"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# Color de fondo por categoría
 CAT_COLOR = {
     "Electrónica": (79, 70, 229),
     "Computación": (14, 165, 233),
@@ -24,6 +23,14 @@ CAT_COLOR = {
     "Belleza": (168, 85, 247),
 }
 DEFAULT = (100, 116, 139)
+# Tienda (marca) -> WhatsApp demo
+STORE_WA = {
+    "Tecnogamer": "593990000001",
+    "PixelStore": "593990000002",
+    "ModaViva": "593990000003",
+    "NutriFit": "593990000004",
+    "CasaHogar": "593990000005",
+}
 
 
 def font(size):
@@ -64,42 +71,56 @@ f_tag = font(26)
 f_title = font(54)
 f_store = font(30)
 
-done = 0
-for p in Product.objects.select_related("brand", "group"):
+
+def make_image(p, idx):
+    """Genera una imagen para el producto. idx=0 portada; idx>0 variantes."""
     cat = p.group.name if p.group else ""
     base = CAT_COLOR.get(cat, DEFAULT)
-    bg = mix(base, 0.10)
+    bg = mix(base, 0.10 + 0.16 * idx)  # cada vista un poco más clara
 
     img = Image.new("RGB", (W, H), bg)
     d = ImageDraw.Draw(img)
-
-    # Banda superior con el nombre de categoría
     d.rectangle([0, 0, W, 90], fill=base)
     d.text((40, 28), cat.upper(), font=f_tag, fill=(255, 255, 255))
+    d.ellipse([W - 220, H - 220, W + 40, H + 40], fill=mix(base, 0.22 + 0.10 * idx))
 
-    # Disco decorativo
-    d.ellipse([W - 220, H - 220, W + 40, H + 40], fill=mix(base, 0.22))
-
-    # Título del producto (envuelto, centrado vertical)
-    lines = wrap(d, p.name, f_title, W - 120)
+    title = p.name if idx == 0 else f"{p.name}"
+    lines = wrap(d, title, f_title, W - 120)
     line_h = 64
-    total = line_h * len(lines)
-    y = (H - total) // 2 - 10
+    y = (H - line_h * len(lines)) // 2 - 10
     for ln in lines:
         tw = d.textlength(ln, font=f_title)
         d.text(((W - tw) / 2, y), ln, font=f_title, fill=(255, 255, 255))
         y += line_h
 
-    # Tienda (marca) abajo
-    store = f"Vendido por {p.brand.name}" if p.brand else ""
-    d.text((40, H - 64), store, font=f_store, fill=mix(base, 0.55))
+    label = f"Vendido por {p.brand.name}" if idx == 0 else f"Vista {idx + 1}"
+    d.text((40, H - 64), label, font=f_store, fill=mix(base, 0.55))
 
-    fname = f"demo-{p.pk}-{slug(p.name)}.jpg"
+    fname = f"demo-{p.pk}-{slug(p.name)}-{idx}.jpg"
     img.save(OUT / fname, "JPEG", quality=88)
+    return f"products/{fname}"
 
-    p.image.name = f"products/{fname}"
+
+EXTRA = 2  # imágenes adicionales por producto (total = 1 portada + EXTRA)
+covers = extras = 0
+for p in Product.objects.select_related("brand", "group"):
+    # Portada
+    p.image.name = make_image(p, 0)
     p.save(update_fields=["image"])
-    done += 1
+    covers += 1
+    # Galería (variantes)
+    for idx in range(1, EXTRA + 1):
+        name = make_image(p, idx)
+        ProductImage.objects.update_or_create(
+            product=p, order=idx, defaults={"image": name}
+        )
+        extras += 1
 
-print("Imágenes generadas y asignadas:", done)
+# WhatsApp demo por tienda (marca)
+wa = 0
+for name, number in STORE_WA.items():
+    updated = Brand.objects.filter(name=name).update(whatsapp=number)
+    wa += updated
+
+print("Portadas:", covers, "| imágenes de galería:", extras, "| tiendas con WhatsApp:", wa)
 print("Carpeta:", OUT)

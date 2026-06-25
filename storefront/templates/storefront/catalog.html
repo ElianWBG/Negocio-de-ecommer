@@ -198,6 +198,68 @@
   .product-view:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
   .product-view:active { transform: scale(.97); }
 
+  /* ===================== CARRUSEL EN CARD ===================== */
+  .pm-slide {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; opacity: 0;
+    transition: opacity var(--d-normal) var(--ease-out), transform var(--d-slow) var(--ease-out);
+  }
+  .pm-slide.is-active { opacity: 1; }
+  .product-card:hover .pm-slide.is-active { transform: scale(1.05); }
+  .pm-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+    width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,.92); color: var(--ink); font-size: .85rem;
+    display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
+    opacity: 0; transition: opacity var(--d-quick) var(--ease-out), background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+  }
+  .pm-nav.prev { left: .5rem; } .pm-nav.next { right: .5rem; }
+  .product-card:hover .pm-nav { opacity: 1; }
+  .pm-nav:hover { background: #fff; }
+  .pm-nav:active { transform: translateY(-50%) scale(.9); }
+  .pm-dots { position: absolute; bottom: .55rem; left: 0; right: 0; z-index: 3; display: flex; gap: .3rem; justify-content: center; }
+  .pm-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55); transition: background var(--d-fast) var(--ease-out), width var(--d-fast) var(--ease-out); }
+  .pm-dot.is-active { background: #fff; width: 16px; border-radius: 3px; }
+
+  /* ===================== FILTRO DE PRECIO ===================== */
+  .price-filter {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center;
+    gap: 1.25rem; flex-wrap: wrap; box-shadow: var(--shadow-sm);
+  }
+  .pf-label { font-size: .85rem; font-weight: 600; color: var(--ink-soft); display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+  .pf-label i { color: var(--brand); }
+  .pf-control { position: relative; flex: 1; min-width: 200px; height: 26px; }
+  .pf-track { position: absolute; top: 50%; left: 0; right: 0; height: 5px; transform: translateY(-50%); background: var(--bg-soft); border-radius: 999px; }
+  .pf-fill { position: absolute; height: 100%; background: var(--brand); border-radius: 999px; }
+  /* dos range superpuestos, fondo transparente, solo thumbs activos */
+  .pf-control input[type=range] {
+    position: absolute; top: 0; left: 0; width: 100%; height: 26px; margin: 0;
+    -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none;
+  }
+  .pf-control input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: pointer;
+    width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    border: 2px solid var(--brand); box-shadow: var(--shadow-sm);
+    transition: transform var(--d-fast) var(--ease-out);
+  }
+  .pf-control input[type=range]::-webkit-slider-thumb:active { transform: scale(1.15); }
+  .pf-control input[type=range]::-moz-range-thumb {
+    pointer-events: auto; cursor: pointer; width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--brand); box-shadow: var(--shadow-sm);
+  }
+  .pf-values { font-size: .88rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .pf-values .pf-sep { color: var(--ink-mute); margin: 0 .15rem; }
+
+  /* Ocultar/mostrar tarjetas con transición suave (filtro en vivo) */
+  .product-card.is-filtered {
+    opacity: 0; transform: scale(.96);
+    transition: opacity var(--d-normal) var(--ease-in), transform var(--d-normal) var(--ease-in);
+  }
+  .product-card.is-entering {
+    opacity: 0; transform: scale(.96);
+  }
+
   /* ===================== EMPTY ===================== */
   .empty { text-align: center; padding: 4rem 1.5rem; }
   .empty i { font-size: 2.6rem; color: #cbd5e1; }
@@ -226,8 +288,10 @@
     width: min(560px, 94vw); max-height: 88vh; display: flex; flex-direction: column;
     box-shadow: var(--shadow-lg); transform-origin: top left; will-change: transform, opacity;
   }
-  .qv-media { position: relative; aspect-ratio: 16 / 10; background: var(--bg-soft); }
+  .qv-media { position: relative; aspect-ratio: 16 / 10; background: var(--bg-soft); overflow: hidden; }
   .qv-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .qv-media .pm-nav { opacity: 1; width: 34px; height: 34px; font-size: .95rem; }
+  .qv-media .pm-slide { transition: opacity var(--d-normal) var(--ease-out); }
   .qv-media .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 3rem; }
   .qv-close {
     position: absolute; top: .7rem; right: .7rem; width: 38px; height: 38px;
@@ -266,6 +330,10 @@
     .visit-store { opacity: 1 !important; transform: none !important; pointer-events: auto !important; }
     /* Genie sin transform: solo fundido */
     .qv-overlay, .qv-panel { transition: opacity 120ms linear !important; }
+    /* Carrusel + filtro: sin transiciones de movimiento */
+    .pm-slide, .pm-nav, .pm-dot, .product-card.is-filtered, .product-card.is-entering { transition: none !important; }
+    .product-card:hover .pm-slide.is-active { transform: none !important; }
+    .pm-nav { opacity: 1 !important; }
   }
 </style>
 {% endblock %}
@@ -296,10 +364,24 @@
     {% endfor %}
   </div>
 
+  <!-- ===================== FILTRO PRECIO (slider doble) ===================== -->
+  {% if products and price_max > price_min %}
+  <div class="price-filter reveal"
+       data-min="{{ price_min }}" data-max="{{ price_max }}">
+    <div class="pf-label"><i class="bi bi-sliders"></i> Rango de precio</div>
+    <div class="pf-control">
+      <div class="pf-track"><div class="pf-fill"></div></div>
+      <input type="range" class="pf-min" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_min }}" step="1" aria-label="Precio mínimo">
+      <input type="range" class="pf-max" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_max }}" step="1" aria-label="Precio máximo">
+    </div>
+    <div class="pf-values"><span class="pf-lo">${{ price_min }}</span> <span class="pf-sep">–</span> <span class="pf-hi">${{ price_max }}</span></div>
+  </div>
+  {% endif %}
+
   <!-- ===================== TOOLBAR ===================== -->
   <div class="toolbar reveal">
     <div class="count">
-      <strong>{{ products|length }}</strong> producto{% if products|length != 1 %}s{% endif %}
+      <strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span>
       {% if query %} para "<strong>{{ query }}</strong>"{% endif %}
       {% if selected_brand %} ·{% endif %}
     </div>
@@ -325,13 +407,21 @@
              data-price="{{ product.unit_price }}"
              data-stock="{{ product.stock }}"
              data-img="{% if product.image %}{{ product.image.url }}{% endif %}"
+             data-images="{% for u in product.gallery %}{{ u }}{% if not forloop.last %}|{% endif %}{% endfor %}"
              data-detail="{% url 'storefront:product_detail' product.pk %}"
              data-storeurl="?brand={{ product.brand.id }}">
-      <div class="product-media">
-        {% if product.image %}
-          <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
-        {% else %}
+      <div class="product-media" data-slide="0">
+        {% for u in product.gallery %}
+          <img class="pm-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}" loading="lazy">
+        {% empty %}
           <div class="placeholder"><i class="bi bi-image"></i></div>
+        {% endfor %}
+        {% if product.gallery|length > 1 %}
+          <button type="button" class="pm-nav prev" aria-label="Imagen anterior"><i class="bi bi-chevron-left"></i></button>
+          <button type="button" class="pm-nav next" aria-label="Imagen siguiente"><i class="bi bi-chevron-right"></i></button>
+          <div class="pm-dots">
+            {% for u in product.gallery %}<span class="pm-dot{% if forloop.first %} is-active{% endif %}"></span>{% endfor %}
+          </div>
         {% endif %}
         <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
           {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
@@ -415,12 +505,30 @@
 
     function buildPanel(d) {
       var inStock = (+d.stock) > 0;
-      var media = d.img
-        ? '<img src="' + esc(d.img) + '" alt="' + esc(d.name) + '">'
-        : '<div class="placeholder"><i class="bi bi-image"></i></div>';
+      var imgs = (d.images || '').split('|').filter(Boolean);
+      if (!imgs.length && d.img) imgs = [d.img];
+      var media;
+      if (!imgs.length) {
+        media = '<div class="placeholder"><i class="bi bi-image"></i></div>';
+      } else {
+        var slides = imgs.map(function (u, i) {
+          return '<img class="pm-slide' + (i === 0 ? ' is-active' : '') + '" src="' + esc(u) + '" alt="' + esc(d.name) + '">';
+        }).join('');
+        var extra = '';
+        if (imgs.length > 1) {
+          var dots = imgs.map(function (u, i) {
+            return '<span class="pm-dot' + (i === 0 ? ' is-active' : '') + '"></span>';
+          }).join('');
+          extra =
+            '<button type="button" class="pm-nav prev" aria-label="Anterior"><i class="bi bi-chevron-left"></i></button>' +
+            '<button type="button" class="pm-nav next" aria-label="Siguiente"><i class="bi bi-chevron-right"></i></button>' +
+            '<div class="pm-dots">' + dots + '</div>';
+        }
+        media = slides + extra;
+      }
       return '' +
         '<div class="qv-panel" role="dialog" aria-modal="true" aria-label="' + esc(d.name) + '">' +
-          '<div class="qv-media">' + media +
+          '<div class="qv-media" data-slide="0">' + media +
             '<span class="qv-stock ' + (inStock ? 'in' : 'out') + '">' + (inStock ? 'En stock' : 'Agotado') + '</span>' +
             '<button class="qv-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>' +
           '</div>' +
@@ -447,6 +555,7 @@
       overlay.innerHTML = buildPanel(card.dataset);
       document.body.appendChild(overlay);
       var panel = overlay.querySelector('.qv-panel');
+      if (window.__initCarousel) window.__initCarousel(panel.querySelector('.qv-media'));
 
       function finish() { overlay.classList.add('is-open'); panel.querySelector('.qv-close').focus(); }
 
@@ -519,6 +628,99 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(card); }
       });
     });
+  })();
+
+  // ====== Carrusel (card + modal) — transición suave de imágenes ======
+  (function () {
+    // Reutilizable: cablea slides/dots/flechas dentro de un .product-media/.qv-media
+    window.__initCarousel = function (media) {
+      if (!media) return;
+      var slides = media.querySelectorAll('.pm-slide');
+      if (slides.length < 2) return;
+      var dots = media.querySelectorAll('.pm-dot');
+      var i = 0;
+      function show(n) {
+        i = (n + slides.length) % slides.length;
+        slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
+        dots.forEach(function (d, k) { d.classList.toggle('is-active', k === i); });
+        media.dataset.slide = i;
+      }
+      media.querySelectorAll('.pm-nav').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation(); // no abrir el modal
+          show(i + (btn.classList.contains('next') ? 1 : -1));
+        });
+      });
+      dots.forEach(function (d, k) {
+        d.addEventListener('click', function (e) { e.stopPropagation(); show(k); });
+      });
+    };
+    document.querySelectorAll('.product-grid .product-media').forEach(window.__initCarousel);
+  })();
+
+  // ====== Filtro de precio (slider doble, filtrado en vivo y suave) ======
+  (function () {
+    var pf = document.querySelector('.price-filter');
+    if (!pf) return;
+    var lo = +pf.dataset.min, hi = +pf.dataset.max;
+    var inMin = pf.querySelector('.pf-min'), inMax = pf.querySelector('.pf-max');
+    var fill = pf.querySelector('.pf-fill');
+    var labLo = pf.querySelector('.pf-lo'), labHi = pf.querySelector('.pf-hi');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.product-grid .product-card'));
+    var countEl = document.querySelector('.js-count'), wordEl = document.querySelector('.js-count-word');
+    var span = (hi - lo) || 1;
+
+    function paint(a, b) {
+      var l = ((a - lo) / span) * 100, r = ((b - lo) / span) * 100;
+      fill.style.left = l + '%'; fill.style.width = (r - l) + '%';
+      labLo.textContent = '$' + a; labHi.textContent = '$' + b;
+    }
+
+    function filter(a, b) {
+      var visible = 0;
+      cards.forEach(function (card) {
+        var price = parseFloat(card.dataset.price) || 0;
+        var match = price >= a && price <= b;
+        var hidden = card.dataset.hidden === '1';
+        if (match && hidden) {
+          card.dataset.hidden = '0';
+          card.style.display = '';
+          card.classList.add('is-entering');
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              card.classList.remove('is-filtered');
+              card.classList.remove('is-entering');
+            });
+          });
+        } else if (!match && !hidden) {
+          card.dataset.hidden = '1';
+          card.classList.add('is-filtered');
+          var done = false;
+          card.addEventListener('transitionend', function h(e) {
+            if (e.propertyName !== 'opacity' || done) return;
+            done = true;
+            if (card.dataset.hidden === '1') card.style.display = 'none';
+          }, { once: true });
+          setTimeout(function () { if (!done && card.dataset.hidden === '1') card.style.display = 'none'; }, 260);
+        }
+        if (match) visible++;
+      });
+      if (countEl) countEl.textContent = visible;
+      if (wordEl) wordEl.textContent = 'producto' + (visible === 1 ? '' : 's');
+    }
+
+    function update() {
+      var a = +inMin.value, b = +inMax.value;
+      if (a > b) { // no se cruzan los thumbs
+        if (this === inMin) { a = b; inMin.value = a; }
+        else { b = a; inMax.value = b; }
+      }
+      paint(a, b); filter(a, b);
+    }
+
+    inMin.addEventListener('input', update);
+    inMax.addEventListener('input', update);
+    paint(lo, hi);
   })();
 </script>
 {% endblock %}
