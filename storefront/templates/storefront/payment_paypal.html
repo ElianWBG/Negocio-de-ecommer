@@ -47,13 +47,17 @@
   <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
 </div>
 
-<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture"></script>
+<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card&components=buttons"></script>
 <script>
 const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
 const csrfToken = "{{ csrf_token }}";
 const total = "{{ paypal_total }}";
 
 paypal.Buttons({
+  style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+  onClick: function(data, actions) {
+    return actions.resolve();
+  },
   createOrder: function(data, actions) {
     return actions.order.create({
       purchase_units: [{
