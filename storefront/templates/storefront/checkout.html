@@ -1,43 +1,99 @@
 {% extends 'storefront/base_public.html' %}
+{% load widget_tweaks %}
 {% block title %}Confirmar compra{% endblock %}
 
 {% block extra_css %}
 <style>
-  .steps { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:2rem; }
+  /* ── Steps ─────────────────────────────────── */
+  .steps { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:2.25rem; }
   .step { display:flex; align-items:center; gap:.5rem; font-size:.8rem; font-weight:600; color:var(--muted); }
   .step.active { color:var(--rust); }
-  .step.done { color:var(--text); }
-  .step-num { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; transition:all var(--transition); }
+  .step.done   { color:var(--text); }
+  .step-num  { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; transition:all var(--transition); }
   .step.active .step-num { border-color:var(--rust); background:var(--rust); color:#fff; }
-  .step.done .step-num { border-color:var(--text); background:var(--text); color:#fff; }
+  .step.done   .step-num { border-color:var(--text); background:var(--text); color:#fff; }
   .step-line { width:40px; height:2px; background:var(--border); margin:0 .25rem; }
   .step-line.done { background:var(--text); }
 
-  .checkout-layout { display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start; }
-  .section-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.25rem; }
-  .section-card h3 { font-family:var(--font-head); font-size:1.2rem; margin-bottom:1.25rem; padding-bottom:.75rem; border-bottom:1px solid var(--sand-dark); }
+  /* ── Layout ─────────────────────────────────── */
+  .checkout-layout { display:grid; grid-template-columns:1fr 360px; gap:2rem; align-items:start; }
+
+  /* ── Section cards ───────────────────────────── */
+  .ck-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+  .ck-section-hd { display:flex; align-items:center; gap:.6rem; margin-bottom:1.25rem; padding-bottom:.85rem; border-bottom:1px solid var(--sand-dark); }
+  .ck-icon { width:32px; height:32px; border-radius:8px; background:var(--sand-dark); display:flex; align-items:center; justify-content:center; color:var(--espresso); font-size:.875rem; flex-shrink:0; }
+  .ck-section-title { font-family:var(--font-head); font-size:1rem; font-weight:600; }
+  .ck-section-sub  { font-family:var(--font-body); font-size:.8rem; font-weight:400; color:var(--muted); margin-left:.25rem; }
+
+  /* ── Delivery method ─────────────────────────── */
+  .delivery-opts { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+  .delivery-opt  { display:flex; flex-direction:column; gap:.35rem; padding:1rem; border:2px solid var(--border); border-radius:10px; cursor:pointer; transition:border-color var(--transition), background var(--transition); }
+  .delivery-opt input[type=radio] { display:none; }
+  .delivery-opt:hover { border-color:var(--muted); }
+  .delivery-opt.sel  { border-color:var(--rust); background:#fef8f5; }
+  .delivery-opt-icon { font-size:1.35rem; color:var(--muted); }
+  .delivery-opt.sel .delivery-opt-icon { color:var(--rust); }
+  .delivery-opt-name { font-weight:600; font-size:.875rem; }
+  .delivery-opt-desc { font-size:.78rem; color:var(--muted); line-height:1.35; }
+
+  /* ── Floating label inputs ───────────────────── */
+  .float-field { position:relative; margin-bottom:1rem; }
+  .float-field input.form-control { padding:1.2rem 1rem .5rem; height:auto; }
+  .float-field > label { position:absolute; left:1rem; top:50%; transform:translateY(-50%); font-size:.875rem; color:var(--muted); pointer-events:none; transition:top .14s ease, font-size .14s ease, color .14s ease, transform .14s ease; line-height:1; white-space:nowrap; }
+  .float-field input:focus ~ label,
+  .float-field input:not(:placeholder-shown) ~ label { top:.6rem; transform:none; font-size:.68rem; font-weight:600; color:var(--rust); }
+
   .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
 
+  /* ── Textarea label ──────────────────────────── */
+  .static-label { font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:.4rem; display:block; }
+
+  /* ── Errors ──────────────────────────────────── */
+  .form-error-box { background:#fef2f0; border:1px solid #f5b8ad; color:#7a1a0d; border-radius:8px; padding:.75rem 1rem; font-size:.875rem; margin-bottom:1rem; display:flex; align-items:flex-start; gap:.5rem; }
+  .field-error { color:var(--rust); font-size:.78rem; margin-top:.3rem; }
+
+  /* ── Action bar ──────────────────────────────── */
+  .ck-action { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 0 .5rem; }
+  .back-link { display:inline-flex; align-items:center; gap:.4rem; color:var(--muted); font-size:.875rem; text-decoration:none; transition:color var(--transition); }
+  .back-link:hover { color:var(--rust); }
+
+  /* ── Order card ──────────────────────────────── */
   .order-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; position:sticky; top:80px; }
-  .order-card h3 { font-family:var(--font-head); font-size:1.2rem; margin-bottom:1rem; }
-  .order-thumb { width:40px; height:40px; border-radius:6px; overflow:hidden; background:var(--sand-dark); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .order-thumb img { width:100%; height:100%; object-fit:cover; }
-  .order-item { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; border-bottom:1px solid var(--sand-dark); }
+  .order-card-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:1.1rem; }
+  .order-card-hd h3 { font-family:var(--font-head); font-size:1.1rem; }
+  .order-item-count { font-size:.8rem; color:var(--muted); }
+
+  .order-item { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid var(--sand-dark); }
   .order-item:last-of-type { border-bottom:none; }
+  .order-thumb { width:44px; height:44px; border-radius:7px; overflow:hidden; background:var(--sand-dark); flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); position:relative; }
+  .order-thumb img { width:100%; height:100%; object-fit:cover; }
+  .order-thumb-qty { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; background:var(--espresso); color:#fff; border-radius:20px; font-size:.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; }
   .order-item-info { flex:1; min-width:0; }
-  .order-item-name { font-size:.875rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .order-item-qty { font-size:.775rem; color:var(--muted); }
+  .order-item-name { font-size:.83rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .order-item-sub  { font-size:.75rem; color:var(--muted); margin-top:.1rem; }
   .order-item-price { font-weight:700; font-size:.9rem; flex-shrink:0; }
-  .order-total { display:flex; justify-content:space-between; margin-top:.85rem; padding-top:.85rem; border-top:2px solid var(--border); font-weight:700; font-size:1.05rem; }
-  .order-total span:last-child { color:var(--rust); }
 
-  .form-error-box { background:#fef2f0; border:1px solid #f5b8ad; color:#7a1a0d; border-radius:8px; padding:.75rem 1rem; font-size:.875rem; margin-bottom:1.25rem; display:flex; align-items:flex-start; gap:.5rem; }
-  .field-error { color:var(--rust); font-size:.8rem; margin-top:.3rem; }
+  .order-divider { border:none; border-top:1px solid var(--sand-dark); margin:1rem 0; }
+  .order-line { display:flex; justify-content:space-between; font-size:.875rem; margin-bottom:.45rem; }
+  .order-line-label { color:var(--muted); }
+  .order-line-val   { font-weight:500; }
+  .order-shipping-val { color:var(--muted); font-size:.8rem; }
+  .order-total { display:flex; justify-content:space-between; font-weight:700; font-size:1.05rem; margin-top:.75rem; padding-top:.75rem; border-top:2px solid var(--border); }
+  .order-total-val { color:var(--rust); }
 
-  @media(max-width:768px) {
+  .ck-trust { margin-top:1.25rem; padding:.85rem 1rem; background:var(--sand); border-radius:8px; display:flex; gap:.6rem; align-items:flex-start; }
+  .ck-trust i { color:var(--muted); font-size:.95rem; margin-top:.1rem; flex-shrink:0; }
+  .ck-trust p { font-size:.78rem; color:var(--muted); margin:0; line-height:1.5; }
+
+  @media(max-width:820px) {
     .checkout-layout { grid-template-columns:1fr; }
     .form-row-2 { grid-template-columns:1fr; }
     .order-card { position:static; }
+  }
+  @media(max-width:480px) {
+    .delivery-opts { grid-template-columns:1fr; }
+    .ck-action { flex-direction:column-reverse; gap:.75rem; align-items:stretch; }
+    .ck-action .btn { text-align:center; }
   }
 </style>
 {% endblock %}
@@ -62,85 +118,214 @@
 </div>
 
 <div class="checkout-layout">
+
+  <!-- ── Formulario ───────────────────────── -->
   <div>
-    <form method="post" novalidate>
+    <form method="post" novalidate id="ck-form">
       {% csrf_token %}
+
       {% if form.non_field_errors %}
       <div class="form-error-box">
         <i class="bi bi-exclamation-circle" style="flex-shrink:0;margin-top:.1rem;"></i>
         <span>{{ form.non_field_errors|striptags }}</span>
       </div>
       {% endif %}
-      <div class="section-card">
-        <h3>Datos de contacto</h3>
-        <div class="form-group">
-          <label class="form-label">Cédula / RUC</label>
-          {{ form.dni }}
+
+      <!-- Método de entrega -->
+      <div class="ck-section">
+        <div class="ck-section-hd">
+          <div class="ck-icon"><i class="bi bi-truck"></i></div>
+          <span class="ck-section-title">Método de entrega</span>
+        </div>
+        <div class="delivery-opts">
+          <label class="delivery-opt sel" id="opt-envio">
+            <input type="radio" name="delivery_method" value="envio" checked>
+            <i class="bi bi-truck delivery-opt-icon"></i>
+            <span class="delivery-opt-name">Enviar a domicilio</span>
+            <span class="delivery-opt-desc">Recibe tu pedido donde estés</span>
+          </label>
+          <label class="delivery-opt" id="opt-retiro">
+            <input type="radio" name="delivery_method" value="retiro">
+            <i class="bi bi-shop delivery-opt-icon"></i>
+            <span class="delivery-opt-name">Recoger en tienda</span>
+            <span class="delivery-opt-desc">Pasa a buscarlo personalmente</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Datos personales -->
+      <div class="ck-section">
+        <div class="ck-section-hd">
+          <div class="ck-icon"><i class="bi bi-person"></i></div>
+          <span class="ck-section-title">Datos personales</span>
+        </div>
+
+        <div class="float-field">
+          {% render_field form.dni placeholder=" " class="form-control" %}
+          <label>Cédula / RUC</label>
           {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors|striptags }}</p>{% endif %}
         </div>
+
         <div class="form-row-2">
-          <div class="form-group">
-            <label class="form-label">Nombre</label>
-            {{ form.first_name }}
+          <div class="float-field">
+            {% render_field form.first_name placeholder=" " class="form-control" %}
+            <label>Nombre</label>
             {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|striptags }}</p>{% endif %}
           </div>
-          <div class="form-group">
-            <label class="form-label">Apellido</label>
-            {{ form.last_name }}
+          <div class="float-field">
+            {% render_field form.last_name placeholder=" " class="form-control" %}
+            <label>Apellido</label>
             {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|striptags }}</p>{% endif %}
           </div>
         </div>
+
         <div class="form-row-2">
-          <div class="form-group">
-            <label class="form-label">Correo</label>
-            {{ form.email }}
+          <div class="float-field">
+            {% render_field form.email placeholder=" " class="form-control" %}
+            <label>Correo electrónico</label>
             {% if form.email.errors %}<p class="field-error">{{ form.email.errors|striptags }}</p>{% endif %}
           </div>
-          <div class="form-group">
-            <label class="form-label">Teléfono</label>
-            {{ form.phone }}
+          <div class="float-field" style="margin-bottom:0;">
+            {% render_field form.phone placeholder=" " class="form-control" %}
+            <label>Teléfono / Celular</label>
             {% if form.phone.errors %}<p class="field-error">{{ form.phone.errors|striptags }}</p>{% endif %}
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Dirección de entrega</label>
-          {{ form.address }}
+      </div>
+
+      <!-- Dirección (se oculta al elegir retiro) -->
+      <div class="ck-section" id="addr-section">
+        <div class="ck-section-hd">
+          <div class="ck-icon"><i class="bi bi-geo-alt"></i></div>
+          <span class="ck-section-title">Dirección de entrega</span>
+        </div>
+        <div class="float-field" style="margin-bottom:0;">
+          {% render_field form.address placeholder=" " class="form-control" %}
+          <label>Dirección completa</label>
           {% if form.address.errors %}<p class="field-error">{{ form.address.errors|striptags }}</p>{% endif %}
         </div>
       </div>
-      <div class="section-card">
-        <h3>Notas adicionales <span style="font-family:var(--font-body);font-size:.875rem;font-weight:400;color:var(--muted);">(opcional)</span></h3>
-        <textarea name="notes" class="form-control" rows="2"
-          placeholder="Horario de entrega, instrucciones especiales..."></textarea>
+
+      <!-- Info de retiro (aparece al elegir recoger) -->
+      <div class="ck-section" id="pickup-info" style="display:none;">
+        <div class="ck-section-hd" style="margin-bottom:0;padding-bottom:0;border:none;">
+          <div class="ck-icon"><i class="bi bi-shop"></i></div>
+          <span class="ck-section-title">Punto de retiro</span>
+        </div>
+        <p style="font-size:.875rem;color:var(--muted);margin-top:.85rem;line-height:1.65;">
+          {% if config.direccion %}
+            <i class="bi bi-map-fill" style="color:var(--rust);margin-right:.35rem;"></i>{{ config.direccion }}
+          {% else %}
+            Te contactaremos para coordinar el punto y horario de retiro.
+          {% endif %}
+        </p>
       </div>
-      <button type="submit" class="btn btn-primary btn-lg btn-full">
-        Continuar al pago <i class="bi bi-arrow-right"></i>
-      </button>
+
+      <!-- Notas adicionales -->
+      <div class="ck-section">
+        <div class="ck-section-hd">
+          <div class="ck-icon"><i class="bi bi-chat-dots"></i></div>
+          <span class="ck-section-title">Notas <span class="ck-section-sub">/ opcional</span></span>
+        </div>
+        <label class="static-label">Instrucciones o comentarios adicionales</label>
+        <textarea name="notes" class="form-control" rows="2"
+          placeholder="Ej: Horario de entrega preferido, instrucciones especiales..."></textarea>
+      </div>
+
+      <!-- Barra de acción -->
+      <div class="ck-action">
+        <a href="{% url 'storefront:cart_view' %}" class="back-link">
+          <i class="bi bi-arrow-left"></i> Volver al carrito
+        </a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          Continuar al pago <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
     </form>
   </div>
 
+  <!-- ── Resumen del pedido ─────────────────── -->
   <div class="order-card">
-    <h3>Tu pedido</h3>
+    <div class="order-card-hd">
+      <h3>Tu pedido</h3>
+      <span class="order-item-count">{{ items|length }}&nbsp;{% if items|length == 1 %}producto{% else %}productos{% endif %}</span>
+    </div>
+
     {% for item in items %}
     <div class="order-item">
       <div class="order-thumb">
         {% if item.product.image %}
           <img src="{{ item.product.image.url }}" alt="">
         {% else %}
-          <i class="bi bi-image" style="font-size:.875rem;color:var(--border);"></i>
+          <i class="bi bi-image" style="font-size:.85rem;color:var(--border);"></i>
         {% endif %}
+        <span class="order-thumb-qty">{{ item.quantity }}</span>
       </div>
       <div class="order-item-info">
         <p class="order-item-name">{{ item.product.name }}</p>
-        <p class="order-item-qty">×{{ item.quantity }}</p>
+        <p class="order-item-sub">${{ item.product.unit_price }} × {{ item.quantity }}</p>
       </div>
       <span class="order-item-price">${{ item.subtotal }}</span>
     </div>
     {% endfor %}
+
+    <hr class="order-divider">
+
+    <div class="order-line">
+      <span class="order-line-label">Subtotal</span>
+      <span class="order-line-val">${{ total }}</span>
+    </div>
+    <div class="order-line">
+      <span class="order-line-label">Envío</span>
+      <span class="order-shipping-val">A confirmar</span>
+    </div>
+
     <div class="order-total">
-      <span>Total estimado</span>
-      <span>${{ total }}</span>
+      <span>Estimado</span>
+      <span class="order-total-val">${{ total }}</span>
+    </div>
+
+    <div class="ck-trust">
+      <i class="bi bi-shield-check"></i>
+      <p>Tu información está protegida. Nunca compartimos tus datos sin tu permiso.</p>
     </div>
   </div>
+
 </div>
+
+<script>
+(function () {
+  var optEnvio     = document.getElementById('opt-envio');
+  var optRetiro    = document.getElementById('opt-retiro');
+  var addrSection  = document.getElementById('addr-section');
+  var pickupInfo   = document.getElementById('pickup-info');
+  var addrInput    = addrSection ? addrSection.querySelector('[name="address"]') : null;
+
+  function selectMethod(method) {
+    var isRetiro = method === 'retiro';
+    optEnvio.classList.toggle('sel',   !isRetiro);
+    optRetiro.classList.toggle('sel',   isRetiro);
+    addrSection.style.display  = isRetiro ? 'none'  : 'block';
+    pickupInfo.style.display   = isRetiro ? 'block' : 'none';
+    if (addrInput) {
+      if (isRetiro) {
+        addrInput.dataset.prev = addrInput.value;
+        addrInput.value = 'Recoger en tienda';
+      } else {
+        addrInput.value = (addrInput.dataset.prev && addrInput.dataset.prev !== 'Recoger en tienda')
+          ? addrInput.dataset.prev : '';
+      }
+    }
+  }
+
+  optEnvio.addEventListener('click',  function () { selectMethod('envio');  });
+  optRetiro.addEventListener('click', function () { selectMethod('retiro'); });
+
+  // Restore pickup state if page reloaded after a server validation error
+  if (addrInput && addrInput.value === 'Recoger en tienda') {
+    document.querySelector('input[value="retiro"]').checked = true;
+    selectMethod('retiro');
+  }
+})();
+</script>
 {% endblock %}

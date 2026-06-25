@@ -429,7 +429,7 @@
 </a>
 <script>
 document.getElementById('wa-float').href =
-  'https://wa.me/{{ config.whatsapp }}?text=' +
+  'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' +
   encodeURIComponent('Hola, me gustaría obtener más información sobre sus productos.');
 </script>
 {% endif %}

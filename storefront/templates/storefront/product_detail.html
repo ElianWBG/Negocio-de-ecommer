@@ -162,7 +162,7 @@ function changeQty(delta) {
   var btn = document.getElementById('wa-product-btn');
   if (!btn) return;
   var msg = 'Hola, estoy interesado en el producto: {{ product.name|escapejs }} - ${{ product.unit_price }}. ¿Tienen disponibilidad?';
-  btn.href = 'https://wa.me/{{ config.whatsapp }}?text=' + encodeURIComponent(msg);
+  btn.href = 'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' + encodeURIComponent(msg);
 })();
 
 // Galería del producto: flechas + miniaturas con transición suave
