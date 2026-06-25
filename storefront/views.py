@@ -66,18 +66,19 @@ def customer_register(request):
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
-            # Si el usuario ya existe, redirigir sin explotar
+            # Si el usuario ya existe, redirigir al login
             if User.objects.filter(email=d['email']).exists():
-                return redirect('storefront:verify_email_sent')
+                messages.error(request, 'Ya existe una cuenta con ese correo.')
+                return render(request, 'storefront/register.html', {'form': form})
             user = User.objects.create_user(
                 username=d['email'],
                 email=d['email'],
                 password=d['password1'],
                 first_name=d['first_name'],
                 last_name=d['last_name'],
-                is_active=False,
+                is_active=True,
             )
-            customer, _ = Customer.objects.update_or_create(
+            Customer.objects.update_or_create(
                 dni=d['dni'],
                 defaults={
                     'first_name': d['first_name'],
@@ -88,30 +89,12 @@ def customer_register(request):
                     'user': user,
                 }
             )
-            token = secrets.token_hex(32)
-            EmailVerificationToken.objects.create(user=user, token=token)
-            verify_url = request.build_absolute_uri(
-                reverse('storefront:verify_email', args=[token])
-            )
-            send_mail(
-                subject='Verifica tu correo — Nuestra tienda',
-                message=(
-                    f'Hola {d["first_name"]},\n\n'
-                    f'Gracias por registrarte. Haz clic en el siguiente enlace para '
-                    f'verificar tu correo y activar tu cuenta:\n\n{verify_url}\n\n'
-                    f'El enlace expira en 24 horas.\n\n'
-                    f'Si no creaste esta cuenta, ignora este mensaje.'
-                ),
-                from_email=None,
-                recipient_list=[d['email']],
-                fail_silently=True,
-            )
-            return redirect('storefront:verify_email_sent')
+            login(request, user)
+            return redirect('storefront:catalog_list')
     else:
         form = CustomerRegistrationForm()
 
     return render(request, 'storefront/register.html', {'form': form})
-
 
 def verify_email_sent(request):
     return render(request, 'storefront/verify_email_sent.html')
