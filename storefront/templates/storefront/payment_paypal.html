@@ -1,0 +1,97 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Pagar con PayPal{% endblock %}
+{% block extra_css %}
+<style>
+  .paypal-wrap { max-width: 560px; margin: 0 auto; }
+  .order-recap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; }
+  .order-recap h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: 1rem; }
+  .recap-row { display: flex; justify-content: space-between; padding: .45rem 0; font-size: .9rem; border-bottom: 1px solid var(--sand-dark); }
+  .recap-row:last-of-type { border-bottom: none; }
+  .recap-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; color: var(--rust); margin-top: .75rem; padding-top: .75rem; border-top: 2px solid var(--border); }
+  #paypal-button-container { margin-top: 1rem; }
+  .back-link { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .875rem; text-decoration: none; margin-bottom: 1.5rem; }
+  .back-link:hover { color: var(--rust); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="paypal-wrap">
+  <a href="{% url 'storefront:payment_choice' purchase_request.pk %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a opciones de pago
+  </a>
+
+  <div class="page-header">
+    <h1>Pagar con PayPal</h1>
+    <p>Completa tu pago de forma segura.</p>
+  </div>
+
+  <div class="order-recap">
+    <h3>Resumen del pedido #{{ purchase_request.id }}</h3>
+    {% for d in purchase_request.details.all %}
+    <div class="recap-row">
+      <span>{{ d.product.name }} × {{ d.quantity }}</span>
+      <span>${{ d.subtotal }}</span>
+    </div>
+    {% endfor %}
+    <div class="recap-total">
+      <span>Total</span>
+      <span>${{ purchase_request.total_estimado }}</span>
+    </div>
+  </div>
+
+  <div id="paypal-button-container"></div>
+  <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
+</div>
+
+<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+<script>
+const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
+const csrfToken = "{{ csrf_token }}";
+const total = "{{ purchase_request.total_estimado }}";
+
+paypal.Buttons({
+  createOrder: function(data, actions) {
+    return actions.order.create({
+      purchase_units: [{
+        amount: {
+          value: total,
+          currency_code: 'USD'
+        },
+        description: 'Pedido #{{ purchase_request.id }} - {{ config.nombre_tienda }}'
+      }]
+    });
+  },
+  onApprove: function(data, actions) {
+    document.getElementById('paypal-msg').style.display = 'block';
+    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando pago...';
+    return fetch(captureUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ orderID: data.orderID })
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.status === 'ok') {
+        window.location.href = result.redirect;
+      } else {
+        document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Error: ' + (result.error || 'Pago no completado');
+      }
+    })
+    .catch(err => {
+      document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Error procesando el pago.';
+    });
+  },
+  onError: function(err) {
+    document.getElementById('paypal-msg').style.display = 'block';
+    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Ocurrió un error con PayPal. Intenta de nuevo.';
+  },
+  onCancel: function() {
+    document.getElementById('paypal-msg').style.display = 'block';
+    document.getElementById('paypal-msg').innerHTML = '<i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo.';
+  }
+}).render('#paypal-button-container');
+</script>
+{% endblock %}

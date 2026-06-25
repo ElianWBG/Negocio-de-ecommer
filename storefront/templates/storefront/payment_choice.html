@@ -43,15 +43,14 @@
 
   <div class="payment-options">
     <div class="pay-option featured">
-      <div class="icon" style="color:var(--rust);">💳</div>
-      <h3>Pagar ahora con tarjeta</h3>
-      <p>Serás redirigido a PayPhone de forma segura. Tu compra se confirma al instante y el stock se reserva inmediatamente.</p>
-      <form method="post" action="{% url 'storefront:pay_with_card' purchase_request.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary btn-full">
-          Pagar ${{ purchase_request.total_estimado }}
-        </button>
-      </form>
+      <div class="icon" style="color:#003087;">
+        <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style="height:40px;">
+      </div>
+      <h3>Pagar con PayPal</h3>
+      <p>Paga de forma segura con tu cuenta PayPal o con tarjeta de crédito/débito. Tu compra se confirma al instante.</p>
+      <a href="{% url 'storefront:pay_with_paypal' purchase_request.pk %}" class="btn btn-primary btn-full">
+        Pagar ${{ purchase_request.total_estimado }} con PayPal
+      </a>
     </div>
     <div class="pay-option">
       <div class="icon" style="color:var(--muted);">💬</div>

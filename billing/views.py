@@ -1906,9 +1906,12 @@ def customer_import_template(request):
         ws.column_dimensions[ws.cell(row=1, column=col_num).column_letter].width = width
     ws.row_dimensions[1].height = 22
 
-    # Formatear columna cédula como texto para evitar notación científica
+    # Formatear cédula y teléfono como texto para evitar notación científica y pérdida del 0
     from openpyxl.utils import get_column_letter
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=1):
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=1):
+        for cell in row:
+            cell.number_format = FORMAT_TEXT
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=5, max_col=5):
         for cell in row:
             cell.number_format = FORMAT_TEXT
 

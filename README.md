@@ -2,7 +2,7 @@
 
 Proyecto Django para gestión de ventas.
 
-## Funcionalidade
+## Funcionalidades
 
 Gestión de marcas, grupos, proveedores, productos, clientes y facturas. Además, el listado de **Productos** incluye:
 
@@ -90,4 +90,4 @@ ent_sales_A2\Scripts\python.exe manage.py migrate
 ent_sales_A2\Scripts\python.exe manage.py runserver
 ```
 
-
+Abre el navegador en: http://127.0.0.1:8000
