@@ -293,6 +293,26 @@ def cart_remove(request, pk):
     return redirect('storefront:cart_view')
 
 
+def cart_update(request, pk):
+    """Fija la cantidad exacta de un producto en el carrito."""
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (ValueError, TypeError):
+            quantity = 1
+        cart = _get_cart(request)
+        if quantity <= 0:
+            cart.pop(str(product.pk), None)
+        else:
+            if quantity > product.stock:
+                messages.warning(request, f'Solo hay {product.stock} unidades de "{product.name}".')
+                quantity = product.stock
+            cart[str(product.pk)] = quantity
+        request.session.modified = True
+    return redirect('storefront:cart_view')
+
+
 def cart_view(request):
     items, total = _cart_items(request)
     return render(request, 'storefront/cart.html', {'items': items, 'total': total})

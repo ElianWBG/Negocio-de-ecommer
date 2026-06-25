@@ -22,6 +22,7 @@ urlpatterns = [
     path('carrito/', views.cart_view, name='cart_view'),
     path('carrito/agregar/<int:pk>/', views.cart_add, name='cart_add'),
     path('carrito/quitar/<int:pk>/', views.cart_remove, name='cart_remove'),
+    path('carrito/actualizar/<int:pk>/', views.cart_update, name='cart_update'),
 
     # Checkout (requiere login)
     path('solicitar/', views.checkout, name='checkout'),
