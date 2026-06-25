@@ -171,8 +171,7 @@ def customer_login(request):
 
 
 def customer_logout(request):
-    if request.method == 'POST':
-        logout(request)
+    logout(request)
     return redirect('storefront:catalog_list')
 
 
