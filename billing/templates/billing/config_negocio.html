@@ -5,10 +5,10 @@
 {% block content %}
 <form method="post" enctype="multipart/form-data">
 {% csrf_token %}
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1100px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:1.5rem;">
 
   <!-- Identidad -->
-  <div class="card">
+  <div class="card" style="grid-column:1/-1;">
     <div class="card-body">
       <h5 class="card-title mb-3"><i class="bi bi-shop"></i> Identidad de la tienda</h5>
       <div class="mb-3">
@@ -81,7 +81,7 @@
     </div>
   </div>
 
-  <!-- Hero -->
+  <!-- Portada (Hero) — pairs with Redes sociales -->
   <div class="card">
     <div class="card-body">
       <h5 class="card-title mb-3"><i class="bi bi-image"></i> Portada (Hero)</h5>
@@ -107,7 +107,26 @@
     </div>
   </div>
 
-  <!-- Banner promocional -->
+  <!-- Redes sociales — pairs with Portada (Hero) -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="bi bi-share"></i> Redes sociales</h5>
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-facebook text-primary"></i> Facebook</label>
+        <input type="url" name="facebook_url" value="{{ config.facebook_url }}" class="form-control" placeholder="https://facebook.com/tupagina">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-instagram text-danger"></i> Instagram</label>
+        <input type="url" name="instagram_url" value="{{ config.instagram_url }}" class="form-control" placeholder="https://instagram.com/tuperfil">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-tiktok"></i> TikTok</label>
+        <input type="url" name="tiktok_url" value="{{ config.tiktok_url }}" class="form-control" placeholder="https://tiktok.com/@tuperfil">
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner promocional — pairs with Contacto -->
   <div class="card">
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between mb-3">
@@ -132,7 +151,7 @@
     </div>
   </div>
 
-  <!-- Contacto -->
+  <!-- Contacto — pairs with Banner promocional -->
   <div class="card">
     <div class="card-body">
       <h5 class="card-title mb-3"><i class="bi bi-telephone"></i> Información de contacto</h5>
@@ -157,7 +176,7 @@
   </div>
 
   <!-- Sobre nosotros -->
-  <div class="card">
+  <div class="card" style="grid-column:1/-1;">
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="card-title mb-0"><i class="bi bi-building"></i> Sobre nosotros</h5>
@@ -194,7 +213,7 @@
   </div>
 
   <!-- Por qué elegirnos -->
-  <div class="card">
+  <div class="card" style="grid-column:1/-1;">
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="card-title mb-0"><i class="bi bi-star"></i> ¿Por qué elegirnos?</h5>
@@ -211,15 +230,16 @@
         <input type="text" name="porque_titulo" value="{{ config.porque_titulo }}" class="form-control" placeholder="¿Por qué elegirnos?">
       </div>
 
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.75rem;">
       {% for num, icono_val, titulo_val, texto_val in porque_items %}
-      <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-bottom:.75rem;">
+      <div class="porque-beneficio" style="background:#f8f9fa;border-radius:8px;padding:1rem;">
         <p class="fw-semibold mb-2" style="font-size:.85rem;">Beneficio {{ num }}</p>
         <div class="mb-2">
           <label class="form-label" style="font-size:.8rem;">Ícono</label>
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;margin-bottom:.5rem;">
             {% for ic_name, ic_label in iconos_disponibles %}
-            <label style="cursor:pointer;text-align:center;padding:.4rem;border-radius:6px;border:2px solid {% if icono_val == ic_name %}#0d6efd{% else %}#dee2e6{% endif %};background:{% if icono_val == ic_name %}#e7f1ff{% else %}#fff{% endif %};" title="{{ ic_label }}">
-              <input type="radio" name="porque_{{ num }}_icono" value="{{ ic_name }}" {% if icono_val == ic_name %}checked{% endif %} style="display:none;" onchange="this.closest('.card-body').querySelectorAll('label[style]').forEach(l=>l.style.cssText=l.style.cssText.replace(/border:2px solid #0d6efd/,'border:2px solid #dee2e6').replace(/background:#e7f1ff/,'background:#fff')); this.parentElement.style.border='2px solid #0d6efd'; this.parentElement.style.background='#e7f1ff'">
+            <label class="icon-opt{% if icono_val == ic_name %} icon-opt--sel{% endif %}" title="{{ ic_label }}">
+              <input type="radio" name="porque_{{ num }}_icono" value="{{ ic_name }}" {% if icono_val == ic_name %}checked{% endif %} style="display:none;" onchange="this.closest('.porque-beneficio').querySelectorAll('label.icon-opt').forEach(l=>l.classList.remove('icon-opt--sel')); this.parentElement.classList.add('icon-opt--sel')">
               <i class="bi {{ ic_name }}" style="font-size:1.2rem;display:block;"></i>
               <span style="font-size:.65rem;color:#6c757d;">{{ ic_label }}</span>
             </label>
@@ -238,24 +258,6 @@
         </div>
       </div>
       {% endfor %}
-    </div>
-  </div>
-
-  <!-- Redes sociales -->
-  <div class="card">
-    <div class="card-body">
-      <h5 class="card-title mb-3"><i class="bi bi-share"></i> Redes sociales</h5>
-      <div class="mb-3">
-        <label class="form-label fw-semibold"><i class="bi bi-facebook text-primary"></i> Facebook</label>
-        <input type="url" name="facebook_url" value="{{ config.facebook_url }}" class="form-control" placeholder="https://facebook.com/tupagina">
-      </div>
-      <div class="mb-3">
-        <label class="form-label fw-semibold"><i class="bi bi-instagram text-danger"></i> Instagram</label>
-        <input type="url" name="instagram_url" value="{{ config.instagram_url }}" class="form-control" placeholder="https://instagram.com/tuperfil">
-      </div>
-      <div class="mb-3">
-        <label class="form-label fw-semibold"><i class="bi bi-tiktok"></i> TikTok</label>
-        <input type="url" name="tiktok_url" value="{{ config.tiktok_url }}" class="form-control" placeholder="https://tiktok.com/@tuperfil">
       </div>
     </div>
   </div>
@@ -271,6 +273,21 @@
   </a>
 </div>
 </form>
+
+<style>
+.icon-opt {
+  cursor: pointer;
+  text-align: center;
+  padding: .4rem;
+  border-radius: 6px;
+  border: 2px solid #dee2e6;
+  background: #fff;
+}
+.icon-opt--sel {
+  border-color: #0d6efd;
+  background: #e7f1ff;
+}
+</style>
 
 <script>
 function syncColor(textInput, fieldName) {
