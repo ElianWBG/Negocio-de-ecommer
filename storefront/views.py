@@ -259,13 +259,25 @@ def cart_add(request, pk):
         cart = _get_cart(request)
         current = cart.get(str(product.pk), 0)
         new_quantity = current + quantity
+        warning = None
         if new_quantity > product.stock:
-            messages.warning(request, f'Solo hay {product.stock} unidades de "{product.name}".')
+            warning = f'Solo hay {product.stock} unidades de "{product.name}".'
             new_quantity = product.stock
         if new_quantity > 0:
             cart[str(product.pk)] = new_quantity
         request.session.modified = True
-        messages.success(request, f'"{product.name}" agregado al carrito.')
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'ok',
+                'cart_count': sum(cart.values()),
+                'warning': warning,
+            })
+
+        if warning:
+            messages.warning(request, warning)
+        else:
+            messages.success(request, f'"{product.name}" agregado al carrito.')
     return redirect('storefront:cart_view')
 
 

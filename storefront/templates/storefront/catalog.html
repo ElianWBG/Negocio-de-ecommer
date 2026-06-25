@@ -187,16 +187,32 @@
     margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--line);
   }
   .product-price { font-size: 1.12rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .product-foot-actions { display: flex; align-items: center; gap: .4rem; }
   .product-view {
-    display: inline-flex; align-items: center; gap: .3rem;
-    font-size: .8rem; font-weight: 600; text-decoration: none; color: var(--brand);
-    padding: .35rem .7rem; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .88rem; text-decoration: none; color: var(--ink-mute);
+    width: 32px; height: 32px; border-radius: var(--r-sm); border: 1.5px solid var(--line);
+    flex-shrink: 0;
     transition: background var(--d-fast) var(--ease-out),
                 border-color var(--d-fast) var(--ease-out),
                 color var(--d-fast) var(--ease-out);
   }
-  .product-view:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
-  .product-view:active { transform: scale(.97); }
+  .product-view:hover { background: var(--bg-soft); border-color: #cbd5e1; color: var(--brand); }
+
+  .btn-add-cart {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .78rem; font-weight: 600; font-family: var(--font-body);
+    background: var(--brand); color: #fff;
+    padding: .35rem .7rem; border-radius: var(--r-sm);
+    border: none; cursor: pointer;
+    transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+    white-space: nowrap;
+  }
+  .btn-add-cart:hover:not(:disabled) { background: var(--brand-600); }
+  .btn-add-cart:active:not(:disabled) { transform: scale(.96); }
+  .btn-add-cart:disabled { opacity: .65; cursor: default; }
+  .btn-add-cart.is-added { background: var(--ok); }
+  .btn-add-cart.is-error  { background: #b91c1c; }
 
   /* ===================== CARRUSEL EN CARD ===================== */
   .pm-slide {
@@ -792,7 +808,10 @@
     }
 
     document.querySelectorAll('.product-card').forEach(function (card) {
-      card.addEventListener('click', function () { activate(card); });
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-add-cart')) return; // handled by AJAX
+        activate(card);
+      });
       card.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(card); }
       });
@@ -890,6 +909,67 @@
     inMin.addEventListener('input', update);
     inMax.addEventListener('input', update);
     paint(lo, hi);
+  })();
+
+  // ====== AJAX — Agregar al carrito ======
+  (function () {
+    function getCsrf() {
+      var m = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.btn-add-cart');
+      if (!btn || btn.disabled) return;
+      e.stopPropagation();
+
+      var card = btn.closest('.product-card');
+      var url  = card && card.dataset.cartUrl;
+      if (!url) return;
+
+      var original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Agregando…';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrf(),
+        },
+        body: 'quantity=1',
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === 'ok') {
+          btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
+          btn.classList.add('is-added');
+          // Update cart count badges (sidebar + navbar)
+          var count = data.cart_count;
+          document.querySelectorAll('.snav-badge').forEach(function (b) {
+            b.textContent = count; b.style.display = count > 0 ? '' : 'none';
+          });
+          document.querySelectorAll('.nav-cart-badge').forEach(function (b) {
+            b.textContent = count; b.style.display = count > 0 ? '' : 'none';
+          });
+        } else {
+          btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
+          btn.classList.add('is-error');
+        }
+      })
+      .catch(function () {
+        btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
+        btn.classList.add('is-error');
+      })
+      .finally(function () {
+        setTimeout(function () {
+          btn.innerHTML = original;
+          btn.disabled = false;
+          btn.classList.remove('is-added', 'is-error');
+        }, 1800);
+      });
+    });
   })();
 
   // ====== Typewriter — hero subtitle ======
