@@ -51,6 +51,9 @@
   .product-desc { color:var(--muted); line-height:1.75; padding-top:1.25rem; border-top:1px solid var(--border); margin-top:1.5rem; }
   .product-desc h4 { font-family:var(--font-head); font-size:1rem; color:var(--text); margin-bottom:.5rem; }
 
+  .btn-whatsapp { background:#25D366; color:#fff; border-color:#25D366; width:100%; justify-content:center; margin-top:.75rem; }
+  .btn-whatsapp:hover { background:#1ebe5d; border-color:#1ebe5d; color:#fff; }
+
   @media(max-width:700px) {
     .product-layout { grid-template-columns:1fr; gap:1.5rem; }
     .product-name { font-size:1.75rem; }
@@ -129,6 +132,12 @@
       </div>
     {% endif %}
 
+    {% if config.whatsapp %}
+    <a id="wa-product-btn" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-lg">
+      <i class="bi bi-whatsapp"></i> Consultar por WhatsApp
+    </a>
+    {% endif %}
+
     {% if product.description %}
     <div class="product-desc">
       <h4>Descripción</h4>
@@ -147,6 +156,14 @@ function changeQty(delta) {
   if (val > max) val = max;
   input.value = val;
 }
+
+// WhatsApp product inquiry link
+(function () {
+  var btn = document.getElementById('wa-product-btn');
+  if (!btn) return;
+  var msg = 'Hola, estoy interesado en el producto: {{ product.name|escapejs }} - ${{ product.unit_price }}. ¿Tienen disponibilidad?';
+  btn.href = 'https://wa.me/{{ config.whatsapp }}?text=' + encodeURIComponent(msg);
+})();
 
 // Galería del producto: flechas + miniaturas con transición suave
 (function () {
