@@ -132,8 +132,23 @@
       .sidebar.open { transform: translateX(0); }
       .sidebar-overlay.open { display: block; }
       .topbar { left: 0; }
-      .main-wrap { margin-left: 0; }
+      .main-wrap { margin-left: 0; padding: 1rem; }
       .hamburger { display: flex; }
+
+      /* Tablas anchas → scroll horizontal en vez de desbordar */
+      .table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+    @media(max-width: 480px) {
+      .topbar { padding: 0 .9rem; }
+      .topbar-title { font-size: .9rem; }
+      /* Ocultar botón "Reportes" en pantallas chicas (queda en el sidebar) */
+      .topbar-actions a:first-child { display: none; }
     }
   </style>
   {% block extra_css %}{% endblock %}
