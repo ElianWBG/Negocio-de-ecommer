@@ -10,10 +10,17 @@
 
   .product-layout { display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:start; }
 
-  .product-img-wrap { background:var(--sand-dark); border-radius:var(--radius); overflow:hidden; aspect-ratio:1; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); position:relative; }
+  /* Gallery: vertical thumbstrip + stage side by side */
+  .gallery { display:flex; gap:.75rem; align-items:flex-start; }
+  .gallery-thumbs-vert { display:flex; flex-direction:column; gap:.5rem; flex-shrink:0; }
+  .g-thumb { width:68px; height:68px; padding:0; border:2px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; background:none; transition:border-color .15s ease; display:block; }
+  .g-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .g-thumb:hover { border-color:var(--muted); }
+  .g-thumb.is-active { border-color:var(--rust); }
+
+  .product-img-wrap { background:var(--sand-dark); border-radius:var(--radius); overflow:hidden; aspect-ratio:1; flex:1; min-width:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); position:relative; }
   .product-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform .4s ease; }
 
-  /* Galería / carrusel */
   .gallery-stage { position:relative; }
   .g-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .22s cubic-bezier(0,0,.2,1); }
   .g-slide.is-active { opacity:1; }
@@ -21,25 +28,22 @@
   .g-nav { position:absolute; top:50%; transform:translateY(-50%); z-index:2; width:38px; height:38px; border:none; cursor:pointer; border-radius:50%; background:rgba(255,255,255,.92); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.12); transition:background .15s ease, transform .1s ease; }
   .g-nav.prev { left:.6rem; } .g-nav.next { right:.6rem; }
   .g-nav:hover { background:#fff; } .g-nav:active { transform:translateY(-50%) scale(.92); }
-  .gallery-thumbs { display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap; }
-  .g-thumb { width:64px; height:64px; padding:0; border:2px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; background:none; transition:border-color .15s ease, transform .1s ease; }
-  .g-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-  .g-thumb:hover { border-color:var(--muted); }
-  .g-thumb.is-active { border-color:var(--rust); }
   .g-progress { position:absolute; bottom:0; left:0; width:0%; height:3px; background:rgba(255,255,255,.75); z-index:3; pointer-events:none; }
+
   .product-img-wrap .no-img { display:flex; flex-direction:column; align-items:center; gap:.75rem; }
   .product-img-wrap .no-img i { font-size:3.5rem; color:var(--border); }
   .product-img-wrap .no-img span { font-size:.8rem; color:var(--muted); font-weight:500; letter-spacing:.05em; text-transform:uppercase; }
 
+  /* Product info */
   .product-badges { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; }
   .product-badge { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; padding:.3rem .75rem; border-radius:20px; background:var(--sand-dark); color:var(--muted); border:1px solid var(--border); }
-
   .product-name { font-family:var(--font-head); font-size:2.2rem; font-weight:600; line-height:1.2; margin-bottom:.75rem; }
   .product-price { font-size:2rem; font-weight:700; color:var(--rust); margin-bottom:1.25rem; }
 
   .stock-strip { display:flex; align-items:center; gap:.5rem; font-size:.875rem; padding:.65rem 1rem; border-radius:8px; margin-bottom:1.5rem; }
   .stock-strip.in { background:#edfaf3; color:#1a5c35; border:1px solid #b2e8cc; }
   .stock-strip.out { background:#fef2f0; color:#7a1a0d; border:1px solid #f5b8ad; }
+  .stock-updated { font-size:.73rem; opacity:.7; margin-left:.25rem; }
 
   .qty-section { margin-bottom:1.5rem; }
   .qty-label { font-size:.85rem; font-weight:600; margin-bottom:.5rem; color:var(--text); }
@@ -49,15 +53,24 @@
   .qty-display { width:52px; height:42px; border:none; border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); text-align:center; font-family:var(--font-body); font-size:1rem; font-weight:600; background:var(--surface); color:var(--text); }
   .qty-display:focus { outline:none; }
 
-  .product-desc { color:var(--muted); line-height:1.75; padding-top:1.25rem; border-top:1px solid var(--border); margin-top:1.5rem; }
-  .product-desc h4 { font-family:var(--font-head); font-size:1rem; color:var(--text); margin-bottom:.5rem; }
-
   .btn-whatsapp { background:#25D366; color:#fff; border-color:#25D366; width:100%; justify-content:center; margin-top:.75rem; }
   .btn-whatsapp:hover { background:#1ebe5d; border-color:#1ebe5d; color:#fff; }
+
+  /* Acerca de */
+  .product-about { margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border); }
+  .product-about > h4 { font-family:var(--font-head); font-size:1rem; font-weight:600; color:var(--text); margin-bottom:.85rem; }
+  .about-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+  .about-item { display:flex; align-items:flex-start; gap:.55rem; padding:.65rem .75rem; background:var(--sand-dark); border-radius:8px; border:1px solid var(--border); }
+  .about-item i { font-size:1rem; color:var(--rust); flex-shrink:0; margin-top:.15rem; }
+  .about-item-text { font-size:.82rem; color:var(--muted); line-height:1.45; }
+  .about-desc { font-size:.9rem; color:var(--muted); line-height:1.75; margin:0; }
 
   @media(max-width:700px) {
     .product-layout { grid-template-columns:1fr; gap:1.5rem; }
     .product-name { font-size:1.75rem; }
+    .about-grid { grid-template-columns:1fr; }
+    .gallery-thumbs-vert { flex-direction:row; }
+    .g-thumb { width:56px; height:56px; }
   }
 </style>
 {% endblock %}
@@ -72,7 +85,19 @@
 </nav>
 
 <div class="product-layout">
+  <!-- Left column: thumbstrip (vertical) + main stage -->
   <div class="gallery">
+    {% if product.gallery|length > 1 %}
+    <div class="gallery-thumbs-vert">
+      {% for u in product.gallery %}
+      <button type="button" class="g-thumb{% if forloop.first %} is-active{% endif %}"
+              data-i="{{ forloop.counter0 }}" aria-label="Ver imagen {{ forloop.counter }}">
+        <img src="{{ u }}" alt="">
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="product-img-wrap gallery-stage">
       {% for u in product.gallery %}
         <img class="g-slide{% if forloop.first %} is-active{% endif %}" src="{{ u }}" alt="{{ product.name }}">
@@ -87,17 +112,9 @@
         <button type="button" class="g-nav next" aria-label="Imagen siguiente"><i class="bi bi-chevron-right"></i></button>
       {% endif %}
     </div>
-    {% if product.gallery|length > 1 %}
-    <div class="gallery-thumbs">
-      {% for u in product.gallery %}
-        <button type="button" class="g-thumb{% if forloop.first %} is-active{% endif %}" data-i="{{ forloop.counter0 }}" aria-label="Ver imagen {{ forloop.counter }}">
-          <img src="{{ u }}" alt="">
-        </button>
-      {% endfor %}
-    </div>
-    {% endif %}
   </div>
 
+  <!-- Right column: product info -->
   <div class="product-info">
     <div class="product-badges">
       <span class="product-badge">{{ product.brand.name }}</span>
@@ -109,7 +126,10 @@
     {% if product.stock > 0 %}
       <div class="stock-strip in">
         <i class="bi bi-check-circle-fill"></i>
-        <span><strong>{{ product.stock }}</strong> unidades disponibles</span>
+        <span>
+          <strong>{{ product.stock }}</strong> unidades disponibles
+          <span class="stock-updated">(Actualizado: {{ product.updated_at|timesince }} atrás)</span>
+        </span>
       </div>
 
       <form method="post" action="{% url 'storefront:cart_add' product.pk %}">
@@ -140,9 +160,22 @@
     {% endif %}
 
     {% if product.description %}
-    <div class="product-desc">
-      <h4>Descripción</h4>
-      <p>{{ product.description }}</p>
+    <div class="product-about">
+      <h4>Acerca de</h4>
+      {% with lines=product.description.splitlines %}
+        {% if lines|length > 1 %}
+        <div class="about-grid">
+          {% for line in lines %}{% if line.strip %}
+          <div class="about-item">
+            <i class="bi bi-{% if forloop.counter|divisibleby:2 %}lightning-charge-fill{% else %}star-fill{% endif %}"></i>
+            <span class="about-item-text">{{ line.strip }}</span>
+          </div>
+          {% endif %}{% endfor %}
+        </div>
+        {% else %}
+        <p class="about-desc">{{ product.description }}</p>
+        {% endif %}
+      {% endwith %}
     </div>
     {% endif %}
   </div>
@@ -150,15 +183,14 @@
 
 <script>
 function changeQty(delta) {
-  const input = document.getElementById('qty');
-  const max = parseInt(input.getAttribute('max'));
-  let val = parseInt(input.value) + delta;
+  var input = document.getElementById('qty');
+  var max = parseInt(input.getAttribute('max'));
+  var val = parseInt(input.value) + delta;
   if (val < 1) val = 1;
   if (val > max) val = max;
   input.value = val;
 }
 
-// WhatsApp product inquiry link
 (function () {
   var btn = document.getElementById('wa-product-btn');
   if (!btn) return;
@@ -166,7 +198,6 @@ function changeQty(delta) {
   btn.href = 'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' + encodeURIComponent(msg);
 })();
 
-// Galería del producto: flechas + miniaturas + auto-play
 (function () {
   var stage = document.querySelector('.gallery-stage');
   if (!stage) return;
@@ -179,7 +210,6 @@ function changeQty(delta) {
   var hovered = false;
   var DELAY = 4000;
 
-  // Progress bar
   var bar = document.createElement('div');
   bar.className = 'g-progress';
   stage.appendChild(bar);
@@ -193,7 +223,7 @@ function changeQty(delta) {
   function resetBar() {
     bar.style.transition = 'none';
     bar.style.width = '0%';
-    void bar.offsetWidth; // force reflow so transition restarts cleanly
+    void bar.offsetWidth;
     bar.style.transition = 'width ' + DELAY + 'ms linear';
     bar.style.width = '100%';
   }
@@ -208,10 +238,7 @@ function changeQty(delta) {
   function play() {
     clearInterval(timer);
     resetBar();
-    timer = setInterval(function () {
-      goTo(current + 1);
-      resetBar();
-    }, DELAY);
+    timer = setInterval(function () { goTo(current + 1); resetBar(); }, DELAY);
   }
 
   function stop() {
@@ -220,7 +247,6 @@ function changeQty(delta) {
     freezeBar();
   }
 
-  // Arrow buttons — also restart auto-play (unless mouse is still over)
   stage.querySelectorAll('.g-nav').forEach(function (b) {
     b.addEventListener('click', function () {
       goTo(current + (b.classList.contains('next') ? 1 : -1));
@@ -228,7 +254,6 @@ function changeQty(delta) {
     });
   });
 
-  // Thumb buttons
   thumbs.forEach(function (t) {
     t.addEventListener('click', function () {
       goTo(+t.dataset.i);
@@ -236,14 +261,11 @@ function changeQty(delta) {
     });
   });
 
-  // Hover pause / resume
   var wrap = stage.closest('.gallery') || stage;
   wrap.addEventListener('mouseenter', function () { hovered = true; stop(); });
   wrap.addEventListener('mouseleave', function () { hovered = false; play(); });
 
-  // Respect prefers-reduced-motion
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
   play();
 })();
 </script>
