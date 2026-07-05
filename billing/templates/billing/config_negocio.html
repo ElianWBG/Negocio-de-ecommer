@@ -68,14 +68,23 @@
           </div>
           <div class="form-text">Barra de navegación superior.</div>
         </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Color del texto</label>
+          <div class="input-group">
+            <input type="color" name="color_texto" value="{{ config.color_texto }}" class="form-control form-control-color" style="width:50px;">
+            <input type="text" id="color_texto_text" value="{{ config.color_texto }}" class="form-control" style="font-family:monospace;" oninput="syncColor(this,'color_texto')">
+          </div>
+          <div class="form-text">Color principal del texto en la tienda.</div>
+        </div>
       </div>
       <div style="background:#f8f9fa;border-radius:8px;padding:1rem;margin-top:1rem;">
         <p style="font-size:.8rem;font-weight:600;color:#6c757d;margin-bottom:.5rem;">Vista previa de colores</p>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-          <div style="text-align:center;"><div id="prev_primario" style="width:36px;height:36px;border-radius:6px;background:{{ config.color_primario }};"></div><span style="font-size:.7rem;color:#6c757d;">Principal</span></div>
-          <div style="text-align:center;"><div id="prev_oscuro" style="width:36px;height:36px;border-radius:6px;background:{{ config.color_oscuro }};"></div><span style="font-size:.7rem;color:#6c757d;">Oscuro</span></div>
-          <div style="text-align:center;"><div id="prev_fondo" style="width:36px;height:36px;border-radius:6px;background:{{ config.color_fondo }};border:1px solid #dee2e6;"></div><span style="font-size:.7rem;color:#6c757d;">Fondo</span></div>
-          <div style="text-align:center;"><div id="prev_navbar" style="width:36px;height:36px;border-radius:6px;background:{{ config.color_navbar }};"></div><span style="font-size:.7rem;color:#6c757d;">Navbar</span></div>
+          <div style="text-align:center;"><div id="prev_primario" class="color-swatch" data-color="{{ config.color_primario }}" style="width:36px;height:36px;border-radius:6px;"></div><span style="font-size:.7rem;color:#6c757d;">Principal</span></div>
+          <div style="text-align:center;"><div id="prev_oscuro" class="color-swatch" data-color="{{ config.color_oscuro }}" style="width:36px;height:36px;border-radius:6px;"></div><span style="font-size:.7rem;color:#6c757d;">Oscuro</span></div>
+          <div style="text-align:center;"><div id="prev_fondo" class="color-swatch" data-color="{{ config.color_fondo }}" style="width:36px;height:36px;border-radius:6px;border:1px solid #dee2e6;"></div><span style="font-size:.7rem;color:#6c757d;">Fondo</span></div>
+          <div style="text-align:center;"><div id="prev_navbar" class="color-swatch" data-color="{{ config.color_navbar }}" style="width:36px;height:36px;border-radius:6px;"></div><span style="font-size:.7rem;color:#6c757d;">Navbar</span></div>
+          <div style="text-align:center;"><div id="prev_texto" class="color-swatch" data-color="{{ config.color_texto }}" style="width:36px;height:36px;border-radius:6px;"></div><span style="font-size:.7rem;color:#6c757d;">Texto</span></div>
         </div>
       </div>
     </div>
@@ -290,12 +299,24 @@
 </style>
 
 <script>
+const PREV_MAP = {
+  'color_primario': 'prev_primario',
+  'color_oscuro':   'prev_oscuro',
+  'color_fondo':    'prev_fondo',
+  'color_navbar':   'prev_navbar',
+  'color_texto':    'prev_texto',
+};
+
+// Initialize all swatches from data-color
+document.querySelectorAll('.color-swatch').forEach(el => {
+  el.style.background = el.dataset.color;
+});
+
 function syncColor(textInput, fieldName) {
   const hex = textInput.value;
   if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
     document.querySelector(`input[name="${fieldName}"]`).value = hex;
-    const prevMap = { 'color_primario':'prev_primario','color_oscuro':'prev_oscuro','color_fondo':'prev_fondo','color_navbar':'prev_navbar' };
-    if (prevMap[fieldName]) document.getElementById(prevMap[fieldName]).style.background = hex;
+    if (PREV_MAP[fieldName]) document.getElementById(PREV_MAP[fieldName]).style.background = hex;
   }
 }
 document.querySelectorAll('input[type="color"]').forEach(picker => {
@@ -303,8 +324,7 @@ document.querySelectorAll('input[type="color"]').forEach(picker => {
     const name = this.name;
     const textId = name + '_text';
     if (document.getElementById(textId)) document.getElementById(textId).value = this.value;
-    const prevMap = { 'color_primario':'prev_primario','color_oscuro':'prev_oscuro','color_fondo':'prev_fondo','color_navbar':'prev_navbar' };
-    if (prevMap[name]) document.getElementById(prevMap[name]).style.background = this.value;
+    if (PREV_MAP[name]) document.getElementById(PREV_MAP[name]).style.background = this.value;
   });
 });
 // Toggle label visible/oculto

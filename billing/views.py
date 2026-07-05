@@ -2350,6 +2350,7 @@ def config_negocio_edit(request):
         config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()
         config.color_fondo      = request.POST.get('color_fondo', '#F8F3EE').strip()
         config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()
+        config.color_texto      = request.POST.get('color_texto', '#231A10').strip()
         config.hero_titulo      = request.POST.get('hero_titulo', '').strip()
         if 'hero_imagen' in request.FILES:
             config.hero_imagen  = request.FILES['hero_imagen']
