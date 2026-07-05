@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load storefront_extras %}
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -363,7 +364,7 @@
         {% if config.whatsapp or config.facebook_url or config.instagram_url or config.tiktok_url %}
         <div class="footer-social-row">
           {% if config.whatsapp %}
-          <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" class="footer-social" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+          <a href="https://wa.me/{{ config.whatsapp|wa_digits }}" target="_blank" class="footer-social" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
           {% endif %}
           {% if config.facebook_url %}
           <a href="{{ config.facebook_url }}" target="_blank" class="footer-social" title="Facebook"><i class="bi bi-facebook"></i></a>
@@ -389,7 +390,7 @@
           <li><span><i class="bi bi-telephone"></i> {{ config.telefono }}</span></li>
           {% endif %}
           {% if config.whatsapp %}
-          <li><a href="https://wa.me/{{ config.whatsapp }}" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a></li>
+          <li><a href="https://wa.me/{{ config.whatsapp|wa_digits }}" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a></li>
           {% endif %}
           {% if config.direccion %}
           <li><span><i class="bi bi-geo-alt"></i> {{ config.direccion }}</span></li>
@@ -429,7 +430,7 @@
 </a>
 <script>
 document.getElementById('wa-float').href =
-  'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' +
+  'https://wa.me/{{ config.whatsapp|wa_digits }}?text=' +
   encodeURIComponent('Hola, me gustaría obtener más información sobre sus productos.');
 </script>
 {% endif %}

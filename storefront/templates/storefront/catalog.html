@@ -662,6 +662,19 @@
         <h2 id="novedades">{% if has_filter %}Resultados{% else %}Lo más vendido{% endif %}<span class="sec-sub"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span></h2>
         {% if has_filter %}<a class="see-all" href="{% url 'storefront:catalog_list' %}"><i class="bi bi-x-lg"></i> Limpiar filtros</a>{% endif %}
       </div>
+      {% if products and price_max > price_min %}
+      <div class="price-filter reveal" data-min="{{ price_min }}" data-max="{{ price_max }}">
+        <span class="pf-label"><i class="bi bi-sliders"></i> Precio</span>
+        <div class="pf-inputs">
+          <span class="pf-pre">$</span>
+          <input type="number" class="pf-min" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_min }}" aria-label="Precio mínimo">
+          <span class="pf-sep">–</span>
+          <span class="pf-pre">$</span>
+          <input type="number" class="pf-max" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_max }}" aria-label="Precio máximo">
+        </div>
+        <p class="pf-range-hint">Rango: ${{ price_min }} – ${{ price_max }}</p>
+      </div>
+      {% endif %}
       {% if has_filter %}
       <div class="active-filters">
         {% if query %}<span class="chip">"{{ query }}"</span>{% endif %}

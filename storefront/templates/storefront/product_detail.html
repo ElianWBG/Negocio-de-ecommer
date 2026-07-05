@@ -1,4 +1,5 @@
 {% extends 'storefront/base_public.html' %}
+{% load storefront_extras %}
 {% block title %}{{ product.name }}{% endblock %}
 
 {% block extra_css %}
@@ -194,8 +195,9 @@ function changeQty(delta) {
 (function () {
   var btn = document.getElementById('wa-product-btn');
   if (!btn) return;
+  var phone = '{{ config.whatsapp|wa_digits }}';
   var msg = 'Hola, estoy interesado en el producto: {{ product.name|escapejs }} - ${{ product.unit_price }}. ¿Tienen disponibilidad?';
-  btn.href = 'https://api.whatsapp.com/send?phone={{ config.whatsapp }}&text=' + encodeURIComponent(msg);
+  btn.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
 })();
 
 (function () {
