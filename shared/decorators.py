@@ -1,6 +1,29 @@
 import logging
 from functools import wraps
 from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+
+def group_required(*groups):
+    """
+    Decorador para FBVs. Exige pertenencia a al menos uno de los grupos indicados.
+    Superusuarios pasan siempre.
+    """
+    def decorator(view_func):
+        @login_required
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if not request.user.is_superuser:
+                user_groups = set(request.user.groups.values_list('name', flat=True))
+                if not user_groups.intersection(set(groups)):
+                    messages.error(request, 'No tienes permisos para acceder a esta sección.')
+                    return redirect('billing:home')
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
+
 
 # Configurar logger para auditoría
 # Los mensajes se guardan en la consola y pueden redirigirse a archivo

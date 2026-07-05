@@ -70,4 +70,7 @@ urlpatterns = [
     # Configuración del negocio
     path('configuracion/', views.config_negocio_edit, name='config_negocio'),
 
+    # Gestión de usuarios
+    path('usuarios/', views.user_management, name='user_management'),
+
 ]

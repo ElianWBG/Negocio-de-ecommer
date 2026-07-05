@@ -1,5 +1,29 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import AccessMixin
 from django.shortcuts import redirect
+
+
+class GroupRequiredMixin(AccessMixin):
+    """
+    Verifica que el usuario pertenezca a al menos uno de los grupos indicados.
+    Los superusuarios pasan siempre. Si no cumple, redirige a billing:home.
+
+    Uso:
+        class ProductListView(GroupRequiredMixin, ListView):
+            group_required = ['Analista de Compras', 'Administrador']
+    """
+
+    group_required = []
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if not request.user.is_superuser and self.group_required:
+            user_groups = set(request.user.groups.values_list('name', flat=True))
+            if not user_groups.intersection(set(self.group_required)):
+                messages.error(request, 'No tienes permisos para acceder a esta sección.')
+                return redirect('billing:home')
+        return super().dispatch(request, *args, **kwargs)
 
 
 class StaffRequiredMixin:

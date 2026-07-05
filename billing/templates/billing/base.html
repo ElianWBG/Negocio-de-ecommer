@@ -175,6 +175,7 @@
     </a>
   </div>
 
+  {% if panel_is_analista %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Catálogo</div>
     <a href="{% url 'billing:product_list' %}" class="sidebar-link {% if 'product' in request.path and 'invoice' not in request.path %}active{% endif %}">
@@ -187,7 +188,9 @@
       <i class="bi bi-tag"></i> Marcas
     </a>
   </div>
+  {% endif %}
 
+  {% if panel_is_vendedor %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ventas</div>
     <a href="{% url 'storefront:purchase_request_list' %}" class="sidebar-link {% if 'solicitudes' in request.path %}active{% endif %}">
@@ -200,7 +203,9 @@
       <i class="bi bi-people"></i> Clientes
     </a>
   </div>
+  {% endif %}
 
+  {% if panel_is_analista %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Compras</div>
     <a href="{% url 'purchasing:purchase_list' %}" class="sidebar-link {% if 'purchases' in request.path %}active{% endif %}">
@@ -210,7 +215,9 @@
       <i class="bi bi-truck"></i> Proveedores
     </a>
   </div>
+  {% endif %}
 
+  {% if panel_is_admin %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Análisis</div>
     <a href="{% url 'billing:report_sales' %}" class="sidebar-link {% if 'reportes/ventas' in request.path %}active{% endif %}">
@@ -226,7 +233,11 @@
     <a href="{% url 'billing:config_negocio' %}" class="sidebar-link {% if 'configuracion' in request.path %}active{% endif %}">
       <i class="bi bi-gear"></i> Configuración
     </a>
+    <a href="{% url 'billing:user_management' %}" class="sidebar-link {% if 'usuarios' in request.path %}active{% endif %}">
+      <i class="bi bi-person-gear"></i> Usuarios
+    </a>
   </div>
+  {% endif %}
   {% endif %}
 
   <div class="sidebar-bottom">
@@ -257,9 +268,11 @@
     <span class="topbar-title">{% block topbar_title %}Panel{% endblock %}</span>
   </div>
   <div class="topbar-actions">
+    {% if panel_is_admin %}
     <a href="{% url 'billing:report_sales' %}" class="topbar-btn">
       <i class="bi bi-bar-chart"></i> Reportes
     </a>
+    {% endif %}
     <a href="{% url 'storefront:catalog_list' %}" target="_blank" class="topbar-btn primary">
       <i class="bi bi-box-arrow-up-right"></i> Ver tienda
     </a>

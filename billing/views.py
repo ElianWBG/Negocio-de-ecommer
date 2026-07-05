@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth import login, get_user_model
@@ -17,8 +16,8 @@ from .forms import (
 )
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
-from shared.mixins import StaffRequiredMixin
-from shared.decorators import audit_action
+from shared.mixins import GroupRequiredMixin
+from shared.decorators import audit_action, group_required
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
     get_brand_visible_columns, get_all_brand_columns,
@@ -177,7 +176,7 @@ class SignUpView(CreateView):
         return response
 
 # === BRAND (FBV) ===
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 @audit_action('LIST_BRANDS')
 def brand_list(request):
     qs = Brand.objects.all()
@@ -258,7 +257,7 @@ def brand_update_visible_columns(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 @audit_action('CREATE_BRAND')
 def brand_create(request):
     if request.method == 'POST':
@@ -271,7 +270,7 @@ def brand_create(request):
         form = BrandForm()
     return render(request, 'billing/brand_form.html', {'form': form, 'title': 'Crear Marca'})
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 @audit_action('VIEW_BRAND')
 def brand_detail(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -282,7 +281,7 @@ def brand_detail(request, pk):
         'product_count': brand.products.count(),
     })
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 @audit_action('UPDATE_BRAND')
 def brand_update(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -296,7 +295,7 @@ def brand_update(request, pk):
         form = BrandForm(instance=brand)
     return render(request, 'billing/brand_form.html', {'form': form, 'title': 'Editar Marca'})
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 @audit_action('DELETE_BRAND')
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -308,7 +307,8 @@ def brand_delete(request, pk):
 
 
 # === PRODUCTGROUP (CBV) ===
-class ProductGroupListView(ExportListMixin, LoginRequiredMixin, ListView):
+class ProductGroupListView(GroupRequiredMixin, ExportListMixin, ListView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = ProductGroup
     template_name = 'billing/product_group_list.html'
     context_object_name = 'items'
@@ -373,17 +373,20 @@ class ProductGroupListView(ExportListMixin, LoginRequiredMixin, ListView):
         ctx['visible_columns_list'] = visible_columns
         return ctx
 
-class ProductGroupCreateView(LoginRequiredMixin, CreateView):
+class ProductGroupCreateView(GroupRequiredMixin, CreateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = ProductGroup; form_class = ProductGroupForm
     template_name = 'billing/product_group_form.html'
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupUpdateView(LoginRequiredMixin, UpdateView):
+class ProductGroupUpdateView(GroupRequiredMixin, UpdateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = ProductGroup; form_class = ProductGroupForm
     template_name = 'billing/product_group_form.html'
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupDetailView(LoginRequiredMixin, DetailView):
+class ProductGroupDetailView(GroupRequiredMixin, DetailView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = ProductGroup
     template_name = 'billing/product_group_detail.html'
     context_object_name = 'group'
@@ -394,11 +397,11 @@ class ProductGroupDetailView(LoginRequiredMixin, DetailView):
         ctx['product_count'] = self.object.products.count()
         return ctx
 
-class ProductGroupDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class ProductGroupDeleteView(GroupRequiredMixin, DeleteView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = ProductGroup
     template_name = 'billing/product_group_confirm_delete.html'
     success_url = reverse_lazy('billing:productgroup_list')
-    staff_redirect_url = '/groups/'
 
 @login_required
 def productgroup_update_visible_columns(request):
@@ -425,7 +428,8 @@ def productgroup_update_visible_columns(request):
 
 
 # === SUPPLIER (CBV) ===
-class SupplierListView(ExportListMixin, LoginRequiredMixin, ListView):
+class SupplierListView(GroupRequiredMixin, ExportListMixin, ListView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Supplier
     template_name = 'billing/supplier_list.html'
     context_object_name = 'items'
@@ -502,17 +506,20 @@ class SupplierListView(ExportListMixin, LoginRequiredMixin, ListView):
         ctx['visible_columns_list'] = visible_columns
         return ctx
 
-class SupplierCreateView(LoginRequiredMixin, CreateView):
+class SupplierCreateView(GroupRequiredMixin, CreateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Supplier; form_class = SupplierForm
     template_name = 'billing/supplier_form.html'
     success_url = reverse_lazy('billing:supplier_list')
 
-class SupplierUpdateView(LoginRequiredMixin, UpdateView):
+class SupplierUpdateView(GroupRequiredMixin, UpdateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Supplier; form_class = SupplierForm
     template_name = 'billing/supplier_form.html'
     success_url = reverse_lazy('billing:supplier_list')
 
-class SupplierDetailView(LoginRequiredMixin, DetailView):
+class SupplierDetailView(GroupRequiredMixin, DetailView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Supplier
     template_name = 'billing/supplier_detail.html'
     context_object_name = 'supplier'
@@ -523,11 +530,11 @@ class SupplierDetailView(LoginRequiredMixin, DetailView):
         ctx['product_count'] = self.object.products.count()
         return ctx
 
-class SupplierDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class SupplierDeleteView(GroupRequiredMixin, DeleteView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Supplier
     template_name = 'billing/supplier_confirm_delete.html'
     success_url = reverse_lazy('billing:supplier_list')
-    staff_redirect_url = '/suppliers/'
 
 @login_required
 def supplier_update_visible_columns(request):
@@ -554,7 +561,8 @@ def supplier_update_visible_columns(request):
 
 
 # === PRODUCT (CBV) ===
-class ProductListView(ExportListMixin, LoginRequiredMixin, ListView):
+class ProductListView(GroupRequiredMixin, ExportListMixin, ListView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Product
     template_name = 'billing/product_list.html'
     context_object_name = 'items'
@@ -793,7 +801,8 @@ class ProductListView(ExportListMixin, LoginRequiredMixin, ListView):
         
         return ctx
 
-class ProductCreateView(LoginRequiredMixin, CreateView):
+class ProductCreateView(GroupRequiredMixin, CreateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Product; form_class = ProductForm
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
@@ -805,7 +814,8 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
                 ProductImage.objects.create(product=self.object, image=f)
         return response
 
-class ProductUpdateView(LoginRequiredMixin, UpdateView):
+class ProductUpdateView(GroupRequiredMixin, UpdateView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Product; form_class = ProductForm
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
@@ -819,14 +829,15 @@ class ProductUpdateView(LoginRequiredMixin, UpdateView):
                 ProductImage.objects.create(product=self.object, image=f)
         return response
 
-class ProductDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class ProductDeleteView(GroupRequiredMixin, DeleteView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Product
     template_name = 'billing/product_confirm_delete.html'
     success_url = reverse_lazy('billing:product_list')
-    staff_redirect_url = '/products/'
 
 
-class ProductDetailView(LoginRequiredMixin, DetailView):
+class ProductDetailView(GroupRequiredMixin, DetailView):
+    group_required = ['Analista de Compras', 'Administrador']
     model = Product
     template_name = 'billing/product_detail.html'
     context_object_name = 'product'
@@ -899,7 +910,8 @@ def product_update_visible_columns(request):
 
 
 # === CUSTOMER (CBV) ===
-class CustomerListView(ExportListMixin, LoginRequiredMixin, ListView):
+class CustomerListView(GroupRequiredMixin, ExportListMixin, ListView):
+    group_required = ['Vendedor', 'Administrador']
     model = Customer
     template_name = 'billing/customer_list.html'
     context_object_name = 'items'
@@ -1123,24 +1135,26 @@ class CustomerListView(ExportListMixin, LoginRequiredMixin, ListView):
 
         return ctx
 
-class CustomerCreateView(LoginRequiredMixin, CreateView):
+class CustomerCreateView(GroupRequiredMixin, CreateView):
+    group_required = ['Vendedor', 'Administrador']
     model = Customer; form_class = CustomerForm
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
 
-class CustomerUpdateView(LoginRequiredMixin, UpdateView):
+class CustomerUpdateView(GroupRequiredMixin, UpdateView):
+    group_required = ['Vendedor', 'Administrador']
     model = Customer; form_class = CustomerForm
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
 
-class CustomerDetailView(LoginRequiredMixin, DetailView):
+class CustomerDetailView(GroupRequiredMixin, DetailView):
+    group_required = ['Vendedor', 'Administrador']
     model = Customer
     template_name = 'billing/customer_detail.html'
     context_object_name = 'customer'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # Incluir perfil e historial de facturas del cliente
         customer = self.object
         ctx['invoices'] = customer.invoices.order_by('-invoice_date')[:10]
         try:
@@ -1149,11 +1163,11 @@ class CustomerDetailView(LoginRequiredMixin, DetailView):
             ctx['profile'] = None
         return ctx
 
-class CustomerDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class CustomerDeleteView(GroupRequiredMixin, DeleteView):
+    group_required = ['Vendedor', 'Administrador']
     model = Customer
     template_name = 'billing/customer_confirm_delete.html'
     success_url = reverse_lazy('billing:customer_list')
-    staff_redirect_url = '/customers/'
 
 
 @login_required
@@ -1184,7 +1198,8 @@ def customer_update_visible_columns(request):
 
 
 # === INVOICE (CBV) ===
-class InvoiceListView(ExportListMixin, LoginRequiredMixin, ListView):
+class InvoiceListView(GroupRequiredMixin, ExportListMixin, ListView):
+    group_required = ['Vendedor', 'Administrador']
     model = Invoice
     template_name = 'billing/invoice_list.html'
     context_object_name = 'items'
@@ -1391,7 +1406,7 @@ class InvoiceListView(ExportListMixin, LoginRequiredMixin, ListView):
 
         return ctx
 
-@login_required
+@group_required('Vendedor', 'Administrador')
 def invoice_create(request):
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
@@ -1469,7 +1484,8 @@ def api_product_info(request, pk):
     })
 
 
-class InvoiceDetailView(LoginRequiredMixin, DetailView):
+class InvoiceDetailView(GroupRequiredMixin, DetailView):
+    group_required = ['Vendedor', 'Administrador']
     model = Invoice
     template_name = 'billing/invoice_detail.html'
     context_object_name = 'invoice'
@@ -1510,18 +1526,18 @@ def invoice_update_visible_columns(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-class InvoiceDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
+    group_required = ['Vendedor', 'Administrador']
     model = Invoice
     template_name = 'billing/invoice_confirm_delete.html'
     success_url = reverse_lazy('billing:invoice_list')
-    staff_redirect_url = '/invoices/'
 
 
 # ─────────────────────────────────────────────
 # Importar productos desde Excel
 # ─────────────────────────────────────────────
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 def product_import(request):
     """Vista principal de importación de productos desde .xlsx.
     Flujo: el usuario sube el archivo → validamos fila por fila →
@@ -1657,7 +1673,7 @@ def product_import(request):
     })
 
 
-@login_required
+@group_required('Analista de Compras', 'Administrador')
 def product_import_template(request):
     """Descarga la plantilla Excel vacía con el formato correcto."""
     from openpyxl import Workbook
@@ -1734,7 +1750,7 @@ def product_import_template(request):
 # Importar clientes desde Excel
 # ─────────────────────────────────────────────
 
-@login_required
+@group_required('Vendedor', 'Administrador')
 def customer_import(request):
     """Importa clientes desde un .xlsx con columnas:
     cedula, nombre, apellido, email, telefono, direccion.
@@ -1860,7 +1876,7 @@ def customer_import(request):
     })
 
 
-@login_required
+@group_required('Vendedor', 'Administrador')
 def customer_import_template(request):
     """Descarga la plantilla Excel para importar clientes."""
     from openpyxl import Workbook
@@ -2008,7 +2024,7 @@ def _sales_summary(invoices):
     }
 
 
-@login_required
+@group_required('Administrador')
 def report_sales(request):
     date_from, date_to = _get_report_dates(request)
     invoices = list(_sales_queryset(date_from, date_to))
@@ -2021,7 +2037,7 @@ def report_sales(request):
     })
 
 
-@login_required
+@group_required('Administrador')
 def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -2101,7 +2117,7 @@ def report_sales_excel(request):
     return response
 
 
-@login_required
+@group_required('Administrador')
 def report_sales_pdf(request):
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
@@ -2198,7 +2214,7 @@ def report_sales_pdf(request):
     return response
 
 
-@login_required
+@group_required('Administrador')
 def report_stock(request):
     query = request.GET.get('q', '').strip()
     low_only = request.GET.get('low', '') == '1'
@@ -2219,7 +2235,7 @@ def report_stock(request):
     })
 
 
-@login_required
+@group_required('Administrador')
 def report_stock_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -2284,7 +2300,7 @@ def report_stock_excel(request):
 # Configuración del negocio
 # ─────────────────────────────────────────────
 
-@login_required
+@group_required('Administrador')
 def config_negocio_edit(request):
     """Vista para editar la configuración global del negocio."""
     from billing.models import ConfigNegocio
@@ -2377,4 +2393,59 @@ def config_negocio_edit(request):
         'config': config,
         'iconos_disponibles': iconos_disponibles,
         'porque_items': porque_items,
+    })
+
+
+# ─────────────────────────────────────────────
+# Gestión de usuarios del panel
+# ─────────────────────────────────────────────
+
+@group_required('Administrador')
+def user_management(request):
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import Group
+
+    User = get_user_model()
+    groups = Group.objects.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'set_group':
+            user_id = request.POST.get('user_id')
+            group_name = request.POST.get('group_name', '')
+            try:
+                u = User.objects.get(pk=user_id)
+                u.groups.clear()
+                if group_name:
+                    g = Group.objects.get(name=group_name)
+                    u.groups.add(g)
+                messages.success(request, f'Rol de {u.username} actualizado.')
+            except (User.DoesNotExist, Group.DoesNotExist):
+                messages.error(request, 'Usuario o grupo no encontrado.')
+
+        elif action == 'create_user':
+            username = request.POST.get('username', '').strip()
+            email = request.POST.get('email', '').strip()
+            password = request.POST.get('password', '').strip()
+            group_name = request.POST.get('group_name', '')
+            if not username or not password:
+                messages.error(request, 'Usuario y contraseña son obligatorios.')
+            elif User.objects.filter(username=username).exists():
+                messages.error(request, f'El usuario "{username}" ya existe.')
+            else:
+                u = User.objects.create_user(username=username, email=email, password=password)
+                if group_name:
+                    try:
+                        u.groups.add(Group.objects.get(name=group_name))
+                    except Group.DoesNotExist:
+                        pass
+                messages.success(request, f'Usuario {username} creado correctamente.')
+
+        return redirect('billing:user_management')
+
+    users = User.objects.prefetch_related('groups').order_by('username')
+    return render(request, 'billing/user_management.html', {
+        'users': users,
+        'groups': groups,
     })
