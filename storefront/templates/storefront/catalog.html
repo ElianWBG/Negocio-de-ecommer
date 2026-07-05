@@ -470,6 +470,83 @@
     .snav-block { display: none; }
   }
 
+  /* ============================================================
+     HOMEPAGE full-width estilo marketplace
+     ============================================================ */
+  .home { display: flex; flex-direction: column; gap: 2.25rem; }
+
+  /* Buscador */
+  .home-search { display: flex; align-items: center; gap: .5rem; background: var(--panel); border: 1.5px solid var(--line); border-radius: 999px; padding: .4rem .4rem .4rem 1.15rem; box-shadow: var(--shadow-sm); transition: border-color var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out); }
+  .home-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-50); }
+  .home-search i { color: var(--ink-mute); }
+  .home-search input { flex: 1; border: none; outline: none; background: transparent; font-family: var(--font-body); font-size: .95rem; color: var(--ink); }
+  .home-search button { border: none; cursor: pointer; background: var(--brand); color: #fff; font-weight: 600; font-family: var(--font-body); font-size: .88rem; border-radius: 999px; padding: .6rem 1.4rem; transition: background var(--d-fast) var(--ease-out); }
+  .home-search button:hover { background: var(--brand-600); }
+
+  /* Strip de categorías */
+  .cat-strip { display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; padding-bottom: .1rem; }
+  .cat-strip::-webkit-scrollbar { display: none; }
+  .cs-link { white-space: nowrap; text-decoration: none; padding: .5rem 1.05rem; border-radius: 999px; font-size: .86rem; font-weight: 500; color: var(--ink-soft); border: 1.5px solid transparent; transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out); }
+  .cs-link:hover { background: var(--panel); color: var(--brand); border-color: var(--line); }
+  .cs-link.active { background: var(--espresso); color: #fff; }
+
+  /* Hero: banner grande + dos mini */
+  .hero-row { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1rem; }
+  .hero-row .hero-banner { margin: 0; height: 100%; }
+  .hero-side { display: grid; grid-template-rows: 1fr 1fr; gap: 1rem; }
+  .hero-mini { position: relative; overflow: hidden; border-radius: 18px; padding: 1.3rem 1.5rem; display: flex; flex-direction: column; justify-content: center; color: var(--ink); border: 1px solid var(--line); }
+  .hero-mini.m1 { background: linear-gradient(120deg, var(--sand-dark), var(--sand)); }
+  .hero-mini.m2 { background: linear-gradient(120deg, color-mix(in srgb, var(--rust) 18%, #fff), color-mix(in srgb, var(--rust) 6%, #fff)); }
+  .hero-mini .hm-tag { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); opacity: .8; margin-bottom: .35rem; }
+  .hero-mini h3 { font-size: 1.15rem; font-weight: 700; line-height: 1.15; margin-bottom: .3rem; letter-spacing: -0.01em; }
+  .hero-mini p { font-size: .82rem; color: var(--ink-soft); margin-bottom: .8rem; }
+  .hero-mini .hm-cta { align-self: flex-start; font-size: .8rem; font-weight: 600; text-decoration: none; color: var(--ink); background: rgba(255,255,255,.72); border-radius: 999px; padding: .4rem .9rem; transition: background var(--d-fast) var(--ease-out); }
+  .hero-mini .hm-cta:hover { background: #fff; }
+  .hero-mini .hm-art { position: absolute; right: -8px; bottom: -14px; font-size: 4.2rem; opacity: .2; }
+
+  /* Cabecera de sección con "ver todo" */
+  .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+  .sec-head h2 { font-family: var(--font-body); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+  .sec-head .sec-sub { font-size: .85rem; color: var(--ink-mute); font-weight: 400; margin-left: .5rem; }
+  .see-all { font-size: .84rem; font-weight: 600; color: var(--brand-600); text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; transition: gap var(--d-fast) var(--ease-out); }
+  .see-all:hover { gap: .55rem; }
+
+  /* Fila de marcas (círculos con inicial) */
+  .brand-row { display: flex; gap: 1.25rem; overflow-x: auto; scrollbar-width: none; padding: .25rem 0; }
+  .brand-row::-webkit-scrollbar { display: none; }
+  .brand-chip { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-decoration: none; min-width: 78px; }
+  .brand-logo { width: 74px; height: 74px; border-radius: 50%; border: 1px solid var(--line); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; transition: transform var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out); }
+  .brand-chip:hover .brand-logo { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .brand-chip:nth-child(6n+1) .brand-logo { background: #6366f1; }
+  .brand-chip:nth-child(6n+2) .brand-logo { background: #ec4899; }
+  .brand-chip:nth-child(6n+3) .brand-logo { background: #f59e0b; }
+  .brand-chip:nth-child(6n+4) .brand-logo { background: #10b981; }
+  .brand-chip:nth-child(6n+5) .brand-logo { background: #0ea5e9; }
+  .brand-chip:nth-child(6n+6) .brand-logo { background: #8b5cf6; }
+  .brand-name { font-size: .82rem; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+  .brand-chip.active .brand-name { color: var(--brand-600); }
+
+  /* Promos anchos (2 columnas) */
+  .promo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .promo-wide { position: relative; overflow: hidden; border-radius: 18px; padding: 1.8rem 2rem; min-height: 150px; display: flex; flex-direction: column; justify-content: center; color: #fff; }
+  .promo-wide.pa { background: linear-gradient(120deg, var(--espresso), color-mix(in srgb, var(--espresso) 65%, var(--rust))); }
+  .promo-wide.pb { background: linear-gradient(120deg, var(--rust), var(--rust-dark)); }
+  .promo-wide .pw-tag { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; opacity: .75; margin-bottom: .45rem; }
+  .promo-wide h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: .5rem; max-width: 82%; }
+  .promo-wide p { font-size: .88rem; opacity: .85; margin-bottom: 1.1rem; }
+  .promo-wide .pw-cta { align-self: flex-start; background: #fff; color: var(--ink); font-size: .84rem; font-weight: 600; text-decoration: none; border-radius: 999px; padding: .55rem 1.2rem; transition: transform var(--d-fast) var(--ease-out); }
+  .promo-wide .pw-cta:hover { transform: translateY(-2px); }
+  .promo-wide .pw-art { position: absolute; right: 1rem; bottom: -1rem; font-size: 6rem; opacity: .15; }
+
+  @media (max-width: 860px) {
+    .hero-row { grid-template-columns: 1fr; }
+    .hero-side { grid-template-rows: none; grid-template-columns: 1fr 1fr; }
+    .promo-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .hero-side { grid-template-columns: 1fr; }
+  }
+
   /* =========== prefers-reduced-motion (SAFETY-CRITICAL) =========== */
   @media (prefers-reduced-motion: reduce) {
     .reveal, .reveal.in-view { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -485,73 +562,43 @@
     .pm-slide, .pm-nav, .pm-dot, .product-card.is-filtered, .product-card.is-entering { transition: none !important; }
     .product-card:hover .pm-slide.is-active { transform: none !important; }
     .pm-nav { opacity: 1 !important; }
+    /* Homepage */
+    .home-search, .cs-link, .see-all, .brand-chip .brand-logo, .promo-wide .pw-cta, .hero-mini .hm-cta { transition: none !important; }
+    .brand-chip:hover .brand-logo { transform: none !important; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="cat">
-  <div class="shop-shell">
+  <div class="home">
 
-    <!-- ===================== SIDEBAR IZQUIERDO ===================== -->
-    <aside class="shop-nav">
-      <nav class="snav">
-        <a class="snav-link active" href="{% url 'storefront:catalog_list' %}"><i class="bi bi-house-door"></i> Inicio</a>
-        <a class="snav-link" href="#categorias"><i class="bi bi-grid"></i> Categorías</a>
-        <a class="snav-link" href="#novedades"><i class="bi bi-stars"></i> Novedades</a>
-        <a class="snav-link" href="#recomendados"><i class="bi bi-fire"></i> Recomendados</a>
-        <a class="snav-link" href="#tiendas"><i class="bi bi-shop"></i> Tiendas</a>
-        <div class="snav-sep"></div>
-        {% if user.is_authenticated and user.customer_profile %}
-        <a class="snav-link" href="{% url 'storefront:my_orders' %}"><i class="bi bi-bag-check"></i> Mis pedidos</a>
-        <a class="snav-link" href="{% url 'storefront:profile' %}"><i class="bi bi-person"></i> Mi perfil</a>
-        {% else %}
-        <a class="snav-link" href="{% url 'storefront:customer_login' %}"><i class="bi bi-box-arrow-in-right"></i> Entrar</a>
-        {% endif %}
-        <a class="snav-link" href="{% url 'storefront:cart_view' %}"><i class="bi bi-bag"></i> Carrito {% if cart_count %}<span class="snav-badge">{{ cart_count }}</span>{% endif %}</a>
-      </nav>
+    <!-- Buscador -->
+    <form method="get" class="home-search reveal" role="search">
+      {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ query }}" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos">
+      <button type="submit">Buscar</button>
+    </form>
 
-      <div class="snav-block" id="tiendas">
-        <div class="snav-title">Tiendas</div>
-        {% for b in sidebar_brands %}
-        <a class="snav-store {% if selected_brand and selected_brand.id == b.id %}active{% endif %}" href="?brand={{ b.id }}">{{ b.name }}</a>
-        {% endfor %}
-      </div>
+    <!-- Strip de categorías -->
+    <nav class="cat-strip reveal" id="categorias" aria-label="Categorías">
+      <a class="cs-link {% if not selected_group and not selected_brand %}active{% endif %}" href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}">Todas</a>
+      {% for g in groups %}
+      <a class="cs-link {% if selected_group == g.id|stringformat:'s' %}active{% endif %}" href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}">{{ g.name }}</a>
+      {% endfor %}
+    </nav>
 
-      {% if products and price_max > price_min %}
-      <div class="snav-block">
-        <div class="snav-title">Precio</div>
-        <div class="price-filter" data-min="{{ price_min }}" data-max="{{ price_max }}">
-          <div class="pf-inputs">
-            <span class="pf-pre">$</span>
-            <input type="number" class="pf-min" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_min }}" aria-label="Precio mínimo">
-            <span class="pf-sep">–</span>
-            <span class="pf-pre">$</span>
-            <input type="number" class="pf-max" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_max }}" aria-label="Precio máximo">
-          </div>
-          <p class="pf-range-hint">Rango: ${{ price_min }} – ${{ price_max }}</p>
-        </div>
-      </div>
-      {% endif %}
-    </aside>
-
-    <!-- ===================== CENTRO ===================== -->
-    <main class="shop-main">
-      <form method="get" class="shop-search reveal" role="search">
-        {% if selected_group %}<input type="hidden" name="group" value="{{ selected_group }}">{% endif %}
-        <i class="bi bi-search"></i>
-        <input type="text" name="q" value="{{ query }}" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos">
-        <button type="submit">Buscar</button>
-      </form>
-
-      <!-- Hero banner -->
-      <section class="hero-banner reveal">
+    {% if not has_filter %}
+    <!-- HERO: banner grande + dos mini -->
+    <section class="hero-row reveal">
+      <div class="hero-banner">
         <div class="hb-text">
           <span class="hb-eyebrow">{{ config.nombre_tienda|default:"Marketplace" }}</span>
-          <h1>{{ config.hero_titulo|default:"Encuentra tu estilo, descubre tus tiendas" }}</h1>
-          <p>{{ config.slogan|default:"Productos de todas nuestras tiendas asociadas en un solo lugar." }}</p>
+          <h1>{{ config.hero_titulo|default:"Todo lo que buscas, en un solo lugar" }}</h1>
+          <p>{{ config.slogan|default:"Productos de todas nuestras tiendas asociadas." }}</p>
           {% if groups %}<p class="hb-typed-row" data-typed="{% for g in groups %}{{ g.name|escapejs }}{% if not forloop.last %}|{% endif %}{% endfor %}">Lo mejor en <span id="typed-hero"></span></p>{% endif %}
-          <a class="hb-cta" href="#novedades">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
+          <a class="hb-cta" href="#best">Explorar catálogo <i class="bi bi-arrow-right"></i></a>
         </div>
         {% if featured_rotation %}
         <div class="hb-rotator" id="hbRotator" aria-live="polite">
@@ -571,104 +618,113 @@
         {% else %}
         <div class="hb-art"><i class="bi bi-bag-heart"></i></div>
         {% endif %}
-      </section>
+      </div>
 
-      <!-- Círculos de categoría -->
-      <section class="cat-circles" id="categorias">
-        <a class="cc {% if not selected_group and not selected_brand %}active{% endif %}" href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}">
-          <span class="cc-ic"><i class="bi bi-grid-3x3-gap"></i></span><span class="cc-lb">Todas</span>
+      <div class="hero-side">
+        <div class="hero-mini m1">
+          <span class="hm-tag">Novedades</span>
+          <h3>Recién llegados</h3>
+          <p>Lo último de nuestras tiendas.</p>
+          <a class="hm-cta" href="#best">Ver ahora</a>
+          <i class="bi bi-stars hm-art"></i>
+        </div>
+        <div class="hero-mini m2">
+          <span class="hm-tag">Ofertas</span>
+          <h3>Mejores precios</h3>
+          <p>Compara y ahorra en un clic.</p>
+          <a class="hm-cta" href="#deals">Explorar</a>
+          <i class="bi bi-tag hm-art"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARCAS -->
+    {% if sidebar_brands %}
+    <section class="home-sec reveal" id="tiendas">
+      <div class="sec-head">
+        <h2>Marcas <span class="sec-sub">nuestras tiendas asociadas</span></h2>
+      </div>
+      <div class="brand-row">
+        {% for b in sidebar_brands %}
+        <a class="brand-chip {% if selected_brand and selected_brand.id == b.id %}active{% endif %}" href="?brand={{ b.id }}">
+          <span class="brand-logo">{{ b.name|slice:":1"|upper }}</span>
+          <span class="brand-name">{{ b.name }}</span>
         </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    {% endif %}
+
+    <!-- LO MÁS VENDIDO / RESULTADOS -->
+    <section class="home-sec" id="best">
+      <div class="sec-head">
+        <h2 id="novedades">{% if has_filter %}Resultados{% else %}Lo más vendido{% endif %}<span class="sec-sub"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span></h2>
+        {% if has_filter %}<a class="see-all" href="{% url 'storefront:catalog_list' %}"><i class="bi bi-x-lg"></i> Limpiar filtros</a>{% endif %}
+      </div>
+      {% if has_filter %}
+      <div class="active-filters">
+        {% if query %}<span class="chip">"{{ query }}"</span>{% endif %}
+        {% if selected_brand %}<span class="chip"><i class="bi bi-shop"></i> {{ selected_brand.name }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if products %}
+      <div class="product-grid" id="catalogGrid">
+        {% for product in products %}{% include 'storefront/_product_card.html' %}{% endfor %}
+      </div>
+      {% else %}
+      <div class="empty reveal">
+        <i class="bi bi-search"></i>
+        <h3>Sin resultados</h3>
+        <p>No encontramos productos con esos criterios. Prueba con otra búsqueda o categoría.</p>
+        <a href="{% url 'storefront:catalog_list' %}">Ver todo el catálogo</a>
+      </div>
+      {% endif %}
+    </section>
+
+    {% if not has_filter %}
+    <!-- EXPLORA POR CATEGORÍA -->
+    {% if groups %}
+    <section class="home-sec reveal">
+      <div class="sec-head"><h2>Explora por categoría</h2></div>
+      <div class="cat-circles">
         {% for g in groups %}
-        <a class="cc {% if selected_group == g.id|stringformat:'s' %}active{% endif %}" href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}">
+        <a class="cc" href="?group={{ g.id }}">
           <span class="cc-ic"><i class="bi bi-tag"></i></span><span class="cc-lb">{{ g.name }}</span>
         </a>
         {% endfor %}
-      </section>
-
-      <!-- Promo cards -->
-      <section class="promos reveal">
-        <div class="promo p1"><div class="promo-tag">Catálogo</div><div class="promo-h">Mejores precios</div><div class="promo-s">De todas las tiendas</div></div>
-        <div class="promo p2"><div class="promo-tag">Entrega</div><div class="promo-h">Coordina envío</div><div class="promo-s">Directo con la tienda</div></div>
-        <div class="promo p3"><div class="promo-tag">Nuevo</div><div class="promo-h">Recién llegados</div><div class="promo-s">Lo último del catálogo</div></div>
-      </section>
-
-      <!-- Grilla principal / resultados -->
-      <section class="block">
-        <div class="block-head">
-          <h2 id="novedades">{% if has_filter %}Resultados de búsqueda{% else %}Productos para ti{% endif %}</h2>
-          <span class="block-meta"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span>
-        </div>
-        {% if has_filter %}
-        <div class="active-filters">
-          {% if query %}<span class="chip">"{{ query }}"</span>{% endif %}
-          {% if selected_brand %}<span class="chip"><i class="bi bi-shop"></i> {{ selected_brand.name }}</span>{% endif %}
-          <a href="{% url 'storefront:catalog_list' %}" class="clear-link"><i class="bi bi-x-lg"></i> Limpiar</a>
-        </div>
-        {% endif %}
-        {% if products %}
-        <div class="product-grid" id="catalogGrid">
-          {% for product in products %}{% include 'storefront/_product_card.html' %}{% endfor %}
-        </div>
-        {% else %}
-        <div class="empty reveal">
-          <i class="bi bi-search"></i>
-          <h3>Sin resultados</h3>
-          <p>No encontramos productos con esos criterios. Prueba con otra búsqueda o categoría.</p>
-          <a href="{% url 'storefront:catalog_list' %}">Ver todo el catálogo</a>
-        </div>
-        {% endif %}
-      </section>
-
-      <!-- Recomendados -->
-      {% if recommended %}
-      <section class="block" id="recomendados">
-        <div class="block-head"><h2>Recomendados para ti</h2></div>
-        <div class="product-grid rail">
-          {% for product in recommended %}{% include 'storefront/_product_card.html' %}{% endfor %}
-        </div>
-      </section>
-      {% endif %}
-    </main>
-
-    <!-- ===================== CARRITO DERECHO ===================== -->
-    <aside class="shop-cart">
-      <div class="cart-head">Mi carrito{% if cart_count %} ({{ cart_count }}){% endif %}</div>
-      {% if cart_items %}
-      <div class="cart-items">
-        {% for it in cart_items %}
-        <div class="cart-item">
-          <div class="ci-img">{% if it.product.image %}<img src="{{ it.product.image.url }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
-          <div class="ci-info">
-            <div class="ci-name">{{ it.product.name }}</div>
-            <div class="ci-store">{{ it.product.brand.name }}</div>
-            <div class="ci-row"><span class="ci-price">${{ it.subtotal }}</span><span class="ci-qty">x{{ it.quantity }}</span></div>
-          </div>
-          <form method="post" action="{% url 'storefront:cart_remove' it.product.pk %}">{% csrf_token %}<button class="ci-del" title="Quitar"><i class="bi bi-trash"></i></button></form>
-        </div>
-        {% endfor %}
       </div>
-      <div class="cart-sum">
-        <div class="cs-row"><span>Subtotal</span><span>${{ cart_subtotal }}</span></div>
-        <div class="cs-row"><span>Envío</span><span class="free">Coordinado</span></div>
-        <div class="cs-row total"><span>Total</span><span>${{ cart_subtotal }}</span></div>
-      </div>
-      <a class="cart-checkout" href="{% url 'storefront:checkout' %}"><i class="bi bi-bag-check"></i> Continuar compra</a>
-      {% else %}
-      <div class="cart-empty"><i class="bi bi-bag"></i><p>Tu carrito está vacío</p></div>
-      {% endif %}
+    </section>
+    {% endif %}
 
-      {% if recommended %}
-      <div class="cart-extra">
-        <div class="ce-title">También te puede interesar</div>
-        {% for p in recommended|slice:":3" %}
-        <a class="ce-item" href="{% url 'storefront:product_detail' p.pk %}">
-          <div class="ce-img">{% if p.image %}<img src="{{ p.image.url }}" alt="">{% else %}<i class="bi bi-image"></i>{% endif %}</div>
-          <div class="ce-info"><div class="ce-name">{{ p.name }}</div><div class="ce-price">${{ p.unit_price }}</div></div>
-        </a>
-        {% endfor %}
+    <!-- PROMOS -->
+    <section class="promo-row reveal">
+      <div class="promo-wide pa">
+        <span class="pw-tag">Marketplace</span>
+        <h3>Todas las tiendas en un solo lugar</h3>
+        <p>Descubre productos de cada marca asociada.</p>
+        <a class="pw-cta" href="#tiendas">Ver tiendas</a>
+        <i class="bi bi-shop pw-art"></i>
       </div>
-      {% endif %}
-    </aside>
+      <div class="promo-wide pb">
+        <span class="pw-tag">Envío</span>
+        <h3>Coordina la entrega directo con la tienda</h3>
+        <p>Rápido y sin complicaciones.</p>
+        <a class="pw-cta" href="#best">Comprar ahora</a>
+        <i class="bi bi-truck pw-art"></i>
+      </div>
+    </section>
+
+    <!-- TOP OFERTAS / RECOMENDADOS -->
+    {% if recommended %}
+    <section class="home-sec" id="deals">
+      <div class="sec-head"><h2 id="recomendados">Top ofertas para ti</h2></div>
+      <div class="product-grid rail">
+        {% for product in recommended %}{% include 'storefront/_product_card.html' %}{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    {% endif %}
 
   </div>
 </div>
