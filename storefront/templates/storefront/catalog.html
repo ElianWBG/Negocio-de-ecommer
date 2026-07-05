@@ -1052,6 +1052,24 @@
       return d.innerHTML;
     }
 
+    // Actualiza el badge del navbar (y lo crea si el carrito venía en 0)
+    function updateCartBadges(count) {
+      document.querySelectorAll('.nav-icon-wrap').forEach(function (wrap) {
+        var b = wrap.querySelector('.nav-cart-badge');
+        if (count > 0) {
+          if (!b) { b = document.createElement('span'); b.className = 'nav-cart-badge'; wrap.appendChild(b); }
+          b.textContent = count;
+          b.style.display = '';
+        } else if (b) {
+          b.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.snav-badge, .mobile-badge').forEach(function (b) {
+        b.textContent = count;
+        b.style.display = count > 0 ? '' : 'none';
+      });
+    }
+
     function updateSidebar(data) {
       var aside = document.querySelector('.shop-cart');
       if (!aside) return;
@@ -1148,6 +1166,7 @@
         if (data.status === 'ok') {
           btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
           btn.classList.add('is-added');
+          updateCartBadges(data.cart_count);
           updateSidebar(data);
         } else {
           btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';
