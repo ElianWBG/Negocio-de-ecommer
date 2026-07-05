@@ -1,47 +1,334 @@
 {% extends 'billing/base.html' %}
 {% block title %}Solicitudes de compra{% endblock %}
+{% block topbar_title %}Solicitudes de Compra{% endblock %}
+
 {% block content %}
 
-<h2 class="mb-4">Solicitudes de compra</h2>
+<!-- ── Summary cards ──────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card stat-pending">
+      <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+      <div class="stat-value">{{ status_counts.pendiente }}</div>
+      <div class="stat-label">Pendientes</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card stat-confirmed">
+      <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-value">{{ status_counts.confirmada }}</div>
+      <div class="stat-label">Confirmadas</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card stat-rejected">
+      <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+      <div class="stat-value">{{ status_counts.rechazada }}</div>
+      <div class="stat-label">Rechazadas</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card stat-income">
+      <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-value">${{ ingresos_pendiente|floatformat:2 }}</div>
+      <div class="stat-label">Est. pendiente</div>
+    </div>
+  </div>
+</div>
 
-<ul class="nav nav-pills mb-3">
-  {% for value, label in status_choices %}
-  <li class="nav-item">
-    <a class="nav-link {% if status == value %}active{% endif %}"
-       href="?status={{ value }}">{{ label }}</a>
-  </li>
-  {% endfor %}
-</ul>
-
-<table class="table align-middle">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Cliente</th>
-      <th>Fecha</th>
-      <th>Total estimado</th>
-      <th>Estado</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in requests %}
-    <tr>
-      <td>{{ r.id }}</td>
-      <td>{{ r.customer.full_name }}</td>
-      <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
-      <td>${{ r.total_estimado }}</td>
-      <td>{{ r.get_status_display }}</td>
-      <td>
-        <a href="{% url 'storefront:purchase_request_detail' r.pk %}" class="btn btn-sm btn-outline-dark">
-          Ver
-        </a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" class="text-muted">No hay solicitudes en este estado.</td></tr>
+<!-- ── Filter bar: tabs + search ─────────────────────── -->
+<div class="filter-bar mb-3">
+  <div class="tab-pills">
+    {% for tab in status_tabs %}
+    <a href="?status={{ tab.value }}{% if q %}&q={{ q }}{% endif %}"
+       class="tab-pill {% if status == tab.value %}active{% endif %}">
+      {{ tab.label }}
+      <span class="tab-count">{{ tab.count }}</span>
+    </a>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
+
+  <form method="get" class="search-form">
+    <input type="hidden" name="status" value="{{ status }}">
+    <div class="search-input-wrap">
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" name="q" value="{{ q }}"
+             placeholder="Buscar cliente…" class="search-input"
+             autocomplete="off">
+      {% if q %}
+      <a href="?status={{ status }}" class="search-clear" title="Limpiar">
+        <i class="bi bi-x"></i>
+      </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ── Table ──────────────────────────────────────────── -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0 req-table">
+        <thead>
+          <tr>
+            <th class="ps-3" style="width:50px">#</th>
+            <th>Cliente</th>
+            <th style="width:100px">Fecha</th>
+            <th style="width:120px">Tiempo</th>
+            <th class="text-end" style="width:120px">Total est.</th>
+            <th style="width:120px">Estado</th>
+            <th class="pe-3 text-end" style="width:70px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+          <tr class="req-row req-row-{{ r.status }}">
+            <td class="ps-3 text-muted small">#{{ r.id }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="customer-avatar">
+                  {{ r.customer.first_name|slice:":1"|upper }}{{ r.customer.last_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div class="req-customer-name">{{ r.customer.full_name }}</div>
+                  {% if r.customer.phone %}
+                  <div class="req-customer-sub">{{ r.customer.phone }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small">{{ r.created_at|date:"d/m/Y" }}</td>
+            <td class="text-muted small">hace {{ r.created_at|timesince }}</td>
+            <td class="text-end fw-semibold">${{ r.total_estimado|floatformat:2 }}</td>
+            <td>
+              <span class="status-pill status-pill-{{ r.status }}">
+                {{ r.get_status_display }}
+              </span>
+            </td>
+            <td class="pe-3 text-end">
+              <a href="{% url 'storefront:purchase_request_detail' r.pk %}" class="btn-ver">
+                Ver <i class="bi bi-arrow-right"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <i class="bi bi-inbox" style="font-size:2.5rem;opacity:.2;display:block;margin-bottom:.75rem;"></i>
+              <span class="text-muted small">
+                {% if q %}No se encontraron solicitudes para "{{ q }}".{% else %}No hay solicitudes en este estado.{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Stat cards ──────────────────────────────────────── */
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  border: 1px solid #f0f0f0;
+  border-top: 3px solid transparent;
+}
+
+.stat-icon { font-size: 1.3rem; margin-bottom: .4rem; }
+.stat-value { font-size: 1.65rem; font-weight: 800; line-height: 1; color: #111; }
+.stat-label { font-size: .7rem; color: #999; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-top: 4px; }
+
+.stat-pending  { border-top-color: #f59e0b; }
+.stat-pending .stat-icon  { color: #f59e0b; }
+.stat-confirmed { border-top-color: #10b981; }
+.stat-confirmed .stat-icon { color: #10b981; }
+.stat-rejected  { border-top-color: #ef4444; }
+.stat-rejected .stat-icon  { color: #ef4444; }
+.stat-income    { border-top-color: var(--rust, #8B3A2A); }
+.stat-income .stat-icon    { color: var(--rust, #8B3A2A); }
+
+/* ── Filter bar ──────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.tab-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #666;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  transition: border-color .15s, background .15s, color .15s;
+}
+
+.tab-pill:hover {
+  border-color: var(--rust, #8B3A2A);
+  color: var(--rust, #8B3A2A);
+}
+
+.tab-pill.active {
+  background: var(--rust, #8B3A2A);
+  border-color: var(--rust, #8B3A2A);
+  color: #fff;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: .65rem;
+  font-weight: 700;
+  background: rgba(255,255,255,.25);
+}
+
+.tab-pill:not(.active) .tab-count {
+  background: #eee;
+  color: #666;
+}
+
+/* Search */
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #bbb;
+  font-size: .82rem;
+  pointer-events: none;
+}
+
+.search-input {
+  padding: 7px 30px 7px 30px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: .82rem;
+  outline: none;
+  width: 220px;
+  background: #fff;
+  color: inherit;
+  transition: border-color .2s;
+}
+
+.search-input:focus { border-color: var(--rust, #8B3A2A); }
+
+.search-clear {
+  position: absolute;
+  right: 9px;
+  color: #bbb;
+  font-size: 1rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.search-clear:hover { color: #555; }
+
+/* ── Table ───────────────────────────────────────────── */
+.req-table thead th {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  font-weight: 700;
+  color: #adb5bd;
+  border-bottom: 2px solid #f0f0f0;
+  background: #fff;
+  padding-top: .75rem;
+  padding-bottom: .75rem;
+}
+
+.req-table tbody td {
+  border-bottom: 1px solid #f8f9fa;
+  padding-top: .7rem;
+  padding-bottom: .7rem;
+}
+
+/* Row tints */
+.req-row-confirmada > td { background: rgba(16,185,129,.04); }
+.req-row-rechazada  > td { background: rgba(239,68,68,.04);  }
+
+/* Customer avatar */
+.customer-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--rust, #8B3A2A);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -.5px;
+}
+
+.req-customer-name { font-size: .86rem; font-weight: 600; color: #111; }
+.req-customer-sub  { font-size: .74rem; color: #aaa; }
+
+/* Status pills */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+.status-pill-pendiente  { background: #fef3c7; color: #92400e; }
+.status-pill-confirmada { background: #d1fae5; color: #065f46; }
+.status-pill-rechazada  { background: #fee2e2; color: #991b1b; }
+
+/* Ver button */
+.btn-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: .75rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--rust, #8B3A2A);
+  border: 1.5px solid var(--rust, #8B3A2A);
+  background: transparent;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+
+.btn-ver:hover {
+  background: var(--rust, #8B3A2A);
+  color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .search-input { width: 100%; }
+  .tab-pill { font-size: .75rem; padding: 5px 10px; }
+}
+</style>
 
 {% endblock %}
