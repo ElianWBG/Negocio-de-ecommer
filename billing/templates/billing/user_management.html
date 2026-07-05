@@ -48,18 +48,27 @@
             </td>
             <td class="text-end pe-3">
               {% if not u.is_superuser %}
-              <form method="post" class="d-inline-flex gap-2 align-items-center">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="set_group">
-                <input type="hidden" name="user_id" value="{{ u.pk }}">
-                <select name="group_name" class="form-select form-select-sm" style="width:auto;">
-                  <option value="">— Sin rol —</option>
-                  {% for g in groups %}
-                  <option value="{{ g.name }}" {% if g in u.groups.all %}selected{% endif %}>{{ g.name }}</option>
-                  {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-sm btn-outline-secondary">Guardar</button>
-              </form>
+              <div class="d-inline-flex gap-2 align-items-center flex-wrap">
+                <form method="post" class="d-inline-flex gap-1 align-items-center">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="set_group">
+                  <input type="hidden" name="user_id" value="{{ u.pk }}">
+                  <select name="group_name" class="form-select form-select-sm" style="width:auto;">
+                    <option value="">— Sin rol —</option>
+                    {% for g in groups %}
+                    <option value="{{ g.name }}" {% if g in u.groups.all %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">Guardar</button>
+                </form>
+                {% if u.pk != request.user.pk %}
+                <a href="{% url 'billing:delete_user' u.pk %}"
+                   class="btn btn-sm btn-outline-danger"
+                   title="Eliminar usuario">
+                  <i class="bi bi-trash"></i>
+                </a>
+                {% endif %}
+              </div>
               {% endif %}
             </td>
           </tr>

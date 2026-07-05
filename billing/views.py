@@ -18,6 +18,7 @@ from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
 from shared.mixins import GroupRequiredMixin
 from shared.decorators import audit_action, group_required
+from billing.audit import log_action
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
     get_brand_visible_columns, get_all_brand_columns,
@@ -812,6 +813,7 @@ class ProductCreateView(GroupRequiredMixin, CreateView):
         for f in self.request.FILES.getlist('extra_images'):
             if f.size <= 5 * 1024 * 1024:
                 ProductImage.objects.create(product=self.object, image=f)
+        log_action(self.request, 'created', 'Product', self.object.pk, f'Producto creado: {self.object.name}')
         return response
 
 class ProductUpdateView(GroupRequiredMixin, UpdateView):
@@ -827,6 +829,7 @@ class ProductUpdateView(GroupRequiredMixin, UpdateView):
         for f in self.request.FILES.getlist('extra_images'):
             if f.size <= 5 * 1024 * 1024:
                 ProductImage.objects.create(product=self.object, image=f)
+        log_action(self.request, 'updated', 'Product', self.object.pk, f'Producto actualizado: {self.object.name}')
         return response
 
 class ProductDeleteView(GroupRequiredMixin, DeleteView):
@@ -834,6 +837,12 @@ class ProductDeleteView(GroupRequiredMixin, DeleteView):
     model = Product
     template_name = 'billing/product_confirm_delete.html'
     success_url = reverse_lazy('billing:product_list')
+
+    def form_valid(self, form):
+        pk, name = self.object.pk, str(self.object)
+        response = super().form_valid(form)
+        log_action(self.request, 'deleted', 'Product', pk, f'Producto eliminado: {name}')
+        return response
 
 
 class ProductDetailView(GroupRequiredMixin, DetailView):
@@ -1141,11 +1150,21 @@ class CustomerCreateView(GroupRequiredMixin, CreateView):
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_action(self.request, 'created', 'Customer', self.object.pk, f'Cliente creado: {self.object.full_name}')
+        return response
+
 class CustomerUpdateView(GroupRequiredMixin, UpdateView):
     group_required = ['Vendedor', 'Administrador']
     model = Customer; form_class = CustomerForm
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_action(self.request, 'updated', 'Customer', self.object.pk, f'Cliente actualizado: {self.object.full_name}')
+        return response
 
 class CustomerDetailView(GroupRequiredMixin, DetailView):
     group_required = ['Vendedor', 'Administrador']
@@ -1168,6 +1187,12 @@ class CustomerDeleteView(GroupRequiredMixin, DeleteView):
     model = Customer
     template_name = 'billing/customer_confirm_delete.html'
     success_url = reverse_lazy('billing:customer_list')
+
+    def form_valid(self, form):
+        pk, name = self.object.pk, self.object.full_name
+        response = super().form_valid(form)
+        log_action(self.request, 'deleted', 'Customer', pk, f'Cliente eliminado: {name}')
+        return response
 
 
 @login_required
@@ -1460,6 +1485,7 @@ def invoice_create(request):
                 except ValueError as e:
                     messages.error(request, str(e))
                 else:
+                    log_action(request, 'created', 'Invoice', invoice.id, f'Factura #{invoice.id} creada. Total: ${invoice.total}')
                     messages.success(request, f'Factura #{invoice.id} creada! Total: ${invoice.total}')
                     return redirect('billing:invoice_list')
     else:
@@ -1531,6 +1557,12 @@ class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
     model = Invoice
     template_name = 'billing/invoice_confirm_delete.html'
     success_url = reverse_lazy('billing:invoice_list')
+
+    def form_valid(self, form):
+        pk = self.object.pk
+        response = super().form_valid(form)
+        log_action(self.request, 'deleted', 'Invoice', pk, f'Factura #{pk} eliminada')
+        return response
 
 
 # ─────────────────────────────────────────────
@@ -2361,6 +2393,7 @@ def config_negocio_edit(request):
             config.sobre_imagen = None
 
         config.save()
+        log_action(request, 'config_saved', 'ConfigNegocio', 1, 'Configuración del negocio guardada')
         messages.success(request, 'Configuración guardada correctamente.')
         return redirect('billing:config_negocio')
 
@@ -2448,4 +2481,56 @@ def user_management(request):
     return render(request, 'billing/user_management.html', {
         'users': users,
         'groups': groups,
+    })
+
+
+@group_required('Administrador')
+def delete_user(request, pk):
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    target = get_object_or_404(User, pk=pk)
+
+    if target.is_superuser:
+        messages.error(request, 'No se puede eliminar un superusuario.')
+        return redirect('billing:user_management')
+    if target.pk == request.user.pk:
+        messages.error(request, 'No puedes eliminar tu propia cuenta.')
+        return redirect('billing:user_management')
+
+    if request.method == 'POST':
+        username = target.username
+        target.delete()
+        log_action(request, 'deleted', 'User', pk, f'Usuario eliminado: {username}')
+        messages.success(request, f'Usuario {username} eliminado correctamente.')
+        return redirect('billing:user_management')
+
+    return render(request, 'billing/user_delete_confirm.html', {'target_user': target})
+
+
+# ─────────────────────────────────────────────
+# Registro de actividad (Audit Log)
+# ─────────────────────────────────────────────
+
+@group_required('Administrador')
+def activity_log(request):
+    from billing.models import AuditLog
+
+    qs = AuditLog.objects.select_related('user')
+
+    filter_user = request.GET.get('user', '').strip()
+    filter_action = request.GET.get('action', '').strip()
+
+    if filter_user:
+        qs = qs.filter(user__username__icontains=filter_user)
+    if filter_action:
+        qs = qs.filter(action=filter_action)
+
+    logs = qs[:200]
+    action_choices = AuditLog.ACTION_CHOICES
+
+    return render(request, 'billing/activity_log.html', {
+        'logs': logs,
+        'action_choices': action_choices,
+        'filter_user': filter_user,
+        'filter_action': filter_action,
     })

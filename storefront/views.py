@@ -1,6 +1,7 @@
 import secrets
 import uuid
 from decimal import Decimal
+from billing.audit import log_action
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -717,6 +718,8 @@ def purchase_request_confirm(request, pk):
         except InsufficientStockError as e:
             messages.error(request, str(e))
         else:
+            log_action(request, 'confirmed', 'PurchaseRequest', purchase_request.pk,
+                       f'Solicitud #{purchase_request.id} confirmada → Factura #{invoice.id}')
             messages.success(request, f'Solicitud #{purchase_request.id} confirmada. Factura #{invoice.id} creada.')
     return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
 
@@ -728,6 +731,8 @@ def purchase_request_reject(request, pk):
         purchase_request.status = 'rechazada'
         purchase_request.reviewed_at = timezone.now()
         purchase_request.save()
+        log_action(request, 'rejected', 'PurchaseRequest', purchase_request.pk,
+                   f'Solicitud #{purchase_request.id} rechazada')
         messages.success(request, f'Solicitud #{purchase_request.id} rechazada.')
     return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
 

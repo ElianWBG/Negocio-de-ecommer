@@ -135,20 +135,32 @@
       .main-wrap { margin-left: 0; padding: 1rem; }
       .hamburger { display: flex; }
 
-      /* Tablas anchas → scroll horizontal en vez de desbordar */
-      .table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
+      /* Page header: stack title + buttons vertically */
+      .page-header { flex-direction: column; align-items: flex-start !important; gap: .5rem; }
+      .page-header > *:last-child { flex-wrap: wrap; }
+
+      /* Button groups wrap instead of overflow */
+      .btn-toolbar-mobile { flex-wrap: wrap !important; gap: .35rem !important; }
+
+      /* Tables: horizontal scroll wrapper already handles this,
+         but keep display:block as fallback for tables without .table-responsive */
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+      /* Trim very long cell text */
+      .table td {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
       }
+      /* Action column should never be clipped */
+      .table td:last-child { max-width: none; white-space: normal; }
     }
     @media(max-width: 480px) {
       .topbar { padding: 0 .9rem; }
       .topbar-title { font-size: .9rem; }
-      /* Ocultar botón "Reportes" en pantallas chicas (queda en el sidebar) */
-      .topbar-actions a:first-child { display: none; }
+      /* On very small screens, hide the topbar "Ver tienda" button (it's in sidebar) */
+      .topbar-btn.primary { display: none; }
     }
   </style>
   {% block extra_css %}{% endblock %}
@@ -235,6 +247,9 @@
     </a>
     <a href="{% url 'billing:user_management' %}" class="sidebar-link {% if 'usuarios' in request.path %}active{% endif %}">
       <i class="bi bi-person-gear"></i> Usuarios
+    </a>
+    <a href="{% url 'billing:activity_log' %}" class="sidebar-link {% if 'actividad' in request.path %}active{% endif %}">
+      <i class="bi bi-clock-history"></i> Actividad
     </a>
   </div>
   {% endif %}

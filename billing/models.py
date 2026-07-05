@@ -248,3 +248,30 @@ class ConfigNegocio(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
+
+class AuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('created',      'Creado'),
+        ('updated',      'Actualizado'),
+        ('deleted',      'Eliminado'),
+        ('confirmed',    'Confirmado'),
+        ('rejected',     'Rechazado'),
+        ('login',        'Inicio de sesión'),
+        ('config_saved', 'Configuración guardada'),
+    ]
+    user        = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='audit_logs')
+    action      = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    model_name  = models.CharField(max_length=100)
+    object_id   = models.IntegerField(null=True, blank=True)
+    description = models.TextField()
+    timestamp   = models.DateTimeField(auto_now_add=True)
+    ip_address  = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Registro de actividad'
+        verbose_name_plural = 'Registros de actividad'
+
+    def __str__(self):
+        return f'[{self.action}] {self.model_name} #{self.object_id} by {self.user}'
+

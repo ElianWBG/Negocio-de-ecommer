@@ -72,5 +72,9 @@ urlpatterns = [
 
     # Gestión de usuarios
     path('usuarios/', views.user_management, name='user_management'),
+    path('usuarios/<int:pk>/eliminar/', views.delete_user, name='delete_user'),
+
+    # Registro de actividad
+    path('actividad/', views.activity_log, name='activity_log'),
 
 ]

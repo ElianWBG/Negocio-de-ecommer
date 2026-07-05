@@ -1,0 +1,100 @@
+{% extends 'billing/base.html' %}
+{% block title %}Actividad{% endblock %}
+{% block topbar_title %}Registro de Actividad{% endblock %}
+
+{% block extra_css %}
+<style>
+  .badge-action-created    { background: #198754; }
+  .badge-action-updated    { background: #0d6efd; }
+  .badge-action-deleted    { background: #dc3545; }
+  .badge-action-confirmed  { background: #fd7e14; }
+  .badge-action-rejected   { background: #6f42c1; }
+  .badge-action-login      { background: #0dcaf0; color: #000; }
+  .badge-action-config_saved { background: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0" style="font-size:1.25rem;">Registro de actividad</h4>
+    <p class="text-muted small mb-0">Últimas 200 acciones registradas en el sistema.</p>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+      <div>
+        <label class="form-label form-label-sm mb-1">Usuario</label>
+        <input type="text" name="user" class="form-control form-control-sm"
+               value="{{ filter_user }}" placeholder="Buscar usuario…" style="width:160px;">
+      </div>
+      <div>
+        <label class="form-label form-label-sm mb-1">Acción</label>
+        <select name="action" class="form-select form-select-sm" style="width:180px;">
+          <option value="">— Todas —</option>
+          {% for value, label in action_choices %}
+          <option value="{{ value }}" {% if filter_action == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+        <a href="{% url 'billing:activity_log' %}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 small">
+        <thead class="table-dark">
+          <tr>
+            <th class="ps-3" style="width:155px;">Fecha / Hora</th>
+            <th style="width:120px;">Usuario</th>
+            <th style="width:120px;">Acción</th>
+            <th style="width:130px;">Módulo</th>
+            <th>Descripción</th>
+            <th style="width:110px;">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="ps-3 text-muted" style="font-size:.8rem; white-space:nowrap;">
+              {{ log.timestamp|date:"d/m/Y H:i:s" }}
+            </td>
+            <td>
+              {% if log.user %}
+                <span class="fw-semibold">{{ log.user.username }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-action-{{ log.action }} text-white rounded-pill px-2 py-1">
+                {{ log.get_action_display }}
+              </span>
+            </td>
+            <td class="text-muted">{{ log.model_name }}{% if log.object_id %} #{{ log.object_id }}{% endif %}</td>
+            <td style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ log.description }}
+            </td>
+            <td class="text-muted" style="font-size:.8rem;">{{ log.ip_address|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No hay registros de actividad.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
