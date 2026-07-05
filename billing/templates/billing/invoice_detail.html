@@ -1,245 +1,506 @@
 {% extends 'billing/base.html' %}
-{% block title %}Factura #{{ invoice.id }} - Detalle{% endblock %}
+{% block title %}Factura #{{ invoice.id|stringformat:"05d" }}{% endblock %}
+{% block topbar_title %}Detalle de Factura{% endblock %}
+
 {% block content %}
 
-<div class="mb-4">
-  <a href="{% url 'billing:invoice_list' %}" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left"></i> Volver al listado
+<!-- Action bar — hidden when printing -->
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap no-print">
+  <a href="{% url 'billing:invoice_list' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver
   </a>
+  <button onclick="window.print()" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-printer"></i> Imprimir / PDF
+  </button>
+  <a href="{% url 'billing:invoice_create' %}" class="btn btn-sm btn-outline-success">
+    <i class="bi bi-plus-circle"></i> Nueva factura
+  </a>
+  {% if invoice.is_active %}
+  <a href="{% url 'billing:invoice_delete' invoice.pk %}" class="btn btn-sm btn-outline-danger ms-auto">
+    <i class="bi bi-trash"></i> Anular factura
+  </a>
+  {% endif %}
 </div>
 
-<div class="card shadow-lg border-0 mb-4">
-  <div class="card-body p-4">
-    <div class="row g-4">
-      <!-- Columna izquierda: Resumen -->
-      <div class="col-lg-4">
-        <div class="sticky-top" style="top: 20px;">
-          <!-- Icono de factura -->
-          <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm"
-                 style="width: 120px; height: 120px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); font-size: 2.5rem; color: white; font-weight: bold;">
-              #{{ invoice.id }}
-            </div>
-          </div>
+<!-- ── Invoice document ──────────────────────────────── -->
+<div class="invoice-doc card border-0 shadow-sm mb-5">
 
-          <!-- Estado -->
-          <div class="text-center mb-3">
-            {% if invoice.is_active %}
-              <span class="badge bg-success p-2" style="font-size: 0.9rem;">
-                <i class="bi bi-check-circle"></i> Factura Activa
-              </span>
-            {% else %}
-              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;">
-                <i class="bi bi-x-circle"></i> Factura Anulada
-              </span>
-            {% endif %}
-          </div>
-
-          <!-- Montos -->
-          <div class="alert alert-light text-center border" role="alert">
-            <small class="text-muted d-block mb-1">Subtotal</small>
-            <strong style="font-size: 1.1rem;">${{ invoice.subtotal }}</strong>
-          </div>
-          <div class="alert alert-light text-center border" role="alert">
-            <small class="text-muted d-block mb-1">IVA (15%)</small>
-            <strong style="font-size: 1.1rem;">${{ invoice.tax }}</strong>
-          </div>
-          <div class="alert alert-success text-center" role="alert">
-            <small class="text-muted d-block mb-1">TOTAL</small>
-            <strong style="font-size: 1.8rem; color: #155724;">${{ invoice.total }}</strong>
-          </div>
+  <!-- Header: brand left / invoice meta right -->
+  <div class="invoice-header">
+    <div class="invoice-brand">
+      {% if config.logo %}
+      <img src="{{ config.logo.url }}" alt="{{ config.nombre_tienda }}" class="invoice-logo">
+      {% else %}
+      <div class="invoice-logo-placeholder">{{ config.nombre_tienda|slice:":2"|upper }}</div>
+      {% endif %}
+      <div>
+        <div class="invoice-store-name">{{ config.nombre_tienda }}</div>
+        {% if config.slogan %}<div class="invoice-slogan">{{ config.slogan }}</div>{% endif %}
+        <div class="invoice-contact-row">
+          {% if config.email_contacto %}<span><i class="bi bi-envelope"></i> {{ config.email_contacto }}</span>{% endif %}
+          {% if config.telefono %}<span><i class="bi bi-telephone"></i> {{ config.telefono }}</span>{% endif %}
         </div>
+        {% if config.direccion %}<div class="invoice-address"><i class="bi bi-geo-alt"></i> {{ config.direccion }}</div>{% endif %}
       </div>
+    </div>
 
-      <!-- Columna derecha: Información de la factura -->
-      <div class="col-lg-8">
-        <!-- Título -->
-        <div class="mb-4 pb-4 border-bottom">
-          <h1 class="h2 fw-bold mb-2" style="color: #2c3e50;">Factura #{{ invoice.id }}</h1>
-          <div class="d-flex align-items-baseline gap-2 mb-1">
-            <span class="badge bg-dark p-2" style="font-size: 0.95rem;">
-              <i class="bi bi-calendar"></i> {{ invoice.invoice_date|date:"d/m/Y H:i" }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Información del cliente -->
-        <div class="mb-4">
-          <h5 class="fw-bold mb-3" style="color: #34495e;">Información del Cliente</h5>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded-2">
-                <small class="text-muted d-block mb-1">Cliente</small>
-                <strong class="h6" style="color: #2c3e50;">{{ invoice.customer.full_name }}</strong>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded-2">
-                <small class="text-muted d-block mb-1">DNI / RUC</small>
-                <strong class="h6" style="color: #2c3e50;">{{ invoice.customer.dni }}</strong>
-              </div>
-            </div>
-            {% if invoice.customer.email %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded-2">
-                <small class="text-muted d-block mb-1">Correo electrónico</small>
-                <strong class="h6" style="color: #2c3e50;">
-                  <a href="mailto:{{ invoice.customer.email }}" class="text-decoration-none">{{ invoice.customer.email }}</a>
-                </strong>
-              </div>
-            </div>
-            {% endif %}
-            {% if invoice.customer.phone %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded-2">
-                <small class="text-muted d-block mb-1">Teléfono</small>
-                <strong class="h6" style="color: #2c3e50;">{{ invoice.customer.phone }}</strong>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Detalle de productos -->
-        <div class="mb-4">
-          <h5 class="fw-bold mb-3" style="color: #34495e;">Detalle de Productos</h5>
-          {% if details %}
-          <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle mb-0">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 50px;">#</th>
-                  <th>Producto</th>
-                  <th>Marca</th>
-                  <th class="text-center" style="width: 100px;">Cantidad</th>
-                  <th class="text-end" style="width: 130px;">Precio Unit.</th>
-                  <th class="text-end" style="width: 130px;">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for detail in details %}
-                <tr>
-                  <td class="text-muted">{{ forloop.counter }}</td>
-                  <td>
-                    <strong>{{ detail.product.name }}</strong>
-                  </td>
-                  <td>
-                    <span class="badge bg-info text-dark">{{ detail.product.brand.name }}</span>
-                  </td>
-                  <td class="text-center">
-                    <span class="badge bg-primary rounded-pill" style="font-size: 0.9rem;">{{ detail.quantity }}</span>
-                  </td>
-                  <td class="text-end">${{ detail.unit_price }}</td>
-                  <td class="text-end"><strong>${{ detail.subtotal }}</strong></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-              <tfoot>
-                <tr class="table-light">
-                  <td colspan="4"></td>
-                  <td class="text-end fw-bold">Subtotal:</td>
-                  <td class="text-end fw-bold">${{ invoice.subtotal }}</td>
-                </tr>
-                <tr class="table-light">
-                  <td colspan="4"></td>
-                  <td class="text-end fw-bold">IVA (15%):</td>
-                  <td class="text-end fw-bold">${{ invoice.tax }}</td>
-                </tr>
-                <tr class="table-warning">
-                  <td colspan="4"></td>
-                  <td class="text-end fw-bold fs-5">TOTAL:</td>
-                  <td class="text-end fw-bold fs-5">${{ invoice.total }}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          {% else %}
-          <div class="alert alert-info">
-            <small><i class="bi bi-info-circle"></i> Esta factura no tiene productos registrados.</small>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Información de auditoría -->
-        <div class="mt-5 pt-4 border-top">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <small class="text-muted d-block mb-1">Fecha de emisión</small>
-              <span class="small" style="color: #7f8c8d;">{{ invoice.invoice_date|date:"d/m/Y H:i" }}</span>
-            </div>
-            <div class="col-md-4">
-              <small class="text-muted d-block mb-1">Cantidad de productos</small>
-              <span class="small" style="color: #7f8c8d;">{{ details|length }} producto(s)</span>
-            </div>
-            <div class="col-md-4">
-              <small class="text-muted d-block mb-1">Total de unidades</small>
-              <span class="small" style="color: #7f8c8d;">{{ total_units }} unidad(es)</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Botones de acción -->
-        <div class="mt-5 pt-4 border-top d-flex gap-2">
-          <a href="{% url 'billing:invoice_delete' invoice.pk %}" class="btn btn-danger">
-            <i class="bi bi-trash"></i> Eliminar Factura
-          </a>
-          <a href="{% url 'billing:invoice_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> Nueva Factura
-          </a>
-          <a href="{% url 'billing:invoice_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-list"></i> Ver Listado
-          </a>
-        </div>
+    <div class="invoice-meta">
+      <div class="invoice-label-tag">FACTURA</div>
+      <div class="invoice-number">#{{ invoice.id|stringformat:"05d" }}</div>
+      <div class="invoice-date">{{ invoice.invoice_date|date:"d/m/Y" }}</div>
+      <div class="invoice-time">{{ invoice.invoice_date|date:"H:i" }}</div>
+      <div class="mt-2">
+        {% if invoice.is_active %}
+          <span class="inv-badge inv-badge-active">● Activa</span>
+        {% else %}
+          <span class="inv-badge inv-badge-void">● Anulada</span>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  <div class="invoice-divider"></div>
+
+  <!-- Customer section -->
+  <div class="invoice-section">
+    <div class="invoice-section-label">FACTURADO A</div>
+    <div class="invoice-customer-grid">
+      <div>
+        <div class="invoice-customer-name">{{ invoice.customer.full_name }}</div>
+        {% if invoice.customer.email %}
+        <div class="invoice-customer-detail"><i class="bi bi-envelope"></i> {{ invoice.customer.email }}</div>
+        {% endif %}
+        {% if invoice.customer.phone %}
+        <div class="invoice-customer-detail"><i class="bi bi-telephone"></i> {{ invoice.customer.phone }}</div>
+        {% endif %}
+      </div>
+      <div class="invoice-customer-meta">
+        <div class="inv-meta-label">CI / RUC</div>
+        <div class="inv-meta-value">{{ invoice.customer.dni }}</div>
+        <div class="inv-meta-label mt-2">Productos</div>
+        <div class="inv-meta-value">{{ details|length }}</div>
+        <div class="inv-meta-label mt-2">Unidades</div>
+        <div class="inv-meta-value">{{ total_units }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="invoice-divider-light"></div>
+
+  <!-- Products table -->
+  <div class="invoice-section">
+    <div class="invoice-section-label">DETALLE DE PRODUCTOS</div>
+    {% if details %}
+    <div class="table-responsive">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Producto</th>
+            <th>Marca</th>
+            <th class="text-center" style="width:80px">Cant.</th>
+            <th class="text-end" style="width:110px">P. Unit.</th>
+            <th class="text-end" style="width:120px">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for detail in details %}
+          <tr>
+            <td class="text-muted">{{ forloop.counter }}</td>
+            <td><strong>{{ detail.product.name }}</strong></td>
+            <td class="text-muted">{{ detail.product.brand.name }}</td>
+            <td class="text-center">{{ detail.quantity }}</td>
+            <td class="text-end">${{ detail.unit_price }}</td>
+            <td class="text-end fw-bold">${{ detail.subtotal }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted small mt-2"><i class="bi bi-info-circle"></i> Esta factura no tiene productos registrados.</p>
+    {% endif %}
+  </div>
+
+  <!-- Totals -->
+  <div class="invoice-totals-area">
+    <div class="invoice-totals">
+      <div class="totals-row">
+        <span>Subtotal</span>
+        <span>${{ invoice.subtotal }}</span>
+      </div>
+      <div class="totals-row">
+        <span>IVA (15%)</span>
+        <span>${{ invoice.tax }}</span>
+      </div>
+      <div class="totals-divider"></div>
+      <div class="totals-row totals-final">
+        <span>TOTAL</span>
+        <span>${{ invoice.total }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="invoice-footer">
+    <div class="invoice-footer-line"></div>
+    <p class="invoice-footer-text">
+      Gracias por su compra.
+      {% if config.email_contacto or config.telefono %}
+        Para consultas, comuníquese con nosotros{% if config.email_contacto %} en <strong>{{ config.email_contacto }}</strong>{% endif %}{% if config.telefono %} o al <strong>{{ config.telefono }}</strong>{% endif %}.
+      {% endif %}
+    </p>
+    <p class="invoice-footer-brand">{{ config.nombre_tienda }} · {{ invoice.invoice_date|date:"Y" }}</p>
+  </div>
+
 </div>
 
-<!-- Estilos adicionales -->
 <style>
-  .sticky-top {
-    position: sticky;
-    top: 20px;
-    z-index: 900;
+/* ── Invoice document ────────────────────────────────── */
+.invoice-doc {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 2.25rem 2.5rem;
+}
+
+.invoice-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.invoice-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.invoice-logo-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #fff;
+  background: var(--rust, #8B3A2A);
+  flex-shrink: 0;
+}
+
+.invoice-store-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.invoice-slogan {
+  font-size: 0.78rem;
+  color: #999;
+  font-style: italic;
+  margin: 3px 0 8px;
+}
+
+.invoice-contact-row {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.78rem;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.invoice-contact-row .bi,
+.invoice-address .bi {
+  margin-right: 3px;
+  opacity: 0.65;
+}
+
+.invoice-address {
+  font-size: 0.78rem;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* Meta right */
+.invoice-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.invoice-label-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rust, #8B3A2A);
+  margin-bottom: 4px;
+}
+
+.invoice-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.invoice-date {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 6px;
+}
+
+.invoice-time {
+  font-size: 0.78rem;
+  color: #999;
+  margin-top: 1px;
+}
+
+.inv-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+.inv-badge-active { background: #d1fae5; color: #065f46; }
+.inv-badge-void   { background: #f3f4f6; color: #6b7280; }
+
+/* Dividers */
+.invoice-divider {
+  height: 3px;
+  background: linear-gradient(90deg, var(--rust, #8B3A2A) 0%, rgba(139,58,42,0.08) 100%);
+}
+
+.invoice-divider-light {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 0 2.5rem;
+}
+
+/* Sections */
+.invoice-section {
+  padding: 1.75rem 2.5rem;
+}
+
+.invoice-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rust, #8B3A2A);
+  margin-bottom: 1rem;
+}
+
+/* Customer */
+.invoice-customer-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: start;
+}
+
+.invoice-customer-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 5px;
+}
+
+.invoice-customer-detail {
+  font-size: 0.81rem;
+  color: #666;
+  margin-top: 3px;
+}
+
+.invoice-customer-detail .bi { margin-right: 4px; opacity: 0.6; }
+
+.invoice-customer-meta { text-align: right; }
+
+.inv-meta-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.inv-meta-value {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Products table */
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.inv-table thead tr {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.inv-table thead th {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.inv-table tbody tr {
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.inv-table tbody tr:last-child { border-bottom: none; }
+
+.inv-table tbody tr:hover { background: #fafafa; }
+
+.inv-table tbody td {
+  padding: 0.65rem 0.6rem;
+  color: #374151;
+}
+
+/* Totals */
+.invoice-totals-area {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2.5rem 2.25rem;
+}
+
+.invoice-totals {
+  min-width: 270px;
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #f0f0f0;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.totals-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+.totals-final {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--rust, #8B3A2A);
+}
+
+/* Footer */
+.invoice-footer {
+  padding: 1.5rem 2.5rem 2rem;
+  text-align: center;
+}
+
+.invoice-footer-line {
+  height: 1px;
+  background: #e9ecef;
+  margin-bottom: 1.25rem;
+}
+
+.invoice-footer-text {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.invoice-footer-brand {
+  font-size: 0.7rem;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0;
+}
+
+/* Print */
+@media print {
+  .sidebar,
+  .sidebar-overlay,
+  .topbar,
+  .no-print {
+    display: none !important;
   }
 
-  @media (max-width: 991px) {
-    .sticky-top {
-      position: static;
-    }
+  body {
+    background: #fff !important;
   }
 
-  .card {
-    transition: box-shadow 0.3s ease;
+  .main-wrap,
+  .main-content,
+  #main-content,
+  .content-wrap {
+    margin: 0 !important;
+    padding: 0.5rem !important;
   }
 
-  .card:hover {
-    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.15) !important;
+  .invoice-doc {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .invoice-header {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.25rem;
   }
 
-  .badge {
-    transition: all 0.2s ease;
+  .invoice-meta { text-align: left; }
+
+  .invoice-section { padding: 1.25rem 1.5rem; }
+
+  .invoice-divider-light { margin: 0 1.5rem; }
+
+  .invoice-customer-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
-  .badge:hover {
-    transform: translateY(-2px);
+  .invoice-customer-meta { text-align: left; }
+
+  .invoice-totals-area {
+    padding: 0 1.5rem 1.5rem;
   }
 
-  .btn {
-    transition: all 0.2s ease;
-  }
+  .invoice-totals { min-width: 100%; }
 
-  .btn:hover {
-    transform: translateY(-2px);
-  }
-
-  h1, h5 {
-    letter-spacing: -0.5px;
-  }
-
-  .bg-light {
-    background-color: #f8f9fa !important;
-  }
+  .invoice-footer { padding: 1.25rem 1.5rem 1.75rem; }
+}
 </style>
 
 {% endblock %}

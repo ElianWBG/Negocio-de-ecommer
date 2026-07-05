@@ -1,6 +1,6 @@
 # SALES_A2
 
-Proyecto Django para gestión de ventas, desarrollado por **Elian**.
+Proyecto Django para gestión de ventas, desarrollado por **ELIAN VLADIMIR GALEAS, JOSE ANTONIO TORRES, JONATHAN BELFOR CASTRO, JHOAN CEVALLOS VILLAVICENCIO, JEAN JIMENEZ BAJAÑA**.
 
 ## Funcionalidades
 
