@@ -725,12 +725,46 @@ def payphone_response(request):
 
 @login_required
 def purchase_request_list(request):
+    from django.db.models import Count, Sum, F, Q as DQ
+    from storefront.models import PurchaseRequestDetail
+
     status = request.GET.get('status', 'pendiente')
+    q = request.GET.get('q', '').strip()
+
+    # Summary counts per status
+    status_counts = {s: 0 for s, _ in PurchaseRequest.STATUS_CHOICES}
+    for row in PurchaseRequest.objects.values('status').annotate(n=Count('id')):
+        status_counts[row['status']] = row['n']
+
+    # Estimated revenue from pending requests (sum of detail lines)
+    ingresos_pendiente = (
+        PurchaseRequestDetail.objects
+        .filter(request__status='pendiente')
+        .aggregate(total=Sum(F('quantity') * F('unit_price')))['total'] or 0
+    )
+
+    # Main queryset
     requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details')
     if status in dict(PurchaseRequest.STATUS_CHOICES):
         requests_qs = requests_qs.filter(status=status)
+    if q:
+        requests_qs = requests_qs.filter(
+            DQ(customer__first_name__icontains=q) | DQ(customer__last_name__icontains=q)
+        )
+
+    status_tabs = [
+        {'value': s, 'label': l, 'count': status_counts.get(s, 0)}
+        for s, l in PurchaseRequest.STATUS_CHOICES
+    ]
+
     return render(request, 'storefront/purchase_request_list.html', {
-        'requests': requests_qs, 'status': status, 'status_choices': PurchaseRequest.STATUS_CHOICES,
+        'requests': requests_qs,
+        'status': status,
+        'status_choices': PurchaseRequest.STATUS_CHOICES,
+        'status_tabs': status_tabs,
+        'status_counts': status_counts,
+        'ingresos_pendiente': ingresos_pendiente,
+        'q': q,
     })
 
 

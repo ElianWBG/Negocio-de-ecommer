@@ -38,7 +38,7 @@
   }
 
   body { background: var(--bg); color: var(--ink); }
-  .page-wrap { max-width: 1340px; padding: 1.5rem 1.25rem; }
+  .page-wrap { max-width: 1600px; padding: 1.5rem 2rem; }
   .cat { font-family: var(--font-body); }
 
   /* ---------- Reveal en scroll (useInView, once:true) ---------- */
@@ -184,11 +184,12 @@
   a.product-name:hover { color: var(--brand); }
   .product-cat { font-size: .76rem; color: var(--ink-mute); margin-bottom: auto; }
   .product-foot {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; flex-direction: column; align-items: stretch; gap: .6rem;
     margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--line);
   }
   .product-price { font-size: 1.12rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
   .product-foot-actions { display: flex; align-items: center; gap: .4rem; }
+  .product-foot-actions .btn-add-cart { flex: 1; justify-content: center; }
   .product-view {
     display: inline-flex; align-items: center; justify-content: center;
     font-size: .88rem; text-decoration: none; color: var(--ink-mute);
@@ -484,8 +485,15 @@
   .home-search button:hover { background: var(--brand-600); }
 
   /* Strip de categorías */
-  .cat-strip { display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; padding-bottom: .1rem; }
+  .cat-bar { display: flex; align-items: center; gap: .6rem; }
+  .cat-strip { flex: 1; min-width: 0; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; padding-bottom: .1rem; }
   .cat-strip::-webkit-scrollbar { display: none; }
+  .filter-toggle { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink-soft); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; cursor: pointer; box-shadow: var(--shadow-sm); transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out); }
+  .filter-toggle:hover { color: var(--brand); border-color: var(--brand); }
+  .filter-toggle:active { transform: scale(.92); }
+  .filter-toggle.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .filter-panel { max-height: 0; opacity: 0; overflow: hidden; transition: max-height var(--d-normal) var(--ease-out), opacity var(--d-normal) var(--ease-out), margin-top var(--d-normal) var(--ease-out); }
+  .filter-panel.open { max-height: 220px; opacity: 1; margin-top: .9rem; }
   .cs-link { white-space: nowrap; text-decoration: none; padding: .5rem 1.05rem; border-radius: 999px; font-size: .86rem; font-weight: 500; color: var(--ink-soft); border: 1.5px solid transparent; transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out); }
   .cs-link:hover { background: var(--panel); color: var(--brand); border-color: var(--line); }
   .cs-link.active { background: var(--espresso); color: #fff; }
@@ -563,7 +571,7 @@
     .product-card:hover .pm-slide.is-active { transform: none !important; }
     .pm-nav { opacity: 1 !important; }
     /* Homepage */
-    .home-search, .cs-link, .see-all, .brand-chip .brand-logo, .promo-wide .pw-cta, .hero-mini .hm-cta { transition: none !important; }
+    .home-search, .cs-link, .see-all, .brand-chip .brand-logo, .promo-wide .pw-cta, .hero-mini .hm-cta, .filter-toggle, .filter-panel { transition: none !important; }
     .brand-chip:hover .brand-logo { transform: none !important; }
   }
 </style>
@@ -581,13 +589,37 @@
       <button type="submit">Buscar</button>
     </form>
 
-    <!-- Strip de categorías -->
-    <nav class="cat-strip reveal" id="categorias" aria-label="Categorías">
-      <a class="cs-link {% if not selected_group and not selected_brand %}active{% endif %}" href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}">Todas</a>
-      {% for g in groups %}
-      <a class="cs-link {% if selected_group == g.id|stringformat:'s' %}active{% endif %}" href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}">{{ g.name }}</a>
-      {% endfor %}
-    </nav>
+    <!-- Strip de categorías + botón de filtro -->
+    <div class="cat-section reveal">
+      <div class="cat-bar">
+        <nav class="cat-strip" id="categorias" aria-label="Categorías">
+          <a class="cs-link {% if not selected_group and not selected_brand %}active{% endif %}" href="{% url 'storefront:catalog_list' %}{% if query %}?q={{ query }}{% endif %}">Todas</a>
+          {% for g in groups %}
+          <a class="cs-link {% if selected_group == g.id|stringformat:'s' %}active{% endif %}" href="?group={{ g.id }}{% if query %}&q={{ query }}{% endif %}">{{ g.name }}</a>
+          {% endfor %}
+        </nav>
+        {% if products and price_max > price_min %}
+        <button type="button" class="filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="filterPanel" aria-label="Filtrar por precio" title="Filtrar por precio">
+          <i class="bi bi-sliders"></i>
+        </button>
+        {% endif %}
+      </div>
+      {% if products and price_max > price_min %}
+      <div class="filter-panel" id="filterPanel">
+        <div class="price-filter" data-min="{{ price_min }}" data-max="{{ price_max }}">
+          <span class="pf-label"><i class="bi bi-sliders"></i> Precio</span>
+          <div class="pf-inputs">
+            <span class="pf-pre">$</span>
+            <input type="number" class="pf-min" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_min }}" aria-label="Precio mínimo">
+            <span class="pf-sep">–</span>
+            <span class="pf-pre">$</span>
+            <input type="number" class="pf-max" inputmode="numeric" min="{{ price_min }}" max="{{ price_max }}" placeholder="{{ price_max }}" aria-label="Precio máximo">
+          </div>
+          <p class="pf-range-hint">Rango: ${{ price_min }} – ${{ price_max }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
 
     {% if not has_filter %}
     <!-- HERO: banner grande + dos mini -->
@@ -933,6 +965,19 @@
     document.querySelectorAll('.product-media').forEach(window.__initCarousel);
   })();
 
+  // ====== Toggle del panel de filtro (botón ícono en el strip) ======
+  (function () {
+    var t = document.getElementById('filterToggle');
+    var p = document.getElementById('filterPanel');
+    if (!t || !p) return;
+    t.addEventListener('click', function () {
+      var open = p.classList.toggle('open');
+      t.classList.toggle('active', open);
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { var mn = p.querySelector('.pf-min'); if (mn) mn.focus(); }
+    });
+  })();
+
   // ====== Filtro de precio (min/max tecleados, filtrado en vivo) ======
   (function () {
     var pf = document.querySelector('.price-filter');
@@ -1005,6 +1050,24 @@
       var d = document.createElement('div');
       d.textContent = s == null ? '' : String(s);
       return d.innerHTML;
+    }
+
+    // Actualiza el badge del navbar (y lo crea si el carrito venía en 0)
+    function updateCartBadges(count) {
+      document.querySelectorAll('.nav-icon-wrap').forEach(function (wrap) {
+        var b = wrap.querySelector('.nav-cart-badge');
+        if (count > 0) {
+          if (!b) { b = document.createElement('span'); b.className = 'nav-cart-badge'; wrap.appendChild(b); }
+          b.textContent = count;
+          b.style.display = '';
+        } else if (b) {
+          b.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.snav-badge, .mobile-badge').forEach(function (b) {
+        b.textContent = count;
+        b.style.display = count > 0 ? '' : 'none';
+      });
     }
 
     function updateSidebar(data) {
@@ -1103,6 +1166,7 @@
         if (data.status === 'ok') {
           btn.innerHTML = '<i class="bi bi-check-lg"></i> Agregado';
           btn.classList.add('is-added');
+          updateCartBadges(data.cart_count);
           updateSidebar(data);
         } else {
           btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error';

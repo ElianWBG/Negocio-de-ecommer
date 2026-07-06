@@ -191,6 +191,7 @@ class ConfigNegocio(models.Model):
     color_oscuro    = models.CharField(max_length=7, default='#231A10', verbose_name='Color oscuro (hex)', help_text='Ej: #231A10')
     color_fondo     = models.CharField(max_length=7, default='#F8F3EE', verbose_name='Color de fondo (hex)', help_text='Fondo general de la tienda')
     color_navbar    = models.CharField(max_length=7, default='#231A10', verbose_name='Color del navbar (hex)', help_text='Barra de navegación superior')
+    color_texto     = models.CharField(max_length=7, default='#231A10', verbose_name='Color del texto (hex)', help_text='Color principal del texto en la tienda')
 
     # Hero
     hero_imagen     = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Imagen de fondo del hero', max_length=500)
