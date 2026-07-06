@@ -77,4 +77,7 @@ urlpatterns = [
     # Registro de actividad
     path('actividad/', views.activity_log, name='activity_log'),
 
+    # Promociones (envío masivo de correo)
+    path('promociones/', views.send_promotion, name='send_promotion'),
+
 ]

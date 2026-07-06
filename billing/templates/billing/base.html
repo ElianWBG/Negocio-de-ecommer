@@ -214,6 +214,9 @@
     <a href="{% url 'billing:customer_list' %}" class="sidebar-link {% if 'customers' in request.path %}active{% endif %}">
       <i class="bi bi-people"></i> Clientes
     </a>
+    <a href="{% url 'billing:send_promotion' %}" class="sidebar-link {% if 'promociones' in request.path %}active{% endif %}">
+      <i class="bi bi-megaphone"></i> Promociones
+    </a>
   </div>
   {% endif %}
 

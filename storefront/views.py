@@ -91,12 +91,45 @@ def customer_register(request):
                     'user': user,
                 }
             )
+            _send_welcome_email(user)
             login(request, user)
             return redirect('storefront:catalog_list')
     else:
         form = CustomerRegistrationForm()
 
     return render(request, 'storefront/register.html', {'form': form})
+
+
+def _send_welcome_email(user):
+    """Envía un correo de bienvenida cuando un cliente se registra.
+    Si falla el envío, no interrumpe el registro (fail_silently)."""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    from billing.models import ConfigNegocio
+
+    if not user.email:
+        return
+    config = ConfigNegocio.objects.first()
+    store_name = (config.nombre_tienda if config else None) or 'nuestra tienda'
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width:560px; margin:0 auto;">
+      <h2 style="color:#B5441B;">¡Bienvenido/a a {store_name}, {user.first_name}!</h2>
+      <p>Tu cuenta se creó correctamente con el correo <strong>{user.email}</strong>.</p>
+      <p>Ya puedes iniciar sesión y explorar nuestro catálogo.</p>
+      <p style="margin-top:2rem; color:#888; font-size:.85rem;">Este es un correo automático, no respondas a este mensaje.</p>
+    </div>
+    """
+    try:
+        message = EmailMultiAlternatives(
+            subject=f'¡Bienvenido/a a {store_name}!',
+            body=strip_tags(html_content),
+            from_email=None,
+            to=[user.email],
+        )
+        message.attach_alternative(html_content, 'text/html')
+        message.send(fail_silently=True)
+    except Exception:
+        pass
 
 def verify_email_sent(request):
     return render(request, 'storefront/verify_email_sent.html')

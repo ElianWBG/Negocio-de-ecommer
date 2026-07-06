@@ -2534,3 +2534,53 @@ def activity_log(request):
         'filter_user': filter_user,
         'filter_action': filter_action,
     })
+
+
+# ─────────────────────────────────────────────
+# Promociones (envío masivo de correo)
+# ─────────────────────────────────────────────
+
+@group_required('Vendedor', 'Administrador')
+def send_promotion(request):
+    """Envía un correo HTML (promoción) a todos los clientes con email registrado."""
+    from django.core.mail import EmailMultiAlternatives, get_connection
+    from django.utils.html import strip_tags
+
+    emails = list(
+        Customer.objects.exclude(email__isnull=True).exclude(email='')
+        .values_list('email', flat=True).distinct()
+    )
+
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        html_content = request.POST.get('html_content', '').strip()
+
+        if not subject or not html_content:
+            messages.error(request, 'Completa el asunto y el contenido HTML antes de enviar.')
+        elif not emails:
+            messages.error(request, 'No hay clientes con correo registrado.')
+        else:
+            sent = 0
+            connection = get_connection()
+            connection.open()
+            for email in emails:
+                try:
+                    message = EmailMultiAlternatives(
+                        subject=subject,
+                        body=strip_tags(html_content),
+                        from_email=None,
+                        to=[email],
+                        connection=connection,
+                    )
+                    message.attach_alternative(html_content, 'text/html')
+                    message.send()
+                    sent += 1
+                except Exception:
+                    continue
+            connection.close()
+            log_action(request, 'promotion_sent', 'Customer', 0,
+                       f'Promoción "{subject}" enviada a {sent} de {len(emails)} correos')
+            messages.success(request, f'Promoción enviada a {sent} de {len(emails)} correos.')
+        return redirect('billing:send_promotion')
+
+    return render(request, 'billing/send_promotion.html', {'total_emails': len(emails)})

@@ -1,0 +1,54 @@
+{% extends 'billing/base.html' %}
+{% block title %}Promociones{% endblock %}
+{% block topbar_title %}Enviar promoción por correo{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0" style="font-size:1.25rem;">Enviar promoción por correo</h4>
+    <p class="text-muted small mb-0">
+      Se enviará a los {{ total_emails }} cliente{{ total_emails|pluralize }} con correo registrado.
+    </p>
+  </div>
+</div>
+
+<form method="post" id="promo-form" onsubmit="return confirm('¿Enviar esta promoción a {{ total_emails }} correo(s)? Esta acción no se puede deshacer.');">
+  {% csrf_token %}
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <label class="form-label fw-semibold">Asunto</label>
+          <input type="text" name="subject" class="form-control" placeholder="Ej: ¡Ofertas de temporada!" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body d-flex flex-column">
+          <label class="form-label fw-semibold">Contenido HTML</label>
+          <textarea name="html_content" id="html_content" class="form-control flex-grow-1" rows="16"
+                    placeholder="&lt;h1&gt;Promoción especial&lt;/h1&gt;&lt;p&gt;20% de descuento esta semana...&lt;/p&gt;"
+                    style="font-family: monospace; font-size:.85rem;" required oninput="document.getElementById('preview').srcdoc = this.value;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body d-flex flex-column">
+          <label class="form-label fw-semibold">Vista previa</label>
+          <iframe id="preview" class="border rounded flex-grow-1" style="min-height:380px; width:100%;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <button type="submit" class="btn btn-primary" {% if total_emails == 0 %}disabled{% endif %}>
+      <i class="bi bi-send"></i> Enviar a {{ total_emails }} correo{{ total_emails|pluralize }}
+    </button>
+  </div>
+</form>
+{% endblock %}

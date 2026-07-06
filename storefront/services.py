@@ -57,4 +57,55 @@ def confirm_purchase_request(purchase_request):
         purchase_request.reviewed_at = timezone.now()
         purchase_request.save()
 
+    _send_purchase_confirmation_email(purchase_request, invoice)
     return invoice
+
+
+def _send_purchase_confirmation_email(purchase_request, invoice):
+    """Envía un correo de confirmación al cliente cuando su compra se confirma.
+    Si falla el envío, no interrumpe la confirmación (fail_silently)."""
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    from billing.models import ConfigNegocio
+
+    customer = purchase_request.customer
+    if not customer.email:
+        return
+    config = ConfigNegocio.objects.first()
+    store_name = (config.nombre_tienda if config else None) or 'nuestra tienda'
+
+    rows = ''.join(
+        f'<tr><td style="padding:4px 8px;">{d.product.name}</td>'
+        f'<td style="padding:4px 8px;text-align:center;">{d.quantity}</td>'
+        f'<td style="padding:4px 8px;text-align:right;">${d.subtotal}</td></tr>'
+        for d in invoice.details.all()
+    )
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width:560px; margin:0 auto;">
+      <h2 style="color:#B5441B;">¡Gracias por tu compra, {customer.first_name}!</h2>
+      <p>Tu pedido #{purchase_request.id} fue confirmado. Aquí el resumen:</p>
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="background:#F1EEE9;">
+            <th style="padding:4px 8px;text-align:left;">Producto</th>
+            <th style="padding:4px 8px;">Cant.</th>
+            <th style="padding:4px 8px;text-align:right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+      <p style="margin-top:1rem;"><strong>Total: ${invoice.total}</strong></p>
+      <p style="margin-top:2rem; color:#888; font-size:.85rem;">Este es un correo automático de {store_name}.</p>
+    </div>
+    """
+    try:
+        message = EmailMultiAlternatives(
+            subject=f'Pedido #{purchase_request.id} confirmado',
+            body=strip_tags(html_content),
+            from_email=None,
+            to=[customer.email],
+        )
+        message.attach_alternative(html_content, 'text/html')
+        message.send(fail_silently=True)
+    except Exception:
+        pass
