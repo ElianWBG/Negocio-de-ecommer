@@ -1,203 +1,210 @@
 {% extends 'billing/base.html' %}
 {% block title %}Inicio - Panel principal{% endblock %}
+{% block topbar_title %}Panel principal{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- ===== SALUDO ===== -->
+<div class="dash-hello mb-4">
   <div>
-    <h2 class="mb-0"><i class="bi bi-speedometer2"></i> Panel principal</h2>
-    <small class="text-muted">Resumen general del sistema · {% now "d/m/Y" %}</small>
+    <h2 class="dash-hello-title mb-1">Hola, {{ user.first_name|default:user.username }} 👋</h2>
+    <p class="text-muted mb-0">Resumen general del sistema · {% now "l, d \d\e F Y" %}</p>
   </div>
 </div>
 
-<!-- ===== TARJETAS RESUMEN (clic = ir al módulo) ===== -->
+<!-- ===== STAT TILES (acento lateral + icono) ===== -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:product_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-primary-subtle text-primary"><i class="bi bi-box-seam"></i></div>
-        <div>
-          <div class="text-muted small">Productos</div>
-          <div class="h4 mb-0 fw-bold">{{ total_products }}</div>
-        </div>
+  <div class="col-6 col-xl-3">
+    <a href="{% url 'billing:invoice_list' %}" class="stat-tile" style="--accent:#F98A78;">
+      <div class="stat-tile-ic"><i class="bi bi-cash-coin"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Ingresos totales</div>
+        <div class="stat-tile-value">${{ total_income|floatformat:2 }}</div>
       </div>
     </a>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:productgroup_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-info-subtle text-info"><i class="bi bi-tags"></i></div>
-        <div>
-          <div class="text-muted small">Categorías</div>
-          <div class="h4 mb-0 fw-bold">{{ total_categories }}</div>
-        </div>
+  <div class="col-6 col-xl-3">
+    <a href="{% url 'billing:invoice_list' %}" class="stat-tile" style="--accent:#6D5DEA;">
+      <div class="stat-tile-ic"><i class="bi bi-receipt"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Ventas</div>
+        <div class="stat-tile-value">{{ total_sales }}</div>
       </div>
     </a>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:brand_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-warning-subtle text-warning"><i class="bi bi-award"></i></div>
-        <div>
-          <div class="text-muted small">Marcas</div>
-          <div class="h4 mb-0 fw-bold">{{ total_brands }}</div>
-        </div>
+  <div class="col-6 col-xl-3">
+    <a href="{% url 'billing:customer_list' %}" class="stat-tile" style="--accent:#FDC24F;">
+      <div class="stat-tile-ic"><i class="bi bi-people"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Clientes</div>
+        <div class="stat-tile-value">{{ total_customers }}</div>
       </div>
     </a>
   </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:supplier_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-secondary-subtle text-secondary"><i class="bi bi-truck"></i></div>
-        <div>
-          <div class="text-muted small">Proveedores</div>
-          <div class="h4 mb-0 fw-bold">{{ total_suppliers }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:customer_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-success-subtle text-success"><i class="bi bi-people"></i></div>
-        <div>
-          <div class="text-muted small">Clientes</div>
-          <div class="h4 mb-0 fw-bold">{{ total_customers }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:user_management' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-dark-subtle text-dark"><i class="bi bi-person-badge"></i></div>
-        <div>
-          <div class="text-muted small">Usuarios</div>
-          <div class="h4 mb-0 fw-bold">{{ total_users }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:invoice_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-primary-subtle text-primary"><i class="bi bi-receipt"></i></div>
-        <div>
-          <div class="text-muted small">Ventas</div>
-          <div class="h4 mb-0 fw-bold">{{ total_sales }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:invoice_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-success-subtle text-success"><i class="bi bi-cash-coin"></i></div>
-        <div>
-          <div class="text-muted small">Ingresos totales</div>
-          <div class="h4 mb-0 fw-bold">${{ total_income|floatformat:2 }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:product_list' %}?stock_max=10" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle"></i></div>
-        <div>
-          <div class="text-muted small">Stock bajo</div>
-          <div class="h4 mb-0 fw-bold">{{ low_stock_count }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'purchasing:purchase_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-secondary-subtle text-secondary"><i class="bi bi-cart"></i></div>
-        <div>
-          <div class="text-muted small">Compras</div>
-          <div class="h4 mb-0 fw-bold">{{ total_purchases }}</div>
-        </div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-md-4 col-xl-3">
-    <a href="{% url 'billing:invoice_list' %}" class="card border-0 shadow-sm h-100 dash-card text-decoration-none text-reset">
-      <div class="card-body d-flex align-items-center gap-3">
-        <div class="dash-icon bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
-        <div>
-          <div class="text-muted small">Cuentas por cobrar</div>
-          <div class="h4 mb-0 fw-bold">${{ pending_credit_total|floatformat:2 }}</div>
-          <div class="text-muted" style="font-size:.7rem;">{{ pending_credit_count }} factura(s) con saldo pendiente</div>
-        </div>
+  <div class="col-6 col-xl-3">
+    <a href="{% url 'billing:product_list' %}" class="stat-tile" style="--accent:#57C98A;">
+      <div class="stat-tile-ic"><i class="bi bi-box-seam"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Productos</div>
+        <div class="stat-tile-value">{{ total_products }}</div>
       </div>
     </a>
   </div>
 </div>
 
-<!-- ===== ALERTAS DEL SISTEMA ===== -->
+<!-- ===== VENTAS POR MES + ANILLOS KPI ===== -->
 <div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="alert alert-warning border-0 shadow-sm mb-0 h-100">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
+  <div class="col-lg-8">
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head">
+        <strong><i class="bi bi-bar-chart-line"></i> Ventas por mes</strong>
+        <span class="text-muted small">Últimos 6 meses</span>
+      </div>
+      <div class="dash-panel-body"><canvas id="chartSalesByMonth" height="120"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-speedometer2"></i> Indicadores</strong></div>
+      <div class="dash-panel-body">
+        <div class="kpi-rings">
+          <div class="kpi-ring-item">
+            <div class="kpi-ring" style="--val:{{ stock_health_pct }}; --c:#6D5DEA;">
+              <div class="kpi-ring-hole">{{ stock_health_pct }}%</div>
+            </div>
+            <div class="kpi-ring-label">Salud de stock</div>
+          </div>
+          <div class="kpi-ring-item">
+            <div class="kpi-ring" style="--val:{{ collection_pct }}; --c:#57C98A;">
+              <div class="kpi-ring-hole">{{ collection_pct }}%</div>
+            </div>
+            <div class="kpi-ring-label">Cobranza</div>
+          </div>
+          <div class="kpi-ring-item">
+            <div class="kpi-ring" style="--val:{{ active_catalog_pct }}; --c:#FDC24F;">
+              <div class="kpi-ring-hole">{{ active_catalog_pct }}%</div>
+            </div>
+            <div class="kpi-ring-label">Catálogo activo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PODIUM TOP PRODUCTOS + CALENDARIO ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-trophy"></i> Productos más vendidos</strong></div>
+      <div class="dash-panel-body">
+        {% if top_products_podium %}
+        <div class="podium">
+          {% for p in top_products_podium %}
+          <div class="podium-card podium-{{ forloop.counter }}">
+            <div class="podium-rank">{{ forloop.counter }}</div>
+            <div class="podium-ic"><i class="bi bi-box-seam"></i></div>
+            <div class="podium-name">{{ p.name }}</div>
+            <div class="podium-qty">{{ p.qty }} vendidos</div>
+            <div class="podium-medal">
+              {% if forloop.counter == 1 %}🥇 1º{% elif forloop.counter == 2 %}🥈 2º{% else %}🥉 3º{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Aún no hay ventas registradas.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-calendar3"></i> <span id="calTitle">Calendario</span></strong></div>
+      <div class="dash-panel-body">
+        <div class="mini-cal" id="miniCal"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STATS SECUNDARIOS ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'billing:productgroup_list' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-info-subtle text-info"><i class="bi bi-tags"></i></span>
+      <span><span class="stat-chip-label">Categorías</span><span class="stat-chip-value">{{ total_categories }}</span></span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'billing:brand_list' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-warning-subtle text-warning"><i class="bi bi-award"></i></span>
+      <span><span class="stat-chip-label">Marcas</span><span class="stat-chip-value">{{ total_brands }}</span></span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'billing:supplier_list' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-secondary-subtle text-secondary"><i class="bi bi-truck"></i></span>
+      <span><span class="stat-chip-label">Proveedores</span><span class="stat-chip-value">{{ total_suppliers }}</span></span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'billing:user_management' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-dark-subtle text-dark"><i class="bi bi-person-badge"></i></span>
+      <span><span class="stat-chip-label">Usuarios</span><span class="stat-chip-value">{{ total_users }}</span></span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'purchasing:purchase_list' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-primary-subtle text-primary"><i class="bi bi-cart"></i></span>
+      <span><span class="stat-chip-label">Compras</span><span class="stat-chip-value">{{ total_purchases }}</span></span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="{% url 'billing:invoice_list' %}" class="stat-chip">
+      <span class="stat-chip-ic bg-danger-subtle text-danger"><i class="bi bi-hourglass-split"></i></span>
+      <span><span class="stat-chip-label">Por cobrar</span><span class="stat-chip-value">${{ pending_credit_total|floatformat:0 }}</span></span>
+    </a>
+  </div>
+</div>
+
+<!-- ===== DISTRIBUCIÓN + ALERTAS ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-pie-chart"></i> Distribución de categorías</strong></div>
+      <div class="dash-panel-body"><canvas id="chartCategories" height="180"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 h-100">
+      <div class="col-sm-6">
+        <div class="soft-alert soft-warning">
           <strong><i class="bi bi-exclamation-triangle-fill"></i> Stock bajo</strong>
           <div class="small mt-1">{{ low_stock_count }} producto(s) con 10 o menos unidades.</div>
+          <a href="{% url 'billing:product_list' %}?stock_max=10" class="soft-alert-link">Ver productos →</a>
         </div>
       </div>
-      <a href="{% url 'billing:product_list' %}?stock_max=10" class="small">Ver productos →</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="alert alert-danger border-0 shadow-sm mb-0 h-100">
-      <strong><i class="bi bi-x-octagon-fill"></i> Agotados</strong>
-      <div class="small mt-1">{{ out_of_stock_count }} producto(s) sin existencias.</div>
-      <a href="{% url 'billing:product_list' %}?stock_max=0" class="small">Ver productos →</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="alert alert-success border-0 shadow-sm mb-0 h-100">
-      <strong><i class="bi bi-graph-up-arrow"></i> Ventas de hoy</strong>
-      <div class="small mt-1">{{ sales_today_count }} factura(s) · ${{ sales_today_total|floatformat:2 }}</div>
-      <a href="{% url 'billing:invoice_list' %}" class="small">Ver facturas →</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="alert alert-info border-0 shadow-sm mb-0 h-100">
-      <strong><i class="bi bi-person-plus-fill"></i> Nuevos clientes</strong>
-      <div class="small mt-1">{{ new_customers_week }} registrado(s) en los últimos 7 días.</div>
-      <a href="{% url 'billing:customer_list' %}" class="small">Ver clientes →</a>
-    </div>
-  </div>
-</div>
-
-<!-- ===== GRÁFICOS ===== -->
-<div class="row g-3 mb-4">
-  <div class="col-lg-7">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-bar-chart-line"></i> Ventas por mes</strong></div>
-      <div class="card-body"><canvas id="chartSalesByMonth" height="110"></canvas></div>
-    </div>
-  </div>
-  <div class="col-lg-5">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-pie-chart"></i> Distribución de categorías</strong></div>
-      <div class="card-body"><canvas id="chartCategories" height="110"></canvas></div>
-    </div>
-  </div>
-  <div class="col-lg-7">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-trophy"></i> Productos más vendidos</strong></div>
-      <div class="card-body"><canvas id="chartTopProducts" height="110"></canvas></div>
-    </div>
-  </div>
-  <div class="col-lg-5">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3">
-        <strong><i class="bi bi-clipboard-data"></i> Estado del stock</strong>
-        <span class="text-muted small d-block">Compras vs Ventas se habilitará cuando exista el módulo de Compras.</span>
+      <div class="col-sm-6">
+        <div class="soft-alert soft-danger">
+          <strong><i class="bi bi-x-octagon-fill"></i> Agotados</strong>
+          <div class="small mt-1">{{ out_of_stock_count }} producto(s) sin existencias.</div>
+          <a href="{% url 'billing:product_list' %}?stock_max=0" class="soft-alert-link">Ver productos →</a>
+        </div>
       </div>
-      <div class="card-body"><canvas id="chartStockStatus" height="110"></canvas></div>
+      <div class="col-sm-6">
+        <div class="soft-alert soft-success">
+          <strong><i class="bi bi-graph-up-arrow"></i> Ventas de hoy</strong>
+          <div class="small mt-1">{{ sales_today_count }} factura(s) · ${{ sales_today_total|floatformat:2 }}</div>
+          <a href="{% url 'billing:invoice_list' %}" class="soft-alert-link">Ver facturas →</a>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="soft-alert soft-info">
+          <strong><i class="bi bi-person-plus-fill"></i> Nuevos clientes</strong>
+          <div class="small mt-1">{{ new_customers_week }} registrado(s) en 7 días.</div>
+          <a href="{% url 'billing:customer_list' %}" class="soft-alert-link">Ver clientes →</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -205,8 +212,8 @@
 <!-- ===== ACTIVIDAD RECIENTE ===== -->
 <div class="row g-3">
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-receipt-cutoff"></i> Últimas ventas</strong></div>
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-receipt-cutoff"></i> Últimas ventas</strong></div>
       <ul class="list-group list-group-flush">
         {% for inv in recent_sales %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -223,8 +230,8 @@
     </div>
   </div>
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-box-seam"></i> Productos agregados</strong></div>
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-box-seam"></i> Productos agregados</strong></div>
       <ul class="list-group list-group-flush">
         {% for p in recent_products %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -241,8 +248,8 @@
     </div>
   </div>
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white py-3"><strong><i class="bi bi-person-check"></i> Usuarios registrados</strong></div>
+    <div class="dash-panel h-100">
+      <div class="dash-panel-head"><strong><i class="bi bi-person-check"></i> Usuarios registrados</strong></div>
       <ul class="list-group list-group-flush">
         {% for u in recent_users %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -261,86 +268,128 @@
 </div>
 
 <style>
-  .dash-icon {
-    width: 52px; height: 52px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; flex-shrink: 0;
+  .dash-hello-title { font-weight: 700; color: #2E2A4A; letter-spacing: -.01em; }
+
+  /* Panel card base (redondeado suave) */
+  .dash-panel { background: #fff; border-radius: 18px; box-shadow: 0 2px 14px rgba(26,18,9,.05); overflow: hidden; }
+  .dash-panel-head { padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-bottom: 1px solid #F1EEE9; }
+  .dash-panel-head strong { color: #2E2A4A; font-size: .95rem; }
+  .dash-panel-head i { color: var(--rust); }
+  .dash-panel-body { padding: 1.25rem; }
+
+  /* Stat tiles (acento lateral + icono) */
+  .stat-tile { display: flex; align-items: center; gap: 1rem; background: #fff; border-radius: 18px; padding: 1.15rem 1.25rem; text-decoration: none; position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(26,18,9,.05); transition: transform .15s ease, box-shadow .15s ease; }
+  .stat-tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--accent); }
+  .stat-tile:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.5rem rgba(26,18,9,.10); }
+  .stat-tile-ic { width: 54px; height: 54px; border-radius: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, #fff); }
+  .stat-tile-label { color: #8B8AA3; font-size: .82rem; font-weight: 500; }
+  .stat-tile-value { color: #2E2A4A; font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+
+  /* Anillos KPI (conic-gradient, sin JS) */
+  .kpi-rings { display: flex; justify-content: space-around; gap: 1rem; flex-wrap: wrap; }
+  .kpi-ring-item { text-align: center; }
+  .kpi-ring { width: 108px; height: 108px; border-radius: 50%; background: conic-gradient(var(--c) calc(var(--val) * 1%), #E7E9F5 0); display: grid; place-items: center; margin: 0 auto; }
+  .kpi-ring-hole { width: 78px; height: 78px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-weight: 700; font-size: 1.15rem; color: #2E2A4A; }
+  .kpi-ring-label { margin-top: .55rem; font-size: .8rem; color: #8B8AA3; font-weight: 600; }
+
+  /* Podium top productos */
+  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .podium-card { border-radius: 16px; padding: 1.25rem 1rem; text-align: center; color: #fff; position: relative; }
+  .podium-1 { background: linear-gradient(150deg, #5BC98A, #3EA96C); }
+  .podium-2 { background: linear-gradient(150deg, #7A6BF0, #5A49D6); }
+  .podium-3 { background: linear-gradient(150deg, #FDC24F, #E8A21F); }
+  .podium-rank { position: absolute; top: .6rem; right: .8rem; font-size: 2.2rem; font-weight: 800; opacity: .22; line-height: 1; }
+  .podium-ic { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin: 0 auto .6rem; }
+  .podium-name { font-weight: 700; font-size: .95rem; line-height: 1.2; margin-bottom: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .podium-qty { font-size: .8rem; opacity: .85; margin-bottom: .7rem; }
+  .podium-medal { display: inline-block; background: rgba(255,255,255,.22); border-radius: 20px; padding: .25rem .8rem; font-size: .82rem; font-weight: 700; }
+
+  /* Stat chips (secundarios) */
+  .stat-chip { display: flex; align-items: center; gap: .7rem; background: #fff; border-radius: 14px; padding: .8rem .9rem; text-decoration: none; box-shadow: 0 2px 14px rgba(26,18,9,.05); transition: transform .15s ease, box-shadow .15s ease; }
+  .stat-chip:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(26,18,9,.09); }
+  .stat-chip-ic { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+  .stat-chip-label { display: block; color: #8B8AA3; font-size: .74rem; font-weight: 500; }
+  .stat-chip-value { display: block; color: #2E2A4A; font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
+
+  /* Soft alerts */
+  .soft-alert { border-radius: 16px; padding: 1rem 1.15rem; height: 100%; box-shadow: 0 2px 14px rgba(26,18,9,.05); }
+  .soft-alert strong { display: block; font-size: .9rem; }
+  .soft-alert-link { display: inline-block; margin-top: .4rem; font-size: .8rem; font-weight: 600; text-decoration: none; }
+  .soft-warning { background: #FFF7E8; color: #8a5a00; } .soft-warning .soft-alert-link { color: #8a5a00; }
+  .soft-danger  { background: #FDEEEB; color: #9e2b13; } .soft-danger .soft-alert-link { color: #9e2b13; }
+  .soft-success { background: #EAF7EF; color: #146c3a; } .soft-success .soft-alert-link { color: #146c3a; }
+  .soft-info    { background: #EAF1FB; color: #1a4b8a; } .soft-info .soft-alert-link { color: #1a4b8a; }
+
+  /* Mini calendario */
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .mini-cal-dow { text-align: center; font-size: .68rem; font-weight: 700; color: #b3aaa0; padding: .2rem 0; text-transform: uppercase; }
+  .mini-cal-day { text-align: center; font-size: .82rem; padding: .4rem 0; border-radius: 9px; color: #4a453e; }
+  .mini-cal-day.other { color: #d3ccc3; }
+  .mini-cal-day.today { background: var(--rust); color: #fff; font-weight: 700; }
+  .mini-cal-caption { text-align: center; font-weight: 700; color: #2E2A4A; margin-bottom: .6rem; text-transform: capitalize; }
+
+  .list-group-item { border-color: #F1EEE9; }
+
+  @media (max-width: 575px) {
+    .podium { grid-template-columns: 1fr; }
+    .kpi-rings { gap: 1.25rem; }
   }
-  .dash-card {
-    border-radius: 14px;
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  a.dash-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.08) !important;
-  }
-  .dash-card-disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-  .card { border-radius: 14px; }
 </style>
 
 {{ month_labels|json_script:"monthLabels" }}
 {{ month_totals|json_script:"monthTotals" }}
-{{ top_products_labels|json_script:"topProductsLabels" }}
-{{ top_products_data|json_script:"topProductsData" }}
 {{ category_labels|json_script:"categoryLabels" }}
 {{ category_data|json_script:"categoryData" }}
-{{ stock_status_labels|json_script:"stockStatusLabels" }}
-{{ stock_status_data|json_script:"stockStatusData" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const get = (id) => JSON.parse(document.getElementById(id).textContent);
-  const palette = ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6f42c1', '#fd7e14', '#20c997', '#6c757d'];
+  const palette = ['#6D5DEA', '#57C98A', '#FDC24F', '#F98A78', '#8B7CF0', '#4FC3E8', '#EC7FB0', '#A9A6C9'];
 
   new Chart(document.getElementById('chartSalesByMonth'), {
     type: 'bar',
     data: {
       labels: get('monthLabels'),
-      datasets: [{
-        label: 'Ventas ($)',
-        data: get('monthTotals'),
-        backgroundColor: '#0d6efd',
-        borderRadius: 6,
-      }]
+      datasets: [{ label: 'Ventas ($)', data: get('monthTotals'), backgroundColor: '#6D5DEA', borderRadius: 8, maxBarThickness: 46 }]
     },
-    options: { responsive: true, plugins: { legend: { display: false } } }
+    options: { responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#F1EEE9' } }, x: { grid: { display: false } } } }
   });
 
   new Chart(document.getElementById('chartCategories'), {
     type: 'doughnut',
-    data: {
-      labels: get('categoryLabels'),
-      datasets: [{ data: get('categoryData'), backgroundColor: palette }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    data: { labels: get('categoryLabels'), datasets: [{ data: get('categoryData'), backgroundColor: palette, borderWidth: 0 }] },
+    options: { responsive: true, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
   });
 
-  new Chart(document.getElementById('chartTopProducts'), {
-    type: 'bar',
-    data: {
-      labels: get('topProductsLabels'),
-      datasets: [{
-        label: 'Unidades vendidas',
-        data: get('topProductsData'),
-        backgroundColor: '#198754',
-        borderRadius: 6,
-      }]
-    },
-    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
-  });
+  // ── Mini calendario (mes actual, resalta hoy) ──
+  (function () {
+    const el = document.getElementById('miniCal');
+    if (!el) return;
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth(), todayD = now.getDate();
+    const monthName = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const first = new Date(y, m, 1);
+    const startDow = (first.getDay() + 6) % 7; // lunes = 0
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const daysPrev = new Date(y, m, 0).getDate();
+    const dows = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 
-  new Chart(document.getElementById('chartStockStatus'), {
-    type: 'pie',
-    data: {
-      labels: get('stockStatusLabels'),
-      datasets: [{ data: get('stockStatusData'), backgroundColor: ['#198754', '#ffc107', '#dc3545'] }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-  });
+    let html = '<div class="mini-cal-caption">' + monthName + '</div><div class="mini-cal-grid">';
+    dows.forEach(d => html += '<div class="mini-cal-dow">' + d + '</div>');
+    for (let i = 0; i < startDow; i++) html += '<div class="mini-cal-day other">' + (daysPrev - startDow + 1 + i) + '</div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      html += '<div class="mini-cal-day' + (d === todayD ? ' today' : '') + '">' + d + '</div>';
+    }
+    const cells = startDow + daysInMonth;
+    const trail = (7 - (cells % 7)) % 7;
+    for (let i = 1; i <= trail; i++) html += '<div class="mini-cal-day other">' + i + '</div>';
+    html += '</div>';
+    el.innerHTML = html;
+    const t = document.getElementById('calTitle');
+    if (t) t.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  })();
 });
 </script>
 

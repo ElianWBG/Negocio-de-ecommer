@@ -9,21 +9,24 @@
   <style>
     :root {
       --sidebar-w: 220px;
-      --sidebar-bg: #1A1209;
-      --sidebar-hover: rgba(255,255,255,.06);
-      --sidebar-active: #B5441B;
+      --sidebar-bg: #6D5DEA;
+      --sidebar-hover: rgba(255,255,255,.14);
+      --sidebar-active: #ffffff;
       --topbar-h: 56px;
-      --rust: #B5441B;
-      --sand: #F8F3EE;
+      --rust: #6D5DEA;          /* acento principal del panel (morado EDSmart) */
+      --coral: #F98A78;
+      --yellow: #FDC24F;
+      --green: #57C98A;
+      --sand: #EFF1F7;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #F1EEE9; min-height: 100vh; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #EFF1F7; min-height: 100vh; }
 
     /* ── SIDEBAR ── */
     .sidebar {
       position: fixed; top: 0; left: 0;
       width: var(--sidebar-w); height: 100vh;
-      background: var(--sidebar-bg);
+      background: linear-gradient(180deg, #243044 0%, #1E293B 55%, #172032 100%);
       display: flex; flex-direction: column;
       z-index: 200; overflow-y: auto;
       transition: transform .25s ease;
@@ -37,7 +40,7 @@
       text-decoration: none; letter-spacing: .01em;
       display: flex; align-items: center; gap: .5rem;
     }
-    .sidebar-logo .dot { color: var(--rust); }
+    .sidebar-logo .dot { color: var(--yellow); }
     .sidebar-logo .version { font-size: .7rem; color: rgba(255,255,255,.3); margin-top: .15rem; }
 
     .sidebar-section { padding: .75rem .75rem .25rem; }
@@ -56,13 +59,13 @@
     }
     .sidebar-link i { font-size: 1rem; width: 18px; flex-shrink: 0; }
     .sidebar-link:hover { background: var(--sidebar-hover); color: #fff; }
-    .sidebar-link.active { background: var(--rust); color: #fff; }
+    .sidebar-link.active { background: rgba(255,255,255,.1); color: #fff; font-weight: 600; box-shadow: inset 3px 0 0 var(--rust); }
     .sidebar-link .badge-pill {
       margin-left: auto; background: rgba(255,255,255,.15);
       color: #fff; font-size: .65rem; font-weight: 700;
       padding: .15rem .5rem; border-radius: 20px;
     }
-    .sidebar-link.active .badge-pill { background: rgba(255,255,255,.25); }
+    .sidebar-link.active .badge-pill { background: var(--rust); color: #fff; }
 
     .sidebar-bottom {
       margin-top: auto; padding: .75rem;
@@ -75,7 +78,7 @@
     }
     .sidebar-avatar {
       width: 32px; height: 32px; border-radius: 50%;
-      background: var(--rust); color: #fff;
+      background: var(--coral); color: #fff;
       display: flex; align-items: center; justify-content: center;
       font-size: .8rem; font-weight: 700; flex-shrink: 0;
     }
@@ -103,7 +106,7 @@
     }
     .topbar-btn:hover { background: var(--sand); border-color: #ccc; color: #1A1209; }
     .topbar-btn.primary { background: var(--rust); color: #fff; border-color: var(--rust); }
-    .topbar-btn.primary:hover { background: #9E3D15; border-color: #9E3D15; }
+    .topbar-btn.primary:hover { background: #5A49D6; border-color: #5A49D6; }
     .hamburger {
       display: none; background: none; border: none;
       cursor: pointer; padding: .3rem; border-radius: 6px;
@@ -162,6 +165,69 @@
       /* On very small screens, hide the topbar "Ver tienda" button (it's in sidebar) */
       .topbar-btn.primary { display: none; }
     }
+
+    /* ============================================================
+       SKIN GLOBAL DEL PANEL — look "Gestión de Usuarios"
+       (títulos serif, botones dorados, cards suaves,
+        tablas como filas-tarjeta slate) Catálogo/Ventas/Análisis
+       ============================================================ */
+
+    /* Títulos de página en serif elegante */
+    .main-wrap .page-header h2,
+    .main-wrap .page-header h4 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 700; color: #1E293B; letter-spacing: -.01em;
+    }
+
+    /* CTA dorado (reemplaza el azul de Bootstrap para acciones "+ Nuevo") */
+    .main-wrap .btn-primary {
+      background: linear-gradient(135deg, #E9D9B4, #D8C088);
+      border-color: #D8C088; color: #4A3B18; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(200,170,100,.3);
+    }
+    .main-wrap .btn-primary:hover,
+    .main-wrap .btn-primary:focus {
+      background: linear-gradient(135deg, #E2CF9F, #CDB278);
+      border-color: #CDB278; color: #4A3B18;
+      box-shadow: 0 8px 18px rgba(200,170,100,.4);
+    }
+
+    /* Cards / paneles redondeados y suaves */
+    .main-wrap .card { border-radius: 16px; border: none; box-shadow: 0 2px 14px rgba(30,41,59,.06); }
+    .main-wrap .card-header { border-radius: 16px 16px 0 0; }
+
+    /* ── Tablas como filas-tarjeta claras (limpias, premium) ── */
+    .main-wrap .table {
+      border-collapse: separate; border-spacing: 0 .6rem; margin-bottom: 0;
+    }
+    .main-wrap .table > :not(caption) > * > * { box-shadow: none; }
+    .main-wrap .table thead th,
+    .main-wrap .table.table-dark thead th {
+      background: transparent !important; color: #94A0B5 !important;
+      border: none; text-transform: uppercase; font-size: .72rem;
+      font-weight: 700; letter-spacing: .06em; padding: .1rem 1rem .5rem;
+    }
+    .main-wrap .table tbody tr { background: transparent; }
+    .main-wrap .table tbody td,
+    .main-wrap .table tbody th {
+      background: #fff; color: #334155; border: none; vertical-align: middle;
+      padding: .9rem 1rem; border-top: 1px solid #EEF0F5; border-bottom: 1px solid #EEF0F5;
+    }
+    .main-wrap .table tbody tr td:first-child,
+    .main-wrap .table tbody tr th:first-child {
+      border-radius: 14px 0 0 14px; padding-left: 1.3rem; border-left: 1px solid #EEF0F5;
+    }
+    .main-wrap .table tbody tr td:last-child,
+    .main-wrap .table tbody tr th:last-child {
+      border-radius: 0 14px 14px 0; padding-right: 1.3rem; border-right: 1px solid #EEF0F5;
+    }
+    .main-wrap .table tbody tr { box-shadow: 0 2px 10px rgba(30,41,59,.05); border-radius: 14px; }
+    .main-wrap .table.table-hover tbody tr:hover td,
+    .main-wrap .table.table-hover tbody tr:hover th { background: #FAFBFF; }
+    .main-wrap .table tbody td .text-muted { color: #8A93A6 !important; }
+
+    /* Header de página: alinear con más aire */
+    .main-wrap .page-header { margin-bottom: 1.5rem !important; }
   </style>
   {% block extra_css %}{% endblock %}
 </head>

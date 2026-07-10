@@ -121,6 +121,23 @@ def home(request):
     stock_status_labels = ['Stock saludable', 'Stock bajo', 'Agotado']
     stock_status_data = [healthy_stock_count, low_stock_count, out_of_stock_count]
 
+    # --- Indicadores (anillos KPI del panel) ---
+    active_products = Product.objects.filter(is_active=True).count()
+
+    def _pct(part, whole):
+        return round((part / whole) * 100) if whole else 0
+
+    stock_health_pct = _pct(healthy_stock_count, total_products)
+    active_catalog_pct = _pct(active_products, total_products)
+    collected = (total_income or 0) - (pending_credit_total or 0)
+    collection_pct = _pct(collected, total_income) if total_income else 100
+
+    # --- Podium: top 3 productos más vendidos (para tarjetas de ranking) ---
+    top_products_podium = [
+        {'name': row['product__name'], 'qty': row['qty']}
+        for row in top_products_qs
+    ][:3]
+
     # --- Actividad reciente ---
     recent_sales = Invoice.objects.select_related('customer').order_by('-invoice_date')[:5]
     recent_products = Product.objects.select_related('brand', 'group').order_by('-created_at')[:5]
@@ -156,6 +173,12 @@ def home(request):
         'category_data': category_data,
         'stock_status_labels': stock_status_labels,
         'stock_status_data': stock_status_data,
+
+        'stock_health_pct': stock_health_pct,
+        'active_catalog_pct': active_catalog_pct,
+        'collection_pct': collection_pct,
+        'collected': collected,
+        'top_products_podium': top_products_podium,
 
         'recent_sales': recent_sales,
         'recent_products': recent_products,

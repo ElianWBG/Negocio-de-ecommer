@@ -3,90 +3,110 @@
 {% block topbar_title %}Gestión de Usuarios{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
+
+<!-- ===== CABECERA ===== -->
+<div class="um-header">
   <div>
-    <h4 class="fw-bold mb-0" style="font-size:1.25rem;">Usuarios del panel</h4>
-    <p class="text-muted small mb-0">Asigna roles a los usuarios o crea nuevas cuentas.</p>
+    <h1 class="um-title">Gestión de Usuarios</h1>
+    <p class="um-subtitle">Asigna roles a los usuarios o crea nuevas cuentas.</p>
   </div>
-  <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
-    <i class="bi bi-person-plus"></i> Nuevo usuario
-  </button>
+  <div class="um-actions-top">
+    <a href="{% url 'billing:report_sales' %}" class="um-btn um-btn-ghost">
+      <i class="bi bi-bar-chart"></i> Reportes
+    </a>
+    <button class="um-btn um-btn-gold" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+      <i class="bi bi-plus-lg"></i> Nuevo usuario
+    </button>
+  </div>
 </div>
 
-<!-- Tabla de usuarios -->
-<div class="card shadow-sm border-0">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th class="ps-3">Usuario</th>
-            <th>Email</th>
-            <th>Rol actual</th>
-            <th>Superusuario</th>
-            <th class="text-end pe-3">Cambiar rol</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in users %}
-          <tr>
-            <td class="ps-3 fw-semibold">{{ u.username }}</td>
-            <td class="text-muted small">{{ u.email|default:"—" }}</td>
-            <td>
-              {% for g in u.groups.all %}
-                <span class="badge bg-secondary">{{ g.name }}</span>
-              {% empty %}
-                <span class="text-muted small">Sin rol</span>
-              {% endfor %}
-            </td>
-            <td>
-              {% if u.is_superuser %}
-                <span class="badge bg-danger">Superusuario</span>
-              {% else %}
-                <span class="text-muted small">—</span>
-              {% endif %}
-            </td>
-            <td class="text-end pe-3">
-              {% if not u.is_superuser %}
-              <div class="d-inline-flex gap-2 align-items-center flex-wrap">
-                <form method="post" class="d-inline-flex gap-1 align-items-center">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="set_group">
-                  <input type="hidden" name="user_id" value="{{ u.pk }}">
-                  <select name="group_name" class="form-select form-select-sm" style="width:auto;">
-                    <option value="">— Sin rol —</option>
-                    {% for g in groups %}
-                    <option value="{{ g.name }}" {% if g in u.groups.all %}selected{% endif %}>{{ g.name }}</option>
-                    {% endfor %}
-                  </select>
-                  <button type="submit" class="btn btn-sm btn-outline-secondary">Guardar</button>
-                </form>
-                {% if u.pk != request.user.pk %}
-                <a href="{% url 'billing:delete_user' u.pk %}"
-                   class="btn btn-sm btn-outline-danger"
-                   title="Eliminar usuario">
-                  <i class="bi bi-trash"></i>
-                </a>
-                {% endif %}
-              </div>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="text-center text-muted py-4">No hay usuarios.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<!-- ===== ENCABEZADOS DE COLUMNA ===== -->
+<div class="um-colhead">
+  <span>Usuario</span>
+  <span>Email</span>
+  <span>Rol actual</span>
+  <span>Superusuario</span>
+  <span class="um-colhead-actions">Acciones</span>
+</div>
+
+<!-- ===== FILAS DE USUARIO ===== -->
+<div class="um-list">
+  {% for u in users %}
+  <div class="um-row">
+
+    <!-- Usuario -->
+    <div class="um-cell um-user">
+      <div class="um-avatar">{{ u.username|first|upper }}</div>
+      <div class="um-user-meta">
+        <span class="um-user-name">{{ u.username }}</span>
+        {% if u.pk == request.user.pk %}<span class="um-you">tú</span>{% endif %}
+      </div>
     </div>
+
+    <!-- Email -->
+    <div class="um-cell um-email">
+      <i class="bi bi-envelope"></i>
+      <span>{{ u.email|default:"—" }}</span>
+    </div>
+
+    <!-- Rol actual -->
+    <div class="um-cell">
+      {% for g in u.groups.all %}
+        <span class="um-badge um-badge-role">{{ g.name }}</span>
+      {% empty %}
+        <span class="um-badge um-badge-empty">Sin rol</span>
+      {% endfor %}
+    </div>
+
+    <!-- Superusuario -->
+    <div class="um-cell">
+      {% if u.is_superuser %}
+        <span class="um-badge um-badge-super"><i class="bi bi-shield-fill-check"></i> Superusuario</span>
+      {% else %}
+        <span class="um-dash">—</span>
+      {% endif %}
+    </div>
+
+    <!-- Acciones -->
+    <div class="um-cell um-actions">
+      {% if u.is_superuser %}
+        <span class="um-locked"><i class="bi bi-lock-fill"></i> Protegido</span>
+      {% else %}
+        <form method="post" class="um-role-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="set_group">
+          <input type="hidden" name="user_id" value="{{ u.pk }}">
+          <select name="group_name" class="um-select" aria-label="Cambiar rol">
+            <option value="">— Sin rol —</option>
+            {% for g in groups %}
+            <option value="{{ g.name }}" {% if g in u.groups.all %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="um-btn-save" title="Guardar rol">
+            <i class="bi bi-check-lg"></i> Guardar
+          </button>
+        </form>
+        {% if u.pk != request.user.pk %}
+        <a href="{% url 'billing:delete_user' u.pk %}" class="um-btn-del" title="Eliminar usuario">
+          <i class="bi bi-trash"></i>
+        </a>
+        {% endif %}
+      {% endif %}
+    </div>
+
   </div>
+  {% empty %}
+  <div class="um-empty">
+    <i class="bi bi-people"></i>
+    <p>No hay usuarios registrados.</p>
+  </div>
+  {% endfor %}
 </div>
 
-<!-- Modal nuevo usuario -->
+<!-- ===== MODAL NUEVO USUARIO ===== -->
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
+    <div class="modal-content um-modal">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold">Crear usuario</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -97,19 +117,19 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label fw-semibold small">Usuario <span class="text-danger">*</span></label>
-            <input type="text" name="username" class="form-control form-control-sm" required>
+            <input type="text" name="username" class="form-control" required>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold small">Email</label>
-            <input type="email" name="email" class="form-control form-control-sm">
+            <input type="email" name="email" class="form-control">
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold small">Contraseña <span class="text-danger">*</span></label>
-            <input type="password" name="password" class="form-control form-control-sm" required>
+            <input type="password" name="password" class="form-control" required>
           </div>
           <div class="mb-1">
             <label class="form-label fw-semibold small">Rol</label>
-            <select name="group_name" class="form-select form-select-sm">
+            <select name="group_name" class="form-select">
               <option value="">— Sin rol —</option>
               {% for g in groups %}
               <option value="{{ g.name }}">{{ g.name }}</option>
@@ -118,11 +138,91 @@
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-sm btn-primary">Crear usuario</button>
+          <button type="button" class="um-btn um-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="um-btn um-btn-gold">Crear usuario</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<style>
+  /* ===== Cabecera ===== */
+  .um-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+  .um-title { font-family: Georgia, 'Times New Roman', serif; font-size: 2rem; font-weight: 700; color: #1E293B; letter-spacing: -.01em; margin: 0; }
+  .um-subtitle { color: #7A8194; font-size: .95rem; margin: .25rem 0 0; }
+  .um-actions-top { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+  .um-btn { display: inline-flex; align-items: center; gap: .45rem; padding: .6rem 1.1rem; border-radius: 11px; font-size: .88rem; font-weight: 600; text-decoration: none; border: 1.5px solid transparent; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+  .um-btn-ghost { background: #fff; color: #475066; border-color: #E2E5EE; }
+  .um-btn-ghost:hover { background: #F4F5FA; color: #1E293B; }
+  .um-btn-gold { background: linear-gradient(135deg, #E9D9B4, #D8C088); color: #4A3B18; box-shadow: 0 6px 16px rgba(200,170,100,.35); }
+  .um-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(200,170,100,.45); color: #4A3B18; }
+
+  /* ===== Encabezados de columna ===== */
+  .um-colhead, .um-row { display: grid; grid-template-columns: 1.5fr 1.7fr 1fr 1.2fr 1.6fr; align-items: center; gap: 1rem; }
+  .um-colhead { padding: 0 1.4rem .65rem; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #98A0B3; }
+  .um-colhead-actions { text-align: right; }
+
+  /* ===== Filas (tarjetas slate) ===== */
+  .um-list { display: flex; flex-direction: column; gap: .85rem; }
+  .um-row { background: linear-gradient(180deg, #273449, #1E293B); border: 1px solid rgba(255,255,255,.05); border-radius: 18px; padding: 1rem 1.4rem; box-shadow: 0 8px 22px rgba(30,41,59,.16); transition: transform .15s ease, box-shadow .15s ease; }
+  .um-row:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(30,41,59,.24); }
+  .um-cell { min-width: 0; }
+
+  /* Usuario */
+  .um-user { display: flex; align-items: center; gap: .8rem; }
+  .um-avatar { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem; color: #fff; background: linear-gradient(135deg, #6D5DEA, #8B7CF0); box-shadow: 0 4px 10px rgba(109,93,234,.4); }
+  .um-user-meta { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+  .um-user-name { color: #fff; font-weight: 600; font-size: .96rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .um-you { flex-shrink: 0; font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #C9CEDC; background: rgba(255,255,255,.1); border-radius: 20px; padding: .1rem .5rem; }
+
+  /* Email */
+  .um-email { display: flex; align-items: center; gap: .55rem; color: #CBD2E0; font-size: .9rem; }
+  .um-email i { color: #7C89A6; flex-shrink: 0; }
+  .um-email span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Badges */
+  .um-badge { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .8rem; border-radius: 20px; font-size: .78rem; font-weight: 600; }
+  .um-badge-role { background: #1E3A5F; color: #B9D2F0; border: 1px solid rgba(120,170,240,.25); }
+  .um-badge-empty { background: #35507D; color: #DCE7F7; border: 1px solid rgba(120,170,240,.3); }
+  .um-badge-super { background: rgba(240,193,80,.14); color: #F2C75A; border: 1px solid rgba(240,193,80,.4); }
+  .um-badge-super i { color: #F2C75A; }
+  .um-dash { color: #5C6577; }
+
+  /* Acciones */
+  .um-actions { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+  .um-role-form { display: inline-flex; align-items: center; gap: .5rem; }
+  .um-select { background: #0F1B2E; color: #E4E9F2; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; padding: .45rem .7rem; font-size: .84rem; max-width: 150px; cursor: pointer; }
+  .um-select:focus { outline: none; border-color: #6D5DEA; box-shadow: 0 0 0 3px rgba(109,93,234,.3); }
+  .um-select option { background: #0F1B2E; color: #E4E9F2; }
+  .um-btn-save { display: inline-flex; align-items: center; gap: .3rem; background: #E9D9B4; color: #4A3B18; border: none; border-radius: 9px; padding: .45rem .8rem; font-size: .82rem; font-weight: 700; cursor: pointer; transition: background .15s ease; }
+  .um-btn-save:hover { background: #DcC594; }
+  .um-btn-del { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; background: rgba(190,60,60,.16); color: #F08A8A; border: 1px solid rgba(190,60,60,.3); text-decoration: none; transition: background .15s ease, color .15s ease; }
+  .um-btn-del:hover { background: #B23A3A; color: #fff; }
+  .um-locked { display: inline-flex; align-items: center; gap: .4rem; color: #7C89A6; font-size: .82rem; font-weight: 500; }
+
+  /* Vacío */
+  .um-empty { text-align: center; padding: 3rem 1rem; color: #98A0B3; }
+  .um-empty i { font-size: 2.5rem; opacity: .5; }
+  .um-empty p { margin: .6rem 0 0; }
+
+  /* Modal */
+  .um-modal { border: none; border-radius: 18px; overflow: hidden; }
+  .um-modal .form-control, .um-modal .form-select { border-radius: 10px; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 900px) {
+    .um-colhead { display: none; }
+    .um-row { grid-template-columns: 1fr 1fr; gap: .75rem 1rem; padding: 1.1rem 1.2rem; }
+    .um-user { grid-column: 1 / -1; }
+    .um-actions { grid-column: 1 / -1; justify-content: flex-start; margin-top: .3rem; padding-top: .75rem; border-top: 1px solid rgba(255,255,255,.08); }
+  }
+  @media (max-width: 520px) {
+    .um-title { font-size: 1.6rem; }
+    .um-row { grid-template-columns: 1fr; }
+    .um-role-form { flex-wrap: wrap; }
+    .um-select { max-width: none; flex: 1; }
+  }
+</style>
 {% endblock %}
