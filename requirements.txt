@@ -24,5 +24,4 @@ django-cloudinary-storage==0.3.0
 # Servidor de producción y archivos estáticos — OBLIGATORIO para Railway
 gunicorn==23.0.0
 whitenoise==6.8.2
-resend
 sendgrid

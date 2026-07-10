@@ -61,7 +61,6 @@ EMAIL_TIMEOUT = 10
 ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', default='')
 PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
 PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
-RESEND_API_KEY = env('RESEND_API_KEY', default='')
 SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
 
 # Application definition

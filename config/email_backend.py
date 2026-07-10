@@ -1,4 +1,3 @@
-import resend
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 
@@ -52,65 +51,6 @@ class SendGridEmailBackend(BaseEmailBackend):
                     ))
 
                 sg.send(mail)
-                sent += 1
-            except Exception as e:
-                if not self.fail_silently:
-                    raise e
-        return sent
-
-
-class ResendEmailBackend(BaseEmailBackend):
-    def open(self):
-        resend.api_key = settings.RESEND_API_KEY
-
-    def close(self):
-        pass
-
-    def send_messages(self, email_messages):
-        import base64
-
-        self.open()
-        sent = 0
-        for msg in email_messages:
-            try:
-                payload = {
-                    "from": msg.from_email,
-                    "to": msg.to,
-                    "subject": msg.subject,
-                    "text": msg.body,
-                }
-
-                # HTML (alternativa text/html)
-                for content, mimetype in getattr(msg, "alternatives", []):
-                    if mimetype == "text/html":
-                        payload["html"] = content
-                        break
-
-                # CC / BCC / Reply-To
-                if msg.cc:
-                    payload["cc"] = msg.cc
-                if msg.bcc:
-                    payload["bcc"] = msg.bcc
-                if msg.reply_to:
-                    payload["reply_to"] = msg.reply_to
-
-                # Adjuntos (ej. la factura XML) -> base64
-                adjuntos = []
-                for att in msg.attachments:
-                    if isinstance(att, tuple):
-                        filename, content, _mimetype = att
-                        raw = content.encode("utf-8") if isinstance(content, str) else content
-                    else:  # MIMEBase
-                        filename = att.get_filename() or "adjunto"
-                        raw = att.get_payload(decode=True) or b""
-                    adjuntos.append({
-                        "filename": filename,
-                        "content": base64.b64encode(raw).decode("ascii"),
-                    })
-                if adjuntos:
-                    payload["attachments"] = adjuntos
-
-                resend.Emails.send(payload)
                 sent += 1
             except Exception as e:
                 if not self.fail_silently:
