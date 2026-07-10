@@ -28,6 +28,7 @@ class PurchaseRequest(models.Model):
     reviewed_at = models.DateTimeField(blank=True, null=True, verbose_name='Fecha de revisión')
     payphone_client_transaction_id = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='ID de transacción (nuestro)')
     payphone_transaction_id = models.IntegerField(blank=True, null=True, verbose_name='ID de transacción (PayPhone)')
+    paypal_order_id = models.CharField(max_length=32, blank=True, null=True, verbose_name='ID de orden (PayPal)')
 
     class Meta:
         verbose_name = 'Solicitud de compra'

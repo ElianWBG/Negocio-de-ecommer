@@ -936,7 +936,7 @@ def paypal_capture(request, pk):
 
     if capture_data.get('status') == 'COMPLETED':
         purchase_request.payment_method = 'tarjeta'
-        purchase_request.payphone_transaction_id = order_id
+        purchase_request.paypal_order_id = order_id
         try:
             confirm_purchase_request(purchase_request)
         except InsufficientStockError as e:
