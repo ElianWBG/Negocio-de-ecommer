@@ -122,7 +122,7 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
             # Si falla la generación del XML no debe bloquear el envío del correo.
             pass
 
-        message.send(fail_silently=True)
+        message.send(fail_silently=False)
     except Exception:
         logger.exception('Error sending purchase confirmation email to %s', customer.email)
         pass
