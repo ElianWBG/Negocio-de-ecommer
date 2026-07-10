@@ -3,9 +3,10 @@ from django.db import models
 
 class PurchaseRequest(models.Model):
     STATUS_CHOICES = [
-        ('pendiente', 'Pendiente'),
+        ('pendiente',  'Pendiente'),
         ('confirmada', 'Confirmada'),
-        ('rechazada', 'Rechazada'),
+        ('rechazada',  'Rechazada'),
+        ('cancelada',  'Cancelada por el cliente'),
     ]
     PAYMENT_METHOD_CHOICES = [
         ('manual', 'Revisión manual del proveedor'),
@@ -35,6 +36,9 @@ class PurchaseRequest(models.Model):
 
     def __str__(self):
         return f'Solicitud #{self.id} - {self.customer} ({self.get_status_display()})'
+
+    def can_be_cancelled(self):
+        return self.status == 'pendiente'
 
     @property
     def subtotal_estimado(self):

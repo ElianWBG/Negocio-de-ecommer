@@ -71,6 +71,8 @@ def home(request):
     out_of_stock_qs = Product.objects.filter(is_active=True, stock=0)
     low_stock_count = low_stock_qs.count()
     out_of_stock_count = out_of_stock_qs.count()
+    pending_credit_total = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).aggregate(s=Sum('saldo'))['s'] or 0
+    pending_credit_count = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).count()
 
     # --- Gráfico: ventas por mes (últimos 6 meses) ---
     months = []
@@ -142,6 +144,8 @@ def home(request):
         'total_income': total_income,
         'low_stock_count': low_stock_count,
         'out_of_stock_count': out_of_stock_count,
+        'pending_credit_total': pending_credit_total,
+        'pending_credit_count': pending_credit_count,
 
         'month_labels': month_labels,
         'month_totals': month_totals,

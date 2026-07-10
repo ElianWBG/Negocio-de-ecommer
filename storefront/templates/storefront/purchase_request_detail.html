@@ -29,6 +29,8 @@
           <i class="bi bi-clock"></i>
         {% elif purchase_request.status == 'confirmada' %}
           <i class="bi bi-check-circle-fill"></i>
+        {% elif purchase_request.status == 'cancelada' %}
+          <i class="bi bi-dash-circle-fill"></i>
         {% else %}
           <i class="bi bi-x-circle-fill"></i>
         {% endif %}
@@ -48,26 +50,29 @@
       <div class="tl-sub">{{ purchase_request.created_at|date:"d/m/Y" }}</div>
     </div>
     <div class="timeline-line {% if purchase_request.status != 'pendiente' %}done{% endif %}"></div>
-    <div class="timeline-step {% if purchase_request.status == 'pendiente' %}timeline-active{% else %}timeline-done{% endif %}">
+    <div class="timeline-step {% if purchase_request.status == 'pendiente' %}timeline-active{% elif purchase_request.status == 'cancelada' %}timeline-rejected{% else %}timeline-done{% endif %}">
       <div class="tl-dot">
         {% if purchase_request.status == 'pendiente' %}<i class="bi bi-hourglass-split"></i>
+        {% elif purchase_request.status == 'cancelada' %}<i class="bi bi-dash"></i>
         {% else %}<i class="bi bi-check"></i>{% endif %}
       </div>
       <div class="tl-label">En revisión</div>
       <div class="tl-sub">&nbsp;</div>
     </div>
-    <div class="timeline-line {% if purchase_request.status != 'pendiente' %}done{% endif %} {% if purchase_request.status == 'rechazada' %}rejected{% endif %}"></div>
+    <div class="timeline-line {% if purchase_request.status != 'pendiente' %}done{% endif %} {% if purchase_request.status == 'rechazada' or purchase_request.status == 'cancelada' %}rejected{% endif %}"></div>
     <div class="timeline-step
       {% if purchase_request.status == 'confirmada' %}timeline-done{% endif %}
-      {% if purchase_request.status == 'rechazada' %}timeline-rejected{% endif %}
+      {% if purchase_request.status == 'rechazada' or purchase_request.status == 'cancelada' %}timeline-rejected{% endif %}
       {% if purchase_request.status == 'pendiente' %}timeline-pending{% endif %}">
       <div class="tl-dot">
         {% if purchase_request.status == 'confirmada' %}<i class="bi bi-check"></i>
         {% elif purchase_request.status == 'rechazada' %}<i class="bi bi-x"></i>
+        {% elif purchase_request.status == 'cancelada' %}<i class="bi bi-dash"></i>
         {% else %}<i class="bi bi-circle"></i>{% endif %}
       </div>
       <div class="tl-label">
         {% if purchase_request.status == 'rechazada' %}Rechazada
+        {% elif purchase_request.status == 'cancelada' %}Cancelada
         {% else %}Confirmada{% endif %}
       </div>
       <div class="tl-sub">
@@ -269,6 +274,7 @@
 .req-header-pendiente  { border-bottom-color: #f59e0b; }
 .req-header-confirmada { border-bottom-color: #10b981; }
 .req-header-rechazada  { border-bottom-color: #ef4444; }
+.req-header-cancelada  { border-bottom-color: #9ca3af; }
 
 .req-label {
   font-size: .62rem;
@@ -310,6 +316,7 @@
 .req-status-pendiente  { background: #fef3c7; color: #92400e; }
 .req-status-confirmada { background: #d1fae5; color: #065f46; }
 .req-status-rechazada  { background: #fee2e2; color: #991b1b; }
+.req-status-cancelada  { background: #f3f4f6; color: #6b7280; }
 
 .req-payment-method {
   font-size: .78rem;

@@ -571,6 +571,25 @@ def my_orders(request):
     })
 
 
+@require_POST
+def cancel_purchase_request(request, pk):
+    if not _is_customer(request.user):
+        return redirect('storefront:customer_login')
+    purchase_request = get_object_or_404(
+        PurchaseRequest, pk=pk, customer=request.user.customer_profile
+    )
+    if not purchase_request.can_be_cancelled():
+        messages.error(request, 'Este pedido ya no puede cancelarse porque ya fue revisado.')
+        return redirect('storefront:my_orders')
+    purchase_request.status = 'cancelada'
+    purchase_request.reviewed_at = timezone.now()
+    purchase_request.save()
+    log_action(request, 'updated', 'PurchaseRequest', purchase_request.pk,
+               f'Pedido #{pk} cancelado por el cliente')
+    messages.success(request, f'Pedido #{pk} cancelado correctamente.')
+    return redirect('storefront:my_orders')
+
+
 def customer_invoice_pdf(request, pk):
     """Download a PDF of an invoice the logged-in customer owns."""
     from django.http import HttpResponse, Http404

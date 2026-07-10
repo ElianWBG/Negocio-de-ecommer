@@ -41,6 +41,7 @@
   .dot-pendiente  { background:#f5a623; }
   .dot-confirmada { background:#27ae60; }
   .dot-rechazada  { background:#c0392b; }
+  .dot-cancelada  { background:#9ca3af; }
   .order-invoice-ref { margin-left:auto; font-size:.8rem; color:var(--muted); display:flex; align-items:center; gap:.35rem; }
 
   @media(max-width:768px) {
@@ -84,7 +85,7 @@
             <p class="order-num">Pedido #{{ r.id }}</p>
             <p class="order-date">{{ r.created_at|date:"d/m/Y H:i" }}</p>
           </div>
-          <span class="badge {% if r.status == 'confirmada' %}badge-success{% elif r.status == 'rechazada' %}badge-danger{% else %}badge-warning{% endif %}">
+          <span class="badge {% if r.status == 'confirmada' %}badge-success{% elif r.status == 'rechazada' %}badge-danger{% elif r.status == 'cancelada' %}badge-secondary{% else %}badge-warning{% endif %}">
             {{ r.get_status_display }}
           </span>
           <div class="order-right">
@@ -117,8 +118,21 @@
               El negocio revisará tu pedido y se pondrá en contacto.
             {% elif r.status == 'confirmada' %}
               Pedido confirmado — gracias por tu compra.
+            {% elif r.status == 'cancelada' %}
+              Cancelaste este pedido.
             {% else %}
               Pedido rechazado. Puedes hacer uno nuevo desde el catálogo.
+            {% endif %}
+            {% if r.can_be_cancelled %}
+            <form method="post"
+                  action="{% url 'storefront:cancel_purchase_request' r.pk %}"
+                  onsubmit="return confirm('¿Cancelar este pedido? Esta acción no se puede deshacer.');"
+                  style="margin-left:auto;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:.78rem;padding:3px 10px;">
+                <i class="bi bi-x-circle"></i> Cancelar pedido
+              </button>
+            </form>
             {% endif %}
             {% if r.invoice %}
             <span class="order-invoice-ref">
