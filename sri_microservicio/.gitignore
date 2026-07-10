@@ -1,0 +1,18 @@
+# Entorno / secretos
+.env
+*.p12
+
+# Comprobantes generados
+comprobantes/
+
+# Base de datos local
+db.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Celery
+celerybeat-schedule
