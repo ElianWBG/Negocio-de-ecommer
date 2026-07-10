@@ -240,11 +240,11 @@ class ConfigNegocio(models.Model):
     nombre_tienda   = models.CharField(max_length=80, default='Nuestra Tienda', verbose_name='Nombre de la tienda')
     slogan          = models.CharField(max_length=160, blank=True, default='Explora nuestro catálogo y solicita tu pedido en minutos', verbose_name='Slogan')
     logo = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Logo', max_length=500)
-    color_primario  = models.CharField(max_length=7, default='#B5441B', verbose_name='Color principal (hex)', help_text='Ej: #B5441B')
-    color_oscuro    = models.CharField(max_length=7, default='#231A10', verbose_name='Color oscuro (hex)', help_text='Ej: #231A10')
-    color_fondo     = models.CharField(max_length=7, default='#F8F3EE', verbose_name='Color de fondo (hex)', help_text='Fondo general de la tienda')
-    color_navbar    = models.CharField(max_length=7, default='#231A10', verbose_name='Color del navbar (hex)', help_text='Barra de navegación superior')
-    color_texto     = models.CharField(max_length=7, default='#231A10', verbose_name='Color del texto (hex)', help_text='Color principal del texto en la tienda')
+    color_primario  = models.CharField(max_length=7, default='#2563EB', verbose_name='Color principal (hex)', help_text='Ej: #2563EB')
+    color_oscuro    = models.CharField(max_length=7, default='#0F1B33', verbose_name='Color oscuro (hex)', help_text='Ej: #0F1B33')
+    color_fondo     = models.CharField(max_length=7, default='#F3F6FC', verbose_name='Color de fondo (hex)', help_text='Fondo general de la tienda')
+    color_navbar    = models.CharField(max_length=7, default='#0F1B33', verbose_name='Color del navbar (hex)', help_text='Barra de navegación superior')
+    color_texto     = models.CharField(max_length=7, default='#0F1B33', verbose_name='Color del texto (hex)', help_text='Color principal del texto en la tienda')
 
     # Hero
     hero_imagen     = models.ImageField(upload_to='config/', blank=True, null=True, verbose_name='Imagen de fondo del hero', max_length=500)

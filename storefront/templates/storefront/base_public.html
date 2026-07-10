@@ -5,26 +5,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ config.nombre_tienda }}{% endblock %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root {
-      --espresso:   {{ config.color_oscuro|default:"#231A10" }};
-      --rust:       {{ config.color_primario|default:"#B5441B" }};
-      --rust-dark:  color-mix(in srgb, {{ config.color_primario|default:"#B5441B" }} 85%, black);
-      --sand:       {{ config.color_fondo|default:"#F8F3EE" }};
-      --sand-dark:  #EDE4D8;
-      --border:     #DDD3C5;
-      --text:       {{ config.color_texto|default:"#231A10" }};
-      --muted:      #8B7355;
+      --espresso:   {{ config.color_oscuro|default:"#0F1B33" }};
+      --rust:       {{ config.color_primario|default:"#2563EB" }};
+      --rust-dark:  color-mix(in srgb, {{ config.color_primario|default:"#2563EB" }} 85%, black);
+      --sand:       {{ config.color_fondo|default:"#F3F6FC" }};
+      --sand-dark:  #E7ECF6;
+      --border:     #D9E0EE;
+      --text:       {{ config.color_texto|default:"#0F1B33" }};
+      --muted:      #5B6B87;
       --surface:    #FFFFFF;
-      --radius:     10px;
-      --shadow:     0 4px 24px rgba(35,26,16,.08);
-      --shadow-lg:  0 12px 40px rgba(35,26,16,.14);
-      --font-head:  'Cormorant Garamond', Georgia, serif;
-      --font-body:  'DM Sans', system-ui, sans-serif;
+      --radius:     12px;
+      --shadow:     0 4px 24px rgba(15,27,51,.07);
+      --shadow-lg:  0 16px 44px rgba(15,27,51,.14);
+      --font-head:  'Sora', system-ui, sans-serif;
+      --font-body:  'Inter', system-ui, sans-serif;
       --transition: .22s cubic-bezier(.4,0,.2,1);
-      --navbar:     {{ config.color_navbar|default:"#231A10" }};
+      --navbar:     {{ config.color_navbar|default:"#0F1B33" }};
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--sand); color: var(--text); font-size: 15px; line-height: 1.6; }
@@ -85,6 +87,31 @@
     .nav-mobile-footer { padding: .9rem 1.25rem; border-top: 1px solid rgba(255,255,255,.08); }
     .nav-mobile-user { display: flex; align-items: center; gap: .75rem; }
     .nav-mobile-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--rust); color: #fff; font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; text-transform: uppercase; flex-shrink: 0; letter-spacing: .02em; }
+
+    /* ── PROMO RIBBON (marquee) ── */
+    .promo-ribbon { background: var(--rust); color: #fff; overflow: hidden; position: relative; }
+    .promo-ribbon::before, .promo-ribbon::after {
+      content: ""; position: absolute; top: 0; bottom: 0; width: 48px; z-index: 2; pointer-events: none;
+    }
+    .promo-ribbon::before { left: 0;  background: linear-gradient(90deg, var(--rust), transparent); }
+    .promo-ribbon::after  { right: 0; background: linear-gradient(270deg, var(--rust), transparent); }
+    .ribbon-track {
+      display: flex; width: max-content; gap: 0;
+      animation: ribbon-scroll 32s linear infinite;
+    }
+    .promo-ribbon:hover .ribbon-track { animation-play-state: paused; }
+    .ribbon-item {
+      display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap;
+      padding: .55rem 1.6rem; font-size: .82rem; font-weight: 500; letter-spacing: .01em;
+      color: rgba(255,255,255,.95);
+    }
+    .ribbon-item i { font-size: .95rem; opacity: .9; }
+    .ribbon-item::after { content: "•"; margin-left: 1.6rem; opacity: .4; }
+    @keyframes ribbon-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @media (prefers-reduced-motion: reduce) {
+      .ribbon-track { animation: none; justify-content: center; width: 100%; flex-wrap: wrap; }
+      .ribbon-item.dup { display: none; }
+    }
 
     /* ── CONTAINER ── */
     .page-wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
@@ -283,6 +310,21 @@
 
   </div>
 </nav>
+
+<!-- Cinta promocional (marquee) -->
+<div class="promo-ribbon" role="marquee" aria-label="Beneficios de la tienda">
+  <div class="ribbon-track">
+    {% comment %}Dos copias del set para un bucle continuo sin saltos.{% endcomment %}
+    <span class="ribbon-item"><i class="bi {{ config.porque_1_icono|default:'bi-truck' }}"></i>{{ config.porque_1_titulo|default:'Envíos rápidos y seguros' }}</span>
+    <span class="ribbon-item"><i class="bi {{ config.porque_2_icono|default:'bi-shield-check' }}"></i>{{ config.porque_2_titulo|default:'Compra con garantía' }}</span>
+    <span class="ribbon-item"><i class="bi {{ config.porque_3_icono|default:'bi-headset' }}"></i>{{ config.porque_3_titulo|default:'Atención personalizada' }}</span>
+    {% if config.slogan %}<span class="ribbon-item"><i class="bi bi-stars"></i>{{ config.slogan }}</span>{% endif %}
+    <span class="ribbon-item dup"><i class="bi {{ config.porque_1_icono|default:'bi-truck' }}"></i>{{ config.porque_1_titulo|default:'Envíos rápidos y seguros' }}</span>
+    <span class="ribbon-item dup"><i class="bi {{ config.porque_2_icono|default:'bi-shield-check' }}"></i>{{ config.porque_2_titulo|default:'Compra con garantía' }}</span>
+    <span class="ribbon-item dup"><i class="bi {{ config.porque_3_icono|default:'bi-headset' }}"></i>{{ config.porque_3_titulo|default:'Atención personalizada' }}</span>
+    {% if config.slogan %}<span class="ribbon-item dup"><i class="bi bi-stars"></i>{{ config.slogan }}</span>{% endif %}
+  </div>
+</div>
 
 <!-- Drawer móvil -->
 <div class="nav-mobile" id="navMobile">

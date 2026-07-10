@@ -244,6 +244,10 @@ def catalog_list(request):
 
     has_filter = bool(query or group_id or brand_id)
 
+    # En portada, "Lo más vendido" muestra máximo 10 productos.
+    if not has_filter:
+        products = products[:10]
+
     # Novedades: últimos 4 productos con stock, solo en la vista principal
     novedades = []
     recommended = []
@@ -265,8 +269,12 @@ def catalog_list(request):
     cart_items, cart_subtotal = _cart_items(request)
 
     # Tiendas (marcas) con productos, para el nav lateral izquierdo
-    sidebar_brands = (Brand.objects.filter(is_active=True, products__is_active=True)
-                      .distinct().order_by('name')[:8])
+    sidebar_brands = list(Brand.objects.filter(is_active=True, products__is_active=True)
+                          .distinct().order_by('name')[:8])
+    # Color fijo por marca (mismo color en el original y en el duplicado del marquee)
+    _brand_palette = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#0ea5e9', '#8b5cf6']
+    for _i, _b in enumerate(sidebar_brands):
+        _b.logo_color = _brand_palette[_i % len(_brand_palette)]
 
     # Rotación destacada del hero: 1 producto por marca, en bucle (solo portada)
     featured_rotation = []

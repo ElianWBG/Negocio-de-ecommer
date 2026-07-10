@@ -520,19 +520,21 @@
   .see-all:hover { gap: .55rem; }
 
   /* Fila de marcas (círculos con inicial) */
-  .brand-row { display: flex; gap: 1.25rem; overflow-x: auto; scrollbar-width: none; padding: .25rem 0; }
-  .brand-row::-webkit-scrollbar { display: none; }
-  .brand-chip { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-decoration: none; min-width: 78px; }
+  /* Marcas en marquee (scroll horizontal continuo, igual que la cinta promo) */
+  .brand-marquee { position: relative; overflow: hidden; padding: .25rem 0; }
+  .brand-marquee::before, .brand-marquee::after { content: ""; position: absolute; top: 0; bottom: 0; width: 48px; z-index: 2; pointer-events: none; }
+  .brand-marquee::before { left: 0;  background: linear-gradient(90deg, var(--surface), transparent); }
+  .brand-marquee::after  { right: 0; background: linear-gradient(270deg, var(--surface), transparent); }
+  .brand-track { display: flex; width: max-content; will-change: transform; }
+  .brand-chip { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-decoration: none; min-width: 78px; margin-right: 1.25rem; flex-shrink: 0; }
   .brand-logo { width: 74px; height: 74px; border-radius: 50%; border: 1px solid var(--line); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; transition: transform var(--d-fast) var(--ease-out), box-shadow var(--d-fast) var(--ease-out); }
   .brand-chip:hover .brand-logo { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-  .brand-chip:nth-child(6n+1) .brand-logo { background: #6366f1; }
-  .brand-chip:nth-child(6n+2) .brand-logo { background: #ec4899; }
-  .brand-chip:nth-child(6n+3) .brand-logo { background: #f59e0b; }
-  .brand-chip:nth-child(6n+4) .brand-logo { background: #10b981; }
-  .brand-chip:nth-child(6n+5) .brand-logo { background: #0ea5e9; }
-  .brand-chip:nth-child(6n+6) .brand-logo { background: #8b5cf6; }
   .brand-name { font-size: .82rem; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
   .brand-chip.active .brand-name { color: var(--brand-600); }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-track { transform: none !important; flex-wrap: wrap; width: 100%; justify-content: center; gap: 1.25rem; }
+    .brand-chip { margin-right: 0; }
+  }
 
   /* Promos anchos (2 columnas) */
   .promo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -676,13 +678,15 @@
       <div class="sec-head">
         <h2>Marcas <span class="sec-sub">nuestras tiendas asociadas</span></h2>
       </div>
-      <div class="brand-row">
-        {% for b in sidebar_brands %}
-        <a class="brand-chip {% if selected_brand and selected_brand.id == b.id %}active{% endif %}" href="?brand={{ b.id }}">
-          <span class="brand-logo">{{ b.name|slice:":1"|upper }}</span>
-          <span class="brand-name">{{ b.name }}</span>
-        </a>
-        {% endfor %}
+      <div class="brand-marquee">
+        <div class="brand-track" id="brandTrack">
+          {% for b in sidebar_brands %}
+          <a class="brand-chip {% if selected_brand and selected_brand.id == b.id %}active{% endif %}" href="?brand={{ b.id }}">
+            <span class="brand-logo" style="background:{{ b.logo_color }}">{{ b.name|slice:":1"|upper }}</span>
+            <span class="brand-name">{{ b.name }}</span>
+          </a>
+          {% endfor %}
+        </div>
       </div>
     </section>
     {% endif %}
@@ -1199,6 +1203,60 @@
       i = (i + 1) % slides.length;
       slides[i].classList.add('is-active');
     }, 2500);
+  })();
+
+  // ====== Marcas — carrusel infinito (logo sale por izq, reaparece por der) ======
+  (function () {
+    var track = document.getElementById('brandTrack');
+    if (!track) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!track.children.length) return;
+
+    var wrap = track.parentElement;
+
+    function chipW(el) {
+      return el.getBoundingClientRect().width +
+             parseFloat(getComputedStyle(el).marginRight || 0);
+    }
+    // Clonar hasta que el belt cubra >= 2x el ancho visible (evita huecos).
+    var setW = 0;
+    for (var k = 0; k < track.children.length; k++) setW += chipW(track.children[k]);
+    var need = wrap.getBoundingClientRect().width * 2 + setW;
+    var originals = Array.prototype.slice.call(track.children);
+    var total = setW;
+    while (total < need) {
+      for (var j = 0; j < originals.length; j++) {
+        var c = originals[j].cloneNode(true);
+        c.setAttribute('aria-hidden', 'true');
+        c.setAttribute('tabindex', '-1');
+        track.appendChild(c);
+        total += chipW(c);
+      }
+    }
+
+    var SPEED = 55;            // px por segundo
+    var offset = 0, last = null, paused = false;
+    wrap.addEventListener('mouseenter', function () { paused = true; });
+    wrap.addEventListener('mouseleave', function () { paused = false; });
+
+    function step(t) {
+      if (last === null) last = t;
+      var dt = (t - last) / 1000; last = t;
+      if (!paused && document.visibilityState === 'visible') {
+        offset += SPEED * dt;
+        var first = track.firstElementChild;
+        var fw = chipW(first);
+        while (first && offset >= fw) {
+          offset -= fw;
+          track.appendChild(first);      // recicla: primero al final
+          first = track.firstElementChild;
+          fw = chipW(first);
+        }
+        track.style.transform = 'translateX(' + (-offset) + 'px)';
+      }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   })();
 
   // ====== Typewriter — hero subtitle ======
