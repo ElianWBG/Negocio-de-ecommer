@@ -1,0 +1,60 @@
+{% extends 'billing/base.html' %}
+{% block title %}Ventas por periodo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Ventas por periodo</h2>
+  <a href="{% url 'reportes:index' %}" class="btn btn-outline-secondary">Volver a reportes</a>
+</div>
+
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body pb-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label form-label-sm mb-1">Desde</label>
+        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label form-label-sm mb-1">Hasta</label>
+        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-fill">Filtrar</button>
+        <a href="{% url 'reportes:ventas_por_periodo' %}" class="btn btn-sm btn-outline-secondary flex-fill">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0"><div class="card-body">
+      <div class="small text-muted">Total vendido</div>
+      <div class="fs-3 fw-bold text-success">${{ total_ventas }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0"><div class="card-body">
+      <div class="small text-muted">Facturas emitidas</div>
+      <div class="fs-3 fw-bold">{{ cantidad_facturas }}</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Cliente</th><th>Fecha</th><th>Tipo de pago</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for f in facturas %}
+        <tr>
+          <td>{{ f.id }}</td><td>{{ f.customer }}</td><td>{{ f.invoice_date|date:"d/m/Y" }}</td>
+          <td>{{ f.get_tipo_pago_display }}</td><td>${{ f.total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No hay ventas en ese periodo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.shortcuts import render, redirect, get_object_or_404
+
+from billing.models import Invoice
+from .forms import CobroFacturaForm
+from .models import CobroFactura
+
+
+# =============================================
+# MÓDULO DE COBROS (cuentas por cobrar)
+# =============================================
+
+@login_required
+def invoice_pending_list(request):
+    """Lista únicamente las facturas a crédito que aún tienen saldo pendiente."""
+    invoices = Invoice.objects.filter(
+        tipo_pago='credito', estado='pendiente'
+    ).select_related('customer').order_by('-invoice_date')
+
+    g = request.GET
+    if customer := g.get('customer', '').strip():
+        invoices = (invoices.filter(customer__first_name__icontains=customer) |
+                    invoices.filter(customer__last_name__icontains=customer))
+
+    return render(request, 'cobros/invoice_pending_list.html', {'invoices': invoices})
+
+
+@login_required
+def cobro_create(request, factura_id):
+    """Registra un nuevo abono sobre una factura específica."""
+    factura = get_object_or_404(Invoice, pk=factura_id)
+
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se puede registrar un pago sobre una factura anulada.')
+        return redirect('cobros:invoice_pending_list')
+
+    if request.method == 'POST':
+        form = CobroFacturaForm(request.POST, initial={'factura': factura})
+        if form.is_valid():
+            with transaction.atomic():
+                cobro = form.save()
+                factura.saldo = factura.saldo - cobro.valor
+                factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
+                factura.save()
+            messages.success(request, f'Pago de ${cobro.valor} registrado. Saldo restante: ${factura.saldo}')
+            return redirect('cobros:payment_history', factura_id=factura.id)
+    else:
+        form = CobroFacturaForm(initial={'factura': factura, 'valor': factura.saldo})
+
+    return render(request, 'cobros/cobro_form.html', {
+        'form': form, 'factura': factura, 'title': 'Registrar pago',
+    })
+
+
+@login_required
+def payment_history(request, factura_id):
+    """Muestra el historial de pagos de una factura y su saldo actual."""
+    factura = get_object_or_404(Invoice, pk=factura_id)
+    cobros = factura.cobros.all()
+    total_pagado = sum(c.valor for c in cobros)
+    return render(request, 'cobros/payment_history.html', {
+        'factura': factura, 'cobros': cobros, 'total_pagado': total_pagado,
+    })
+
+
+@login_required
+def cobro_update(request, pk):
+    """Edita un cobro ya registrado, recalculando el saldo de la factura."""
+    cobro = get_object_or_404(CobroFactura, pk=pk)
+    factura = cobro.factura
+    valor_anterior = cobro.valor  # capturado ANTES de construir el form: is_valid()
+                                    # muta el objeto `cobro` con los valores nuevos,
+                                    # así que si lo leyéramos después ya estaría pisado.
+
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se puede editar un pago de una factura anulada.')
+        return redirect('cobros:payment_history', factura_id=factura.id)
+
+    if request.method == 'POST':
+        form = CobroFacturaForm(request.POST, instance=cobro)
+        if form.is_valid():
+            with transaction.atomic():
+                cobro_actualizado = form.save(commit=False)
+                # Revertimos el valor viejo y aplicamos el nuevo
+                factura.saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
+                factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
+                factura.save()
+                cobro_actualizado.save()
+            messages.success(request, 'Pago actualizado correctamente.')
+            return redirect('cobros:payment_history', factura_id=factura.id)
+    else:
+        form = CobroFacturaForm(instance=cobro)
+
+    return render(request, 'cobros/cobro_form.html', {
+        'form': form, 'factura': factura, 'title': 'Editar pago',
+    })
+
+
+@login_required
+def cobro_delete(request, pk):
+    """Elimina un cobro, reponiendo su valor al saldo de la factura.
+    No se permite si la factura está anulada."""
+    cobro = get_object_or_404(CobroFactura, pk=pk)
+    factura = cobro.factura
+
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se puede eliminar un pago de una factura anulada.')
+        return redirect('cobros:payment_history', factura_id=factura.id)
+
+    if request.method == 'POST':
+        with transaction.atomic():
+            factura.saldo = factura.saldo + cobro.valor
+            factura.estado = 'pendiente'  # al reponer saldo, siempre queda > 0
+            factura.save()
+            cobro.delete()
+        messages.success(request, 'Pago eliminado y saldo repuesto.')
+        return redirect('cobros:payment_history', factura_id=factura.id)
+
+    return render(request, 'cobros/cobro_confirm_delete.html', {'cobro': cobro, 'factura': factura})

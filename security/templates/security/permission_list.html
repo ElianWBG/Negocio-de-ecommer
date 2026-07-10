@@ -1,0 +1,25 @@
+{% extends 'billing/base.html' %}
+{% block title %}Permissions{% endblock %}
+{% block content %}
+<h2>Permissions</h2>
+<a href="{% url 'security:permission_create' %}" class="btn btn-primary mb-3">+ New Permission</a>
+<table class="table table-striped table-hover">
+  <thead class="table-dark">
+    <tr><th>Name</th><th>Codename</th><th>Model</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for p in items %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td><code>{{ p.codename }}</code></td>
+      <td>{{ p.content_type.model }}</td>
+      <td>
+        <a href="{% url 'security:permission_update' p.pk %}" class="btn btn-sm btn-warning">Edit</a>
+        <a href="{% url 'security:permission_delete' p.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+

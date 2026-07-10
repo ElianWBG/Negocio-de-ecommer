@@ -1,0 +1,57 @@
+{% extends 'billing/base.html' %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<h2 class="mb-4">Área de reportes</h2>
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{% url 'reportes:cuentas_por_cobrar' %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title">Cuentas por cobrar</h5>
+          <p class="card-text text-muted small">Facturas a crédito pendientes de pago.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'reportes:cuentas_por_pagar' %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title">Cuentas por pagar</h5>
+          <p class="card-text text-muted small">Compras a crédito pendientes de pago a proveedores.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'reportes:ventas_por_periodo' %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title">Ventas por periodo</h5>
+          <p class="card-text text-muted small">Total facturado, filtrable por rango de fechas.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'reportes:productos_mas_vendidos' %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title">Productos más vendidos</h5>
+          <p class="card-text text-muted small">Ranking por unidades vendidas.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'reportes:stock_bajo' %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h5 class="card-title">Stock bajo</h5>
+          <p class="card-text text-muted small">Productos por debajo de un umbral de inventario.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

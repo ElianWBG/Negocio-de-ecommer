@@ -1,0 +1,33 @@
+{% extends 'billing/base.html' %}
+{% block title %}Cuentas por cobrar{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Cuentas por cobrar</h2>
+  <a href="{% url 'reportes:index' %}" class="btn btn-outline-secondary">Volver a reportes</a>
+</div>
+
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <div class="small text-muted">Total pendiente de cobro</div>
+    <div class="fs-3 fw-bold text-danger">${{ total_por_cobrar }}</div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Saldo</th></tr></thead>
+      <tbody>
+        {% for f in facturas %}
+        <tr>
+          <td>{{ f.id }}</td><td>{{ f.customer }}</td><td>{{ f.invoice_date|date:"d/m/Y" }}</td>
+          <td>${{ f.total }}</td><td><strong>${{ f.saldo }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No hay cuentas por cobrar pendientes.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

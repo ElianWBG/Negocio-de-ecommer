@@ -1,0 +1,28 @@
+{% extends 'billing/base.html' %}
+{% block title %}Productos más vendidos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Productos más vendidos</h2>
+  <a href="{% url 'reportes:index' %}" class="btn btn-outline-secondary">Volver a reportes</a>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Producto</th><th>Unidades vendidas</th><th>Total vendido</th></tr></thead>
+      <tbody>
+        {% for item in ranking %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ item.product__name }}</td>
+          <td>{{ item.unidades_vendidas }}</td>
+          <td>${{ item.total_vendido }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Aún no hay ventas registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
