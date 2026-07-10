@@ -1,4 +1,6 @@
 from django.db import models
+from django.conf import settings
+from decimal import Decimal
 from shared.validators import validate_cedula_ec
 
 class Brand(models.Model):
@@ -157,11 +159,29 @@ class Invoice(models.Model):
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Impuesto')
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Total')
     is_active = models.BooleanField(default=True, verbose_name='Activo')
+    estado = models.CharField(
+        max_length=10,
+        choices=[('pendiente', 'Pendiente'), ('parcial', 'Parcial'), ('pagada', 'Pagada'), ('anulada', 'Anulada')],
+        default='pendiente',
+        verbose_name='Estado de pago',
+    )
+    saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Saldo pendiente')
+    tipo_pago = models.CharField(
+        max_length=10,
+        choices=[('contado', 'Contado'), ('credito', 'Crédito')],
+        default='contado',
+        verbose_name='Tipo de pago',
+    )
     class Meta:
         verbose_name = 'Factura'
         verbose_name_plural = 'Facturas'
         ordering = ['-invoice_date']
     def __str__(self): return f'Factura #{self.id} - {self.customer}'
+    def save(self, *args, **kwargs):
+        if self.tipo_pago == 'contado' and self.estado != 'anulada':
+            self.saldo = Decimal('0')
+            self.estado = 'pagada'
+        super().save(*args, **kwargs)
 
 class InvoiceDetail(models.Model):
     """Líneas de factura."""
@@ -177,6 +197,34 @@ class InvoiceDetail(models.Model):
     def save(self, *args, **kwargs):
         self.subtotal = self.quantity * self.unit_price
         super().save(*args, **kwargs)
+
+
+class InvoicePayment(models.Model):
+    """Registro de un pago (total o parcial) aplicado a una factura de crédito."""
+    METHOD_CHOICES = [
+        ('efectivo', 'Efectivo'),
+        ('transferencia', 'Transferencia'),
+        ('tarjeta', 'Tarjeta'),
+        ('otro', 'Otro'),
+    ]
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='payments', verbose_name='Factura')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Monto pagado')
+    payment_date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de pago')
+    method = models.CharField(max_length=15, choices=METHOD_CHOICES, verbose_name='Método de pago')
+    registered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        null=True, blank=True, verbose_name='Registrado por'
+    )
+    notes = models.TextField(blank=True, verbose_name='Notas')
+
+    class Meta:
+        verbose_name = 'Pago de factura'
+        verbose_name_plural = 'Pagos de facturas'
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f'Pago ${self.amount} — Factura #{self.invoice_id}'
+
 
 class ConfigNegocio(models.Model):
     """Configuración global del negocio — singleton (solo una fila).

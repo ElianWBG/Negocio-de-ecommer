@@ -2,6 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from decimal import Decimal
 from .models import Brand, ProductGroup, Supplier, Product, Customer, Invoice, InvoiceDetail
 
 
@@ -76,10 +77,28 @@ class CustomerForm(forms.ModelForm):
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['customer']
+        fields = ['customer', 'tipo_pago']
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
+
+
+class InvoicePaymentForm(forms.Form):
+    amount = forms.DecimalField(
+        max_digits=12, decimal_places=2, min_value=Decimal('0.01'),
+        label='Monto a pagar',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+    )
+    method = forms.ChoiceField(
+        choices=[('efectivo', 'Efectivo'), ('transferencia', 'Transferencia'), ('tarjeta', 'Tarjeta'), ('otro', 'Otro')],
+        label='Método de pago',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    notes = forms.CharField(
+        required=False, label='Notas',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+    )
 
 
 InvoiceDetailFormSet = inlineformset_factory(

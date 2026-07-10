@@ -23,10 +23,15 @@
       {% csrf_token %}
 
       <div class="row mb-3">
-        <div class="col-md-8">
+        <div class="col-md-5">
           <label class="form-label fw-bold">Customer</label>
           {{ form.customer }}
           {% for error in form.customer.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Tipo de pago</label>
+          {{ form.tipo_pago }}
+          {% for error in form.tipo_pago.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
         </div>
         <div class="col-md-4">
           <label class="form-label fw-bold">Date</label>

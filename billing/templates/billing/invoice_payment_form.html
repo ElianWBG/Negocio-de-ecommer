@@ -1,0 +1,88 @@
+{% extends 'billing/base.html' %}
+{% block title %}Registrar pago — Factura #{{ invoice.id|stringformat:"05d" }}{% endblock %}
+{% block topbar_title %}Registrar pago{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center gap-2 mb-4">
+  <a href="{% url 'billing:invoice_detail' invoice.pk %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-md-8">
+
+    <!-- Invoice summary -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small">Factura</div>
+            <div class="fw-bold fs-5">#{{ invoice.id|stringformat:"05d" }}</div>
+            <div class="text-muted small">{{ invoice.customer.full_name }}</div>
+          </div>
+          <div class="text-end">
+            <div class="text-muted small">Saldo pendiente</div>
+            <div class="fw-bold fs-3 text-danger">${{ invoice.saldo }}</div>
+            <div class="text-muted small">Total: ${{ invoice.total }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment form -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-light py-2">
+        <span class="fw-semibold"><i class="bi bi-cash-coin me-1"></i> Registrar pago</span>
+      </div>
+      <div class="card-body">
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show py-2" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.amount.label }}</label>
+            {{ form.amount }}
+            {% for e in form.amount.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+            <div class="form-text">Máximo: ${{ invoice.saldo }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.method.label }}</label>
+            {{ form.method }}
+            {% for e in form.method.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            {% for e in form.notes.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success flex-fill">
+              <i class="bi bi-check-circle me-1"></i> Confirmar pago
+            </button>
+            <a href="{% url 'billing:invoice_detail' invoice.pk %}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

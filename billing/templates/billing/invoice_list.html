@@ -89,6 +89,34 @@
                   <span class="badge bg-secondary">Anulada</span>
                 {% endif %}
               </td>
+              {% elif col_key == 'estado' %}
+              <td class="column-estado">
+                {% if item.estado == 'pagada' %}
+                  <span class="badge bg-success">Pagada</span>
+                {% elif item.estado == 'parcial' %}
+                  <span class="badge bg-warning text-dark">Parcial</span>
+                {% elif item.estado == 'pendiente' %}
+                  <span class="badge bg-danger">Pendiente</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ item.get_estado_display }}</span>
+                {% endif %}
+              </td>
+              {% elif col_key == 'saldo' %}
+              <td class="column-saldo">
+                {% if item.saldo > 0 %}
+                  <span class="text-danger fw-semibold">${{ item.saldo }}</span>
+                {% else %}
+                  <span class="text-muted">$0.00</span>
+                {% endif %}
+              </td>
+              {% elif col_key == 'tipo_pago' %}
+              <td class="column-tipo_pago">
+                {% if item.tipo_pago == 'credito' %}
+                  <span class="badge bg-info text-dark">Crédito</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border">Contado</span>
+                {% endif %}
+              </td>
               {% endif %}
             {% endfor %}
             <td class="column-actions text-end text-nowrap">

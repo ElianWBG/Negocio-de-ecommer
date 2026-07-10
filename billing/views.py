@@ -12,7 +12,7 @@ from datetime import timedelta, date
 from .models import *
 from .forms import (
     SignUpForm, BrandForm, ProductGroupForm, SupplierForm,
-    CustomerForm, InvoiceForm, InvoiceDetailFormSet
+    CustomerForm, InvoiceForm, InvoiceDetailFormSet, InvoicePaymentForm
 )
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
@@ -1292,6 +1292,12 @@ class InvoiceListView(GroupRequiredMixin, ExportListMixin, ListView):
             return f'{obj.total:.2f}'
         elif col_key == 'is_active':
             return 'Activa' if obj.is_active else 'Anulada'
+        elif col_key == 'estado':
+            return obj.get_estado_display()
+        elif col_key == 'saldo':
+            return f'{obj.saldo:.2f}'
+        elif col_key == 'tipo_pago':
+            return obj.get_tipo_pago_display()
         else:
             return getattr(obj, col_key, '-')
 
@@ -1481,6 +1487,13 @@ def invoice_create(request):
                         invoice.subtotal = subtotal
                         invoice.tax = subtotal * Decimal('0.15')
                         invoice.total = invoice.subtotal + invoice.tax
+
+                        if invoice.tipo_pago == 'credito':
+                            from billing.services import check_credit_limit
+                            check_credit_limit(invoice.customer, invoice.total)
+                            invoice.saldo = invoice.total
+                            invoice.estado = 'pendiente'
+
                         invoice.save()
                 except ValueError as e:
                     messages.error(request, str(e))
@@ -1522,6 +1535,7 @@ class InvoiceDetailView(GroupRequiredMixin, DetailView):
         details = invoice.details.select_related('product', 'product__brand').all()
         ctx['details'] = details
         ctx['total_units'] = sum(d.quantity for d in details)
+        ctx['payments'] = invoice.payments.select_related('registered_by').all()
         return ctx
 
 
@@ -1563,6 +1577,48 @@ class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
         response = super().form_valid(form)
         log_action(self.request, 'deleted', 'Invoice', pk, f'Factura #{pk} eliminada')
         return response
+
+
+@group_required('Vendedor', 'Administrador')
+def register_payment(request, pk):
+    """Registrar un pago (total o parcial) en una factura de crédito."""
+    from billing.services import register_invoice_payment
+    invoice = get_object_or_404(Invoice, pk=pk, is_active=True)
+
+    if invoice.tipo_pago != 'credito' or invoice.saldo <= 0:
+        messages.warning(request, 'Esta factura no tiene saldo pendiente.')
+        return redirect('billing:invoice_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = InvoicePaymentForm(request.POST)
+        if form.is_valid():
+            try:
+                payment = register_invoice_payment(
+                    invoice=invoice,
+                    amount=form.cleaned_data['amount'],
+                    method=form.cleaned_data['method'],
+                    user=request.user,
+                    notes=form.cleaned_data.get('notes', ''),
+                )
+                log_action(
+                    request, 'updated', 'Invoice', invoice.pk,
+                    f'Pago de ${payment.amount:.2f} registrado en Factura #{invoice.pk}. '
+                    f'Saldo restante: ${invoice.saldo:.2f}',
+                )
+                messages.success(
+                    request,
+                    f'Pago de ${payment.amount:.2f} registrado. Saldo restante: ${invoice.saldo:.2f}',
+                )
+            except ValueError as e:
+                messages.error(request, str(e))
+            return redirect('billing:invoice_detail', pk=pk)
+    else:
+        form = InvoicePaymentForm(initial={'amount': invoice.saldo})
+
+    return render(request, 'billing/invoice_payment_form.html', {
+        'form': form,
+        'invoice': invoice,
+    })
 
 
 # ─────────────────────────────────────────────

@@ -15,6 +15,11 @@
   <a href="{% url 'billing:invoice_create' %}" class="btn btn-sm btn-outline-success">
     <i class="bi bi-plus-circle"></i> Nueva factura
   </a>
+  {% if invoice.is_active and invoice.saldo > 0 %}
+  <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-sm btn-success">
+    <i class="bi bi-cash-coin"></i> Registrar pago
+  </a>
+  {% endif %}
   {% if invoice.is_active %}
   <a href="{% url 'billing:invoice_delete' invoice.pk %}" class="btn btn-sm btn-outline-danger ms-auto">
     <i class="bi bi-trash"></i> Anular factura
@@ -49,11 +54,21 @@
       <div class="invoice-number">#{{ invoice.id|stringformat:"05d" }}</div>
       <div class="invoice-date">{{ invoice.invoice_date|date:"d/m/Y" }}</div>
       <div class="invoice-time">{{ invoice.invoice_date|date:"H:i" }}</div>
-      <div class="mt-2">
+      <div class="mt-2 d-flex flex-column gap-1 align-items-end">
         {% if invoice.is_active %}
           <span class="inv-badge inv-badge-active">● Activa</span>
         {% else %}
           <span class="inv-badge inv-badge-void">● Anulada</span>
+        {% endif %}
+        {% if invoice.estado == 'pagada' %}
+          <span class="inv-badge inv-badge-pagada">✓ Pagada</span>
+        {% elif invoice.estado == 'parcial' %}
+          <span class="inv-badge inv-badge-parcial">◑ Pago parcial — Saldo ${{ invoice.saldo }}</span>
+        {% elif invoice.estado == 'pendiente' %}
+          <span class="inv-badge inv-badge-pendiente">⚑ Pendiente — Saldo ${{ invoice.saldo }}</span>
+        {% endif %}
+        {% if invoice.tipo_pago == 'credito' %}
+          <span class="inv-badge inv-badge-credito">Crédito</span>
         {% endif %}
       </div>
     </div>
@@ -154,6 +169,52 @@
   </div>
 
 </div>
+
+<!-- ── Historial de pagos (no se imprime) ──────────── -->
+{% if payments %}
+<div class="card border-0 shadow-sm mb-4 no-print" style="max-width:860px;margin:0 auto;">
+  <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
+    <span class="fw-semibold small"><i class="bi bi-cash-stack me-1"></i> Historial de pagos</span>
+    {% if invoice.is_active and invoice.saldo > 0 %}
+    <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-sm btn-success">
+      <i class="bi bi-plus-circle"></i> Registrar pago
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Fecha</th>
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Registrado por</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td class="ps-3 text-muted small">{{ p.payment_date|date:"d/m/Y H:i" }}</td>
+            <td><strong class="text-success">${{ p.amount }}</strong></td>
+            <td>{{ p.get_method_display }}</td>
+            <td>{{ p.registered_by.get_full_name|default:p.registered_by.username }}</td>
+            <td class="text-muted small">{{ p.notes|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% elif invoice.is_active and invoice.saldo > 0 %}
+<div class="text-center mb-4 no-print" style="max-width:860px;margin:0 auto;">
+  <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-success">
+    <i class="bi bi-cash-coin me-1"></i> Registrar primer pago — Saldo ${{ invoice.saldo }}
+  </a>
+</div>
+{% endif %}
 
 <style>
 /* ── Invoice document ────────────────────────────────── */
@@ -279,8 +340,12 @@
   font-weight: 600;
 }
 
-.inv-badge-active { background: #d1fae5; color: #065f46; }
-.inv-badge-void   { background: #f3f4f6; color: #6b7280; }
+.inv-badge-active   { background: #d1fae5; color: #065f46; }
+.inv-badge-void     { background: #f3f4f6; color: #6b7280; }
+.inv-badge-pagada   { background: #d1fae5; color: #065f46; }
+.inv-badge-parcial  { background: #fef3c7; color: #92400e; }
+.inv-badge-pendiente{ background: #fee2e2; color: #991b1b; }
+.inv-badge-credito  { background: #dbeafe; color: #1e40af; }
 
 /* Dividers */
 .invoice-divider {

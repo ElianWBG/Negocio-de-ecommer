@@ -89,6 +89,33 @@ INVOICE_COLUMNS = {
         'required': False,
         'sortable': True,
     },
+    'estado': {
+        'label': 'Pago',
+        'field': 'estado',
+        'type': 'text',
+        'width': 110,
+        'visible': True,
+        'required': False,
+        'sortable': True,
+    },
+    'saldo': {
+        'label': 'Saldo',
+        'field': 'saldo',
+        'type': 'decimal',
+        'width': 110,
+        'visible': True,
+        'required': False,
+        'sortable': True,
+    },
+    'tipo_pago': {
+        'label': 'Tipo pago',
+        'field': 'tipo_pago',
+        'type': 'text',
+        'width': 110,
+        'visible': False,
+        'required': False,
+        'sortable': True,
+    },
 }
 
 # Configuración por defecto
