@@ -124,4 +124,5 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
 
         message.send(fail_silently=True)
     except Exception:
+        logger.exception('Error sending purchase confirmation email to %s', customer.email)
         pass
