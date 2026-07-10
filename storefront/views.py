@@ -96,7 +96,11 @@ def customer_register(request):
                 }
             )
             _send_welcome_email(user)
+            cart_snapshot = request.session.get(CART_SESSION_KEY)
             login(request, user)
+            if cart_snapshot:
+                request.session[CART_SESSION_KEY] = cart_snapshot
+                request.session.modified = True
             return redirect('storefront:catalog_list')
     else:
         form = CustomerRegistrationForm()
@@ -154,7 +158,11 @@ def verify_email(request, token):
     user.save()
     verification.delete()
 
+    cart_snapshot = request.session.get(CART_SESSION_KEY)
     login(request, user)
+    if cart_snapshot:
+        request.session[CART_SESSION_KEY] = cart_snapshot
+        request.session.modified = True
     messages.success(request, f'¡Bienvenido, {user.first_name}! Tu cuenta está activa.')
     next_url = request.session.pop('next_after_login', None)
     return redirect(next_url or 'storefront:catalog_list')
@@ -183,7 +191,11 @@ def customer_login(request):
             elif not hasattr(user, 'customer_profile'):
                 form.add_error(None, 'Esta cuenta no es de cliente. Usa el panel de administración.')
             else:
+                cart_snapshot = request.session.get(CART_SESSION_KEY)
                 login(request, user)
+                if cart_snapshot:
+                    request.session[CART_SESSION_KEY] = cart_snapshot
+                    request.session.modified = True
                 next_url = request.session.pop('next_after_login', None)
                 return redirect(next_url or 'storefront:catalog_list')
     else:

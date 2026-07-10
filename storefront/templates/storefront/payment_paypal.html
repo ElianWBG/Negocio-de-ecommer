@@ -53,9 +53,18 @@ const createOrderUrl = "{% url 'storefront:paypal_create_order' purchase_request
 const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
 const csrfToken = "{{ csrf_token }}";
 
+let paypalOrderInFlight = false;
+
 paypal.Buttons({
   style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
   createOrder: function() {
+    if (paypalOrderInFlight) {
+      return Promise.reject(new Error('Ya hay un pago en proceso.'));
+    }
+    paypalOrderInFlight = true;
+    var btnContainer = document.getElementById('paypal-button-container');
+    btnContainer.style.opacity = '0.5';
+    btnContainer.style.pointerEvents = 'none';
     return fetch(createOrderUrl, {
       method: 'POST',
       headers: { 'X-CSRFToken': csrfToken },
@@ -64,6 +73,12 @@ paypal.Buttons({
     .then(function(data) {
       if (data.error) throw new Error(data.error);
       return data.id;
+    })
+    .catch(function(err) {
+      paypalOrderInFlight = false;
+      btnContainer.style.opacity = '1';
+      btnContainer.style.pointerEvents = 'auto';
+      throw err;
     });
   },
   onApprove: function(data, actions) {
@@ -104,6 +119,10 @@ paypal.Buttons({
     msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Ocurrió un error con PayPal. Intenta de nuevo.</div>';
   },
   onCancel: function() {
+    paypalOrderInFlight = false;
+    var btnContainer = document.getElementById('paypal-button-container');
+    btnContainer.style.opacity = '1';
+    btnContainer.style.pointerEvents = 'auto';
     var msgEl = document.getElementById('paypal-msg');
     msgEl.style.display = 'block';
     msgEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo cuando quieras.</div>';
