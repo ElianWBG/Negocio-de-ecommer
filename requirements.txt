@@ -25,3 +25,4 @@ django-cloudinary-storage==0.3.0
 gunicorn==23.0.0
 whitenoise==6.8.2
 resend
+sendgrid
