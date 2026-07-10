@@ -11,6 +11,7 @@ urlpatterns = [
     path('verificar-email/enviado/', views.verify_email_sent, name='verify_email_sent'),
     path('verificar-email/<str:token>/', views.verify_email, name='verify_email'),
     path('mis-pedidos/', views.my_orders, name='my_orders'),
+    path('factura/<int:pk>/pdf/', views.customer_invoice_pdf, name='customer_invoice_pdf'),
     path('cambiar-contrasena/', views.change_password, name='change_password'),
     path('perfil/', views.profile, name='profile'),
 

@@ -121,7 +121,13 @@
               Pedido rechazado. Puedes hacer uno nuevo desde el catálogo.
             {% endif %}
             {% if r.invoice %}
-            <span class="order-invoice-ref"><i class="bi bi-receipt"></i> Factura #{{ r.invoice.id }}</span>
+            <span class="order-invoice-ref">
+              <i class="bi bi-receipt"></i> Factura #{{ r.invoice.id }}
+              <a href="{% url 'storefront:customer_invoice_pdf' r.invoice.id %}" target="_blank"
+                 class="ms-1" style="color:var(--rust);font-size:.75rem;" title="Descargar PDF">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+              </a>
+            </span>
             {% endif %}
           </div>
         </div>

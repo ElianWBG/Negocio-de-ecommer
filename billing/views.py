@@ -1580,6 +1580,22 @@ class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
 
 
 @group_required('Vendedor', 'Administrador')
+def invoice_pdf(request, pk):
+    """Server-generated PDF for a single invoice (opens inline in browser)."""
+    from billing.services import build_invoice_pdf
+    from django.http import HttpResponse
+
+    invoice = get_object_or_404(
+        Invoice.objects.select_related('customer').prefetch_related('details__product__brand', 'payments__registered_by'),
+        pk=pk,
+    )
+    buffer = build_invoice_pdf(invoice)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="factura_{invoice.id:05d}.pdf"'
+    return response
+
+
+@group_required('Vendedor', 'Administrador')
 def register_payment(request, pk):
     """Registrar un pago (total o parcial) en una factura de crédito."""
     from billing.services import register_invoice_payment

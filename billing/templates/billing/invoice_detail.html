@@ -9,9 +9,12 @@
   <a href="{% url 'billing:invoice_list' %}" class="btn btn-sm btn-outline-secondary">
     <i class="bi bi-arrow-left"></i> Volver
   </a>
-  <button onclick="window.print()" class="btn btn-sm btn-outline-primary">
-    <i class="bi bi-printer"></i> Imprimir / PDF
+  <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-printer"></i> Imprimir
   </button>
+  <a href="{% url 'billing:invoice_pdf' invoice.pk %}" target="_blank" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+  </a>
   <a href="{% url 'billing:invoice_create' %}" class="btn btn-sm btn-outline-success">
     <i class="bi bi-plus-circle"></i> Nueva factura
   </a>

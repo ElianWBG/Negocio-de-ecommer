@@ -570,6 +570,30 @@ def my_orders(request):
     })
 
 
+def customer_invoice_pdf(request, pk):
+    """Download a PDF of an invoice the logged-in customer owns."""
+    from django.http import HttpResponse, Http404
+    from billing.models import Invoice
+    from billing.services import build_invoice_pdf
+
+    if not _is_customer(request.user):
+        return redirect('storefront:customer_login')
+
+    invoice = get_object_or_404(
+        Invoice.objects.select_related('customer').prefetch_related(
+            'details__product__brand', 'payments__registered_by'
+        ),
+        pk=pk,
+    )
+    if not invoice.customer.user or invoice.customer.user != request.user:
+        raise Http404
+
+    buffer = build_invoice_pdf(invoice)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="factura_{invoice.id:05d}.pdf"'
+    return response
+
+
 def change_password(request):
     """Permite al cliente cambiar su contraseña desde el perfil."""
     if not _is_customer(request.user):

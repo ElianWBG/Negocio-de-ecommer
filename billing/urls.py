@@ -54,6 +54,7 @@ urlpatterns = [
     path('invoices/', views.InvoiceListView.as_view(), name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
     path('invoices/<int:pk>/', views.InvoiceDetailView.as_view(), name='invoice_detail'),
+    path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     path('invoices/<int:pk>/delete/', views.InvoiceDeleteView.as_view(), name='invoice_delete'),
     path('invoices/<int:pk>/pago/', views.register_payment, name='register_payment'),
     path('invoices/api/update-visible-columns/', views.invoice_update_visible_columns, name='invoice_update_visible_columns'),
