@@ -276,6 +276,7 @@ class ConfigNegocio(models.Model):
     banner_cta      = models.CharField(max_length=40, default='Ver productos', verbose_name='Texto del botón del banner')
 
     # Contacto
+    ruc              = models.CharField(max_length=13, blank=True, verbose_name='RUC del negocio')
     email_contacto   = models.EmailField(blank=True, verbose_name='Email de contacto')
     telefono         = models.CharField(max_length=20, blank=True, verbose_name='Teléfono')
     whatsapp         = models.CharField(max_length=20, blank=True, verbose_name='Número WhatsApp (con código de país, ej: 593999999999)')

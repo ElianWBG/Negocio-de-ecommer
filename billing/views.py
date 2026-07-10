@@ -2473,6 +2473,7 @@ def config_negocio_edit(request):
         config.banner_titulo    = request.POST.get('banner_titulo', '').strip()
         config.banner_subtitulo = request.POST.get('banner_subtitulo', '').strip()
         config.banner_cta       = request.POST.get('banner_cta', '').strip()
+        config.ruc              = request.POST.get('ruc', '').strip()
         config.email_contacto   = request.POST.get('email_contacto', '').strip()
         config.telefono         = request.POST.get('telefono', '').strip()
         config.whatsapp         = request.POST.get('whatsapp', '').strip()

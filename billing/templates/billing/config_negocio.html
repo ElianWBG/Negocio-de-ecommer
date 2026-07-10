@@ -165,6 +165,11 @@
     <div class="card-body">
       <h5 class="card-title mb-3"><i class="bi bi-telephone"></i> Información de contacto</h5>
       <div class="mb-3">
+        <label class="form-label fw-semibold">RUC del negocio</label>
+        <input type="text" name="ruc" value="{{ config.ruc }}" class="form-control" placeholder="1790012345001" maxlength="13">
+        <div class="form-text">Aparece como emisor en la factura XML.</div>
+      </div>
+      <div class="mb-3">
         <label class="form-label fw-semibold">Email de contacto</label>
         <input type="email" name="email_contacto" value="{{ config.email_contacto }}" class="form-control">
       </div>
