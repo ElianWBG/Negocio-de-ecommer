@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 
 from django.db import transaction
@@ -5,6 +6,8 @@ from django.db.models import F
 from django.utils import timezone
 
 from billing.models import Product, Invoice, InvoiceDetail
+
+logger = logging.getLogger(__name__)
 
 
 class InsufficientStockError(Exception):
@@ -57,7 +60,10 @@ def confirm_purchase_request(purchase_request):
         purchase_request.reviewed_at = timezone.now()
         purchase_request.save()
 
-    _send_purchase_confirmation_email(purchase_request, invoice)
+    try:
+        _send_purchase_confirmation_email(purchase_request, invoice)
+    except Exception as e:
+        logger.exception('Error al enviar correo de confirmación para pedido #%s: %s', purchase_request.pk, e)
     return invoice
 
 
