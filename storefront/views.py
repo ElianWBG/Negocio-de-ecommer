@@ -135,7 +135,7 @@ def _send_welcome_email(user):
             to=[user.email],
         )
         message.attach_alternative(html_content, 'text/html')
-        message.send(fail_silently=True)
+        message.send(fail_silently=False)
     except Exception:
         logger.exception('Error sending welcome email to %s', user.email)
         pass
