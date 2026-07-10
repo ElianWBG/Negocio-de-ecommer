@@ -12,6 +12,12 @@ class CustomerRegistrationForm(forms.Form):
     email = forms.EmailField(label='Correo electrónico', widget=forms.EmailInput(attrs={'class': 'form-control'}))
     phone = forms.CharField(label='Teléfono', max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0999999999'}))
     address = forms.CharField(label='Dirección', required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))
+    accepts_promotions = forms.BooleanField(
+        label='Quiero recibir promociones y ofertas por correo',
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
     password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
     password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 

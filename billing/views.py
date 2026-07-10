@@ -2621,6 +2621,7 @@ def send_promotion(request):
 
     emails = list(
         Customer.objects.exclude(email__isnull=True).exclude(email='')
+        .filter(accepts_promotions=True)
         .values_list('email', flat=True).distinct()
     )
 

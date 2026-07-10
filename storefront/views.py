@@ -88,6 +88,7 @@ def customer_register(request):
                     'email': d['email'],
                     'phone': d.get('phone', ''),
                     'address': d.get('address', ''),
+                    'accepts_promotions': d.get('accepts_promotions', True),
                     'user': user,
                 }
             )

@@ -67,6 +67,7 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
     from django.core.mail import EmailMultiAlternatives
     from django.utils.html import strip_tags
     from billing.models import ConfigNegocio
+    from billing.xml_utils import generate_invoice_xml, invoice_xml_filename
 
     customer = purchase_request.customer
     if not customer.email:
@@ -106,6 +107,15 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
             to=[customer.email],
         )
         message.attach_alternative(html_content, 'text/html')
+
+        # Adjunta la factura en XML (formato de práctica, no válido ante el SRI).
+        try:
+            xml_bytes = generate_invoice_xml(invoice)
+            message.attach(invoice_xml_filename(invoice), xml_bytes, 'application/xml')
+        except Exception:
+            # Si falla la generación del XML no debe bloquear el envío del correo.
+            pass
+
         message.send(fail_silently=True)
     except Exception:
         pass

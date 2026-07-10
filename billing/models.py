@@ -119,6 +119,11 @@ class Customer(models.Model):
     email = models.EmailField(blank=True, null=True, verbose_name='Correo electrónico')
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Teléfono')
     address = models.TextField(blank=True, null=True, verbose_name='Dirección')
+    accepts_promotions = models.BooleanField(
+        default=True,
+        verbose_name='Acepta recibir promociones',
+        help_text='Si está marcado, el cliente recibirá correos de promociones y ofertas.',
+    )
     is_active = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

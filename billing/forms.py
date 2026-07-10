@@ -62,7 +62,7 @@ from .ProductForm import ProductForm
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['dni', 'first_name', 'last_name', 'email', 'phone', 'address', 'is_active']
+        fields = ['dni', 'first_name', 'last_name', 'email', 'phone', 'address', 'accepts_promotions', 'is_active']
         widgets = {
             'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -70,6 +70,7 @@ class CustomerForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'accepts_promotions': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
