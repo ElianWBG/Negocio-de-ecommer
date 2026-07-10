@@ -1,6 +1,9 @@
+import logging
 import secrets
 import uuid
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 from billing.audit import log_action
 
 from django.contrib import messages
@@ -902,6 +905,7 @@ def paypal_create_order(request, pk):
             order = json.loads(resp.read())
         return JsonResponse({'id': order['id']})
     except Exception as e:
+        logger.exception('PayPal error: %s', e)
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -927,6 +931,7 @@ def paypal_capture(request, pk):
         with urllib.request.urlopen(req) as resp:
             capture_data = json.loads(resp.read())
     except Exception as e:
+        logger.exception('PayPal error: %s', e)
         return JsonResponse({'error': str(e)}, status=500)
 
     if capture_data.get('status') == 'COMPLETED':
