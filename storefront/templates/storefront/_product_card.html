@@ -24,6 +24,7 @@
       </div>
     {% endif %}
     <span class="stock-tag {% if product.stock > 0 %}in{% else %}out{% endif %}">
+      <i class="bi {% if product.stock > 0 %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %}"></i>
       {% if product.stock > 0 %}En stock{% else %}Agotado{% endif %}
     </span>
     <a class="visit-store" href="{% url 'storefront:product_detail' product.pk %}">

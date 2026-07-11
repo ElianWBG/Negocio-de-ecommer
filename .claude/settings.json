@@ -15,7 +15,10 @@
       "PowerShell(if \\($?\\) { \"commit ok\" })",
       "Bash(rm -rf .venv)",
       "Bash(ls -d .venv)",
-      "PowerShell(git pull --no-edit)"
+      "PowerShell(git pull --no-edit)",
+      "Read(//c/Users/PC/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python scripts/search.py \"e-commerce marketplace multivendor catalog product cards trustworthy\" --design-system -f markdown)",
+      "Bash(python -c ' *)"
     ]
   }
 }

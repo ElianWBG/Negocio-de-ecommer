@@ -39,9 +39,24 @@
     .site-logo img { height: 34px; object-fit: contain; flex-shrink: 0; }
     .logo-sep { width: 1px; height: 20px; background: rgba(255,255,255,.18); flex-shrink: 0; }
 
-    .nav-links { display: flex; align-items: center; gap: .2rem; }
+    .nav-links { display: flex; align-items: center; gap: .2rem; flex-shrink: 0; }
     .nav-link { color: rgba(255,255,255,.72); text-decoration: none; padding: .45rem .75rem; border-radius: 8px; font-size: .875rem; font-weight: 500; transition: color var(--transition), background var(--transition); display: flex; align-items: center; gap: .4rem; }
     .nav-link:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+    /* ── SEARCH global integrada (patrón marketplace: search = CTA persistente) ── */
+    .nav-search { flex: 1; max-width: 520px; display: flex; align-items: center; gap: .5rem; background: rgba(255,255,255,.10); border: 1.5px solid rgba(255,255,255,.14); border-radius: 999px; padding: .32rem .32rem .32rem 1rem; transition: background var(--transition), border-color var(--transition); }
+    .nav-search:focus-within { background: #fff; border-color: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+    .nav-search i { color: rgba(255,255,255,.6); font-size: .95rem; flex-shrink: 0; transition: color var(--transition); }
+    .nav-search:focus-within i { color: var(--muted); }
+    .nav-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: #fff; font-family: var(--font-body); font-size: .875rem; }
+    .nav-search input::placeholder { color: rgba(255,255,255,.55); }
+    .nav-search:focus-within input { color: var(--text); }
+    .nav-search:focus-within input::placeholder { color: var(--muted); }
+    .nav-search button { flex-shrink: 0; border: none; cursor: pointer; background: var(--rust); color: #fff; border-radius: 999px; padding: .42rem .95rem; font-size: .8rem; font-weight: 600; font-family: var(--font-body); display: inline-flex; align-items: center; gap: .35rem; transition: background var(--transition), transform var(--transition); }
+    .nav-search button:hover { background: var(--rust-dark); }
+    .nav-search button:active { transform: scale(.96); }
+    .nav-search button span { display: inline; }
+    @media (max-width: 900px) { .nav-search button span { display: none; } .nav-search button { padding: .42rem .6rem; } }
 
     .nav-icon-wrap { position: relative; display: inline-flex; align-items: center; }
     .nav-cart-badge { position: absolute; top: -7px; right: -9px; background: var(--rust); color: #fff; border: 2px solid var(--navbar); border-radius: 20px; min-width: 18px; height: 18px; font-size: .62rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; pointer-events: none; }
@@ -182,6 +197,7 @@
       .site-logo { font-size: 1.25rem; gap: .45rem; }
       .site-logo .logo-sep { display: none; }
       .nav-links { display: none; }
+      .nav-search { display: none; }
       .nav-mobile-actions { display: flex; }
       .page-wrap { padding: 1.25rem 1rem; }
     }
@@ -256,6 +272,13 @@
       {% endif %}
       <span>{{ config.nombre_tienda|truncatechars:22 }}</span>
     </a>
+
+    <!-- Búsqueda global (marketplace): persistente en todas las páginas -->
+    <form class="nav-search" method="get" action="{% url 'storefront:catalog_list' %}" role="search">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar productos, marcas y más…" aria-label="Buscar en el catálogo">
+      <button type="submit"><i class="bi bi-search"></i><span>Buscar</span></button>
+    </form>
 
     <!-- Links de escritorio -->
     <div class="nav-links">

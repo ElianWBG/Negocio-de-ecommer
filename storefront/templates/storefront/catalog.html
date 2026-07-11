@@ -143,13 +143,16 @@
   .product-card:hover .product-media img { transform: scale(1.05); }
   .product-media .placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--border); font-size: 2.2rem; }
 
+  /* Badge de stock: filled tinted, contraste WCAG AA (≥4.5:1) + icono (no solo color) */
   .stock-tag {
     position: absolute; top: .65rem; left: .65rem;
-    font-size: .7rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px;
-    background: rgba(255,255,255,.92); backdrop-filter: blur(4px); border: 1px solid var(--line);
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .72rem; font-weight: 700; padding: .28rem .62rem; border-radius: 999px;
+    border: 1px solid transparent; box-shadow: var(--shadow-sm);
   }
-  .stock-tag.in { color: var(--ok); }
-  .stock-tag.out { color: #b91c1c; }
+  .stock-tag i { font-size: .78rem; }
+  .stock-tag.in  { background: #dcfce7; color: #166534; border-color: #86efac; }  /* 7.4:1 */
+  .stock-tag.out { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }  /* 6.8:1 */
 
   /* "Visitar tienda" — discreto, aparece en hover (150ms ease-out) */
   .visit-store {
@@ -313,8 +316,9 @@
   }
   .qv-close:hover { background: #fff; transform: scale(1.06); }
   .qv-close:active { transform: scale(.95); }
-  .qv-stock { position: absolute; top: .7rem; left: .7rem; font-size: .72rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px; background: rgba(255,255,255,.95); }
-  .qv-stock.in { color: var(--ok); } .qv-stock.out { color: #b91c1c; }
+  .qv-stock { position: absolute; top: .7rem; left: .7rem; font-size: .72rem; font-weight: 700; padding: .28rem .62rem; border-radius: 999px; border: 1px solid transparent; box-shadow: var(--shadow-sm); }
+  .qv-stock.in  { background: #dcfce7; color: #166534; border-color: #86efac; }
+  .qv-stock.out { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
   .qv-body { padding: 1.4rem 1.5rem 1.5rem; overflow-y: auto; }
   .qv-store { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--ink-mute); margin-bottom: .5rem; }
   .qv-store b { color: var(--ink-soft); }
@@ -515,6 +519,23 @@
   /* Cabecera de sección con "ver todo" */
   .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
   .sec-head h2 { font-family: var(--font-body); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+  /* Ancla visual por sección: icono en contenedor tintado (evita 2 títulos idénticos) */
+  .sec-title-wrap { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+  .sec-ic { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; font-size: 1.1rem; flex-shrink: 0; }
+  .sec-ic.best  { background: var(--sand-dark); color: var(--espresso); }
+  .sec-ic.deals { background: color-mix(in srgb, var(--rust) 16%, #fff); color: var(--rust-dark); }
+
+  /* "Top ofertas": marco + fondo de acento para separarla claramente de "Lo más vendido" */
+  .home-sec--deals {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--rust) 7%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--rust) 20%, var(--line));
+    border-radius: 18px; padding: 1.4rem 1.4rem 1.6rem;
+  }
+  .deals-badge {
+    display: inline-flex; align-items: center; gap: .35rem;
+    background: var(--rust); color: #fff; font-size: .66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; padding: .28rem .62rem; border-radius: 999px;
+  }
   .sec-head .sec-sub { font-size: .85rem; color: var(--ink-mute); font-weight: 400; margin-left: .5rem; }
   .see-all { font-size: .84rem; font-weight: 600; color: var(--brand-600); text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; transition: gap var(--d-fast) var(--ease-out); }
   .see-all:hover { gap: .55rem; }
@@ -695,7 +716,10 @@
     <!-- LO MÁS VENDIDO / RESULTADOS -->
     <section class="home-sec" id="best">
       <div class="sec-head">
-        <h2 id="novedades">{% if has_filter %}Resultados{% else %}Lo más vendido{% endif %}<span class="sec-sub"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span></h2>
+        <div class="sec-title-wrap">
+          {% if not has_filter %}<span class="sec-ic best"><i class="bi bi-fire"></i></span>{% endif %}
+          <h2 id="novedades">{% if has_filter %}Resultados{% else %}Lo más vendido{% endif %}<span class="sec-sub"><strong class="js-count">{{ products|length }}</strong> <span class="js-count-word">producto{% if products|length != 1 %}s{% endif %}</span></span></h2>
+        </div>
         {% if has_filter %}<a class="see-all" href="{% url 'storefront:catalog_list' %}"><i class="bi bi-x-lg"></i> Limpiar filtros</a>{% endif %}
       </div>
       {% if has_filter %}
@@ -753,8 +777,14 @@
 
     <!-- TOP OFERTAS / RECOMENDADOS -->
     {% if recommended %}
-    <section class="home-sec" id="deals">
-      <div class="sec-head"><h2 id="recomendados">Top ofertas para ti</h2></div>
+    <section class="home-sec home-sec--deals reveal" id="deals">
+      <div class="sec-head">
+        <div class="sec-title-wrap">
+          <span class="sec-ic deals"><i class="bi bi-tag-fill"></i></span>
+          <h2 id="recomendados">Top ofertas para ti<span class="sec-sub">seleccionadas de varias tiendas</span></h2>
+        </div>
+        <span class="deals-badge"><i class="bi bi-lightning-charge-fill"></i> Ofertas</span>
+      </div>
       <div class="product-grid rail">
         {% for product in recommended %}{% include 'storefront/_product_card.html' %}{% endfor %}
       </div>
