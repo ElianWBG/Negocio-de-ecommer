@@ -1,11 +1,24 @@
 def user_panel_roles(request):
     if not request.user.is_authenticated:
         return {}
-    is_admin = request.user.is_superuser or request.user.groups.filter(name='Administrador').exists()
-    is_vendedor = is_admin or request.user.groups.filter(name='Vendedor').exists()
-    is_analista = is_admin or request.user.groups.filter(name='Analista de Compras').exists()
+    u = request.user
+    # "Sistema" (config/usuarios/actividad/roles) se queda atado al grupo
+    # fijo 'Administrador', no a un permiso delegable: así un rol nuevo
+    # creado desde el panel nunca puede auto-otorgarse esa sección solo
+    # por tener, por ejemplo, permiso de editar usuarios.
+    is_admin = u.is_superuser or u.groups.filter(name='Administrador').exists()
+
+    def any_perm(*perms):
+        return is_admin or any(u.has_perm(p) for p in perms)
+
     return {
         'panel_is_admin': is_admin,
-        'panel_is_vendedor': is_vendedor,
-        'panel_is_analista': is_analista,
+        # Ancladas a un permiso de ESCRITURA propio de cada rol dueño de la
+        # sección (no de solo-lectura): así un rol como "Contador", que
+        # necesita ver facturas/productos como contexto mas no venderlos,
+        # no termina destapando toda la sección de Ventas o Catálogo.
+        'panel_is_vendedor': any_perm('billing.add_invoice', 'billing.change_customer'),
+        'panel_is_analista': any_perm('billing.add_product', 'purchasing.add_purchase'),
+        'panel_is_finanzas': any_perm('cobros.view_cobrofactura', 'pagos.view_pagocompra'),
+        'panel_is_soporte': any_perm('storefront.view_purchaserequest'),
     }

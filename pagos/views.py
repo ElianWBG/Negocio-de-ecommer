@@ -1,9 +1,9 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
 from purchasing.models import Purchase
+from shared.decorators import permission_required_any
 from .forms import PagoCompraForm
 from .models import PagoCompra
 
@@ -12,7 +12,7 @@ from .models import PagoCompra
 # MÓDULO DE PAGOS (cuentas por pagar)
 # =============================================
 
-@login_required
+@permission_required_any('pagos.view_pagocompra')
 def purchase_pending_list(request):
     """Lista únicamente las compras a crédito que aún tienen saldo pendiente."""
     purchases = Purchase.objects.filter(
@@ -26,7 +26,7 @@ def purchase_pending_list(request):
     return render(request, 'pagos/purchase_pending_list.html', {'purchases': purchases})
 
 
-@login_required
+@permission_required_any('pagos.add_pagocompra')
 def pago_create(request, compra_id):
     """Registra un nuevo abono sobre una compra específica."""
     compra = get_object_or_404(Purchase, pk=compra_id)
@@ -53,7 +53,7 @@ def pago_create(request, compra_id):
     })
 
 
-@login_required
+@permission_required_any('pagos.view_pagocompra')
 def payment_history(request, compra_id):
     """Historial de pagos de una compra y su saldo actual."""
     compra = get_object_or_404(Purchase, pk=compra_id)
@@ -64,7 +64,7 @@ def payment_history(request, compra_id):
     })
 
 
-@login_required
+@permission_required_any('pagos.change_pagocompra')
 def pago_update(request, pk):
     """Edita un pago ya registrado, recalculando el saldo de la compra."""
     pago = get_object_or_404(PagoCompra, pk=pk)
@@ -94,7 +94,7 @@ def pago_update(request, pk):
     })
 
 
-@login_required
+@permission_required_any('pagos.delete_pagocompra')
 def pago_delete(request, pk):
     """Elimina un pago, reponiendo su valor al saldo de la compra."""
     pago = get_object_or_404(PagoCompra, pk=pk)

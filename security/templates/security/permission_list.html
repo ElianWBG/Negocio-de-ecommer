@@ -1,25 +1,31 @@
 {% extends 'billing/base.html' %}
-{% block title %}Permissions{% endblock %}
+{% block title %}Permisos{% endblock %}
 {% block content %}
-<h2>Permissions</h2>
-<a href="{% url 'security:permission_create' %}" class="btn btn-primary mb-3">+ New Permission</a>
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2>Permisos (avanzado)</h2>
+  {% if user.is_superuser %}
+  <a href="{% url 'security:permission_create' %}" class="btn btn-primary">+ Nuevo permiso</a>
+  {% endif %}
+</div>
+<p class="text-muted small">Solo el superusuario puede crear, editar o eliminar permisos personalizados. Para armar un rol con los permisos existentes, usa <a href="{% url 'security:group_list' %}">Roles y Permisos</a>.</p>
 <table class="table table-striped table-hover">
   <thead class="table-dark">
-    <tr><th>Name</th><th>Codename</th><th>Model</th><th>Actions</th></tr>
+    <tr><th>Nombre</th><th>Código</th><th>Modelo</th>{% if user.is_superuser %}<th>Acciones</th>{% endif %}</tr>
   </thead>
   <tbody>
     {% for p in items %}
     <tr>
       <td>{{ p.name }}</td>
       <td><code>{{ p.codename }}</code></td>
-      <td>{{ p.content_type.model }}</td>
+      <td>{{ p.content_type.app_label }}.{{ p.content_type.model }}</td>
+      {% if user.is_superuser %}
       <td>
-        <a href="{% url 'security:permission_update' p.pk %}" class="btn btn-sm btn-warning">Edit</a>
-        <a href="{% url 'security:permission_delete' p.pk %}" class="btn btn-sm btn-danger">Delete</a>
+        <a href="{% url 'security:permission_update' p.pk %}" class="btn btn-sm btn-warning">Editar</a>
+        <a href="{% url 'security:permission_delete' p.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
       </td>
+      {% endif %}
     </tr>
     {% endfor %}
   </tbody>
 </table>
 {% endblock %}
-

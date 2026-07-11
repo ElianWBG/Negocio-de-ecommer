@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from billing.models import Product, Supplier
-from shared.decorators import audit_action
+from shared.decorators import audit_action, permission_required_any
 from shared.column_export import export_visible_columns_excel, export_visible_columns_pdf
 
 from .column_config import (
@@ -47,7 +47,7 @@ def _get_export_value(obj, col_key):
     return getattr(obj, col_key, '-')
 
 
-@login_required
+@permission_required_any('purchasing.view_purchase')
 @audit_action('LIST_PURCHASES')
 def purchase_list(request):
     """Lista todas las compras con su proveedor y total."""
@@ -94,7 +94,7 @@ def purchase_list(request):
     })
 
 
-@login_required
+@permission_required_any('purchasing.add_purchase')
 @audit_action('CREATE_PURCHASE')
 def purchase_create(request):
     """Crea una compra con sus líneas de detalle, calcula IVA 15% y
@@ -149,7 +149,7 @@ def purchase_create(request):
     })
 
 
-@login_required
+@permission_required_any('purchasing.view_purchase')
 @audit_action('VIEW_PURCHASE')
 def purchase_detail(request, pk):
     """Muestra el detalle completo de una compra."""
@@ -166,7 +166,7 @@ def purchase_detail(request, pk):
     })
 
 
-@login_required
+@permission_required_any('purchasing.delete_purchase')
 @audit_action('DELETE_PURCHASE')
 def purchase_delete(request, pk):
     """Elimina una compra y todas sus líneas (CASCADE). Solo personal staff."""

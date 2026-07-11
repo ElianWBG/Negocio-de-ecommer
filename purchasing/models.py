@@ -31,8 +31,8 @@ class Purchase(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Purchase'
-        verbose_name_plural = 'Purchases'
+        verbose_name = 'Compra a proveedor'
+        verbose_name_plural = 'Compras a proveedores'
         ordering = ['-purchase_date']
         # Reto opcional: no permitir el mismo número de documento dos veces
         # para un mismo proveedor.

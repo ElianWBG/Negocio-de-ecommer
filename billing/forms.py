@@ -24,10 +24,11 @@ class SignUpForm(UserCreationForm):
 class BrandForm(forms.ModelForm):
     class Meta:
         model = Brand
-        fields = ['name', 'description', 'is_active']
+        fields = ['name', 'description', 'logo', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

@@ -26,6 +26,49 @@ class GroupRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+class PermissionRequiredAnyMixin(AccessMixin):
+    """
+    Verifica que el usuario tenga al menos uno de los permisos indicados
+    (formato 'app_label.codename'). Los superusuarios pasan siempre.
+    Si no cumple, redirige a billing:home.
+
+    Uso:
+        class InvoiceListView(PermissionRequiredAnyMixin, ListView):
+            permissions_required = ['billing.view_invoice']
+    """
+
+    permissions_required = []
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if not request.user.is_superuser and self.permissions_required:
+            if not any(request.user.has_perm(p) for p in self.permissions_required):
+                messages.error(request, 'No tienes permisos para acceder a esta sección.')
+                return redirect('billing:home')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SuperuserRequiredMixin(AccessMixin):
+    """
+    Verifica que el usuario sea superusuario. Se usa para acciones sensibles
+    que ni siquiera el rol Administrador debe poder hacer, como crear
+    permisos personalizados.
+
+    Uso:
+        class PermissionCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+            ...
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if not request.user.is_superuser:
+            messages.error(request, 'Solo el superusuario puede realizar esta acción.')
+            return redirect('billing:home')
+        return super().dispatch(request, *args, **kwargs)
+
+
 class StaffRequiredMixin:
     """
     Mixin que verifica si el usuario es miembro del staff.

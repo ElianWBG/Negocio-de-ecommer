@@ -9,7 +9,7 @@
         <h4 class="mb-0">{{ title }}</h4>
       </div>
       <div class="card-body p-4">
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate>
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>

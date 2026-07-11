@@ -8,8 +8,8 @@ from billing.audit import log_action
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from shared.decorators import permission_required_any
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q, Min, Max
@@ -791,7 +791,7 @@ def payphone_response(request):
 # Panel interno (requiere login de staff)
 # ---------------------------------------------------------------------
 
-@login_required
+@permission_required_any('storefront.view_purchaserequest')
 def purchase_request_list(request):
     from django.db.models import Count, Sum, F, Q as DQ
     from storefront.models import PurchaseRequestDetail
@@ -836,7 +836,7 @@ def purchase_request_list(request):
     })
 
 
-@login_required
+@permission_required_any('storefront.view_purchaserequest')
 def purchase_request_detail(request, pk):
     purchase_request = get_object_or_404(
         PurchaseRequest.objects.select_related('customer').prefetch_related('details__product'), pk=pk
@@ -844,7 +844,7 @@ def purchase_request_detail(request, pk):
     return render(request, 'storefront/purchase_request_detail.html', {'purchase_request': purchase_request})
 
 
-@login_required
+@permission_required_any('storefront.change_purchaserequest')
 def purchase_request_confirm(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     if request.method == 'POST':
@@ -859,7 +859,7 @@ def purchase_request_confirm(request, pk):
     return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
 
 
-@login_required
+@permission_required_any('storefront.change_purchaserequest')
 def purchase_request_reject(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     if request.method == 'POST':

@@ -1,9 +1,9 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
 from billing.models import Invoice
+from shared.decorators import permission_required_any
 from .forms import CobroFacturaForm
 from .models import CobroFactura
 
@@ -12,7 +12,7 @@ from .models import CobroFactura
 # MÓDULO DE COBROS (cuentas por cobrar)
 # =============================================
 
-@login_required
+@permission_required_any('cobros.view_cobrofactura')
 def invoice_pending_list(request):
     """Lista únicamente las facturas a crédito que aún tienen saldo pendiente."""
     invoices = Invoice.objects.filter(
@@ -27,7 +27,7 @@ def invoice_pending_list(request):
     return render(request, 'cobros/invoice_pending_list.html', {'invoices': invoices})
 
 
-@login_required
+@permission_required_any('cobros.add_cobrofactura')
 def cobro_create(request, factura_id):
     """Registra un nuevo abono sobre una factura específica."""
     factura = get_object_or_404(Invoice, pk=factura_id)
@@ -54,7 +54,7 @@ def cobro_create(request, factura_id):
     })
 
 
-@login_required
+@permission_required_any('cobros.view_cobrofactura')
 def payment_history(request, factura_id):
     """Muestra el historial de pagos de una factura y su saldo actual."""
     factura = get_object_or_404(Invoice, pk=factura_id)
@@ -65,7 +65,7 @@ def payment_history(request, factura_id):
     })
 
 
-@login_required
+@permission_required_any('cobros.change_cobrofactura')
 def cobro_update(request, pk):
     """Edita un cobro ya registrado, recalculando el saldo de la factura."""
     cobro = get_object_or_404(CobroFactura, pk=pk)
@@ -98,7 +98,7 @@ def cobro_update(request, pk):
     })
 
 
-@login_required
+@permission_required_any('cobros.delete_cobrofactura')
 def cobro_delete(request, pk):
     """Elimina un cobro, reponiendo su valor al saldo de la factura.
     No se permite si la factura está anulada."""

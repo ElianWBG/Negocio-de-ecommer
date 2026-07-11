@@ -1,25 +1,64 @@
 {% extends 'billing/base.html' %}
-{% block title %}Role{% endblock %}
+{% block title %}Rol{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-8">
-    <h2>Role</h2>
+  <div class="col-md-9">
+    <h2>{% if object %}Editar rol{% else %}Nuevo rol{% endif %}</h2>
     <form method="post">
       {% csrf_token %}
       <div class="mb-3">
-        <label class="form-label fw-bold">Role name</label>
+        <label class="form-label fw-bold">Nombre del rol</label>
         {{ form.name }}
+        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
       </div>
+
       <div class="mb-3">
-        <label class="form-label fw-bold">Permissions</label>
-        <!-- Lista con scroll para que no ocupe toda la página -->
-        <div class="border rounded p-2" style="max-height:300px; overflow-y:auto;">
-          {{ form.permissions }}
+        <label class="form-label fw-bold">Permisos</label>
+        <p class="text-muted small mb-2">Marca qué puede ver y hacer este rol en cada sección del panel.</p>
+        {% if form.permissions.errors %}<div class="text-danger small mb-2">{{ form.permissions.errors }}</div>{% endif %}
+
+        {% for group in permission_groups %}
+        <div class="card mb-2">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <strong>{{ group.section }}</strong>
+            <div>
+              <a href="#" class="small me-2 select-all" data-section="{{ forloop.counter0 }}">Marcar todo</a>
+              <a href="#" class="small clear-all" data-section="{{ forloop.counter0 }}">Ninguno</a>
+            </div>
+          </div>
+          <div class="card-body py-2" data-section-body="{{ forloop.counter0 }}">
+            <div class="row">
+              {% for item in group.items %}
+              <div class="col-md-4 col-sm-6">
+                <div class="form-check">
+                  <input type="checkbox" name="permissions" value="{{ item.permission.pk }}"
+                         id="perm_{{ item.permission.pk }}" class="form-check-input"
+                         {% if item.checked %}checked{% endif %}>
+                  <label class="form-check-label" for="perm_{{ item.permission.pk }}">{{ item.label }}</label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
         </div>
+        {% endfor %}
       </div>
-      <button type="submit" class="btn btn-primary">Save</button>
-      <a href="{% url 'security:group_list' %}" class="btn btn-secondary">Cancel</a>
+
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="{% url 'security:group_list' %}" class="btn btn-secondary">Cancelar</a>
     </form>
   </div>
 </div>
+<script>
+document.querySelectorAll('.select-all, .clear-all').forEach(function (link) {
+  link.addEventListener('click', function (e) {
+    e.preventDefault();
+    var section = this.dataset.section;
+    var checked = this.classList.contains('select-all');
+    document.querySelectorAll('[data-section-body="' + section + '"] input[type=checkbox]').forEach(function (cb) {
+      cb.checked = checked;
+    });
+  });
+});
+</script>
 {% endblock %}

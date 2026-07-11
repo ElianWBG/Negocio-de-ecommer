@@ -1,6 +1,18 @@
 from django import template
 
+from security.permission_labels import permission_label_es, app_section_label
+
 register = template.Library()
+
+@register.filter(name='label_es')
+def label_es(permission):
+    """{{ permission|label_es }} -> 'Ver factura'"""
+    return permission_label_es(permission)
+
+@register.filter(name='section_label_es')
+def section_label_es(app_label):
+    """{{ app_label|section_label_es }} -> 'Catálogo, ventas y clientes'"""
+    return app_section_label(app_label)
 
 @register.filter(name='has_group')
 def has_group(user, group_name):

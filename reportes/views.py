@@ -1,20 +1,23 @@
 from decimal import Decimal
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, F, Count
 from django.shortcuts import render
 
 from billing.models import Invoice, InvoiceDetail, Product
 from purchasing.models import Purchase
+from shared.decorators import permission_required_any
 
 
-@login_required
+@permission_required_any(
+    'billing.view_invoice', 'purchasing.view_purchase',
+    'billing.view_invoicedetail', 'billing.view_product',
+)
 def reportes_index(request):
     """Página de inicio del área de reportes: enlaces a cada reporte."""
     return render(request, 'reportes/index.html')
 
 
-@login_required
+@permission_required_any('billing.view_invoice')
 def cuentas_por_cobrar(request):
     """Resumen de cuánto le deben a la empresa: facturas a crédito pendientes."""
     facturas = Invoice.objects.filter(
@@ -26,7 +29,7 @@ def cuentas_por_cobrar(request):
     })
 
 
-@login_required
+@permission_required_any('purchasing.view_purchase')
 def cuentas_por_pagar(request):
     """Resumen de cuánto debe la empresa a proveedores: compras a crédito pendientes."""
     compras = Purchase.objects.filter(
@@ -38,7 +41,7 @@ def cuentas_por_pagar(request):
     })
 
 
-@login_required
+@permission_required_any('billing.view_invoice')
 def ventas_por_periodo(request):
     """Total vendido en un rango de fechas (por defecto, todo el historial)."""
     g = request.GET
@@ -63,7 +66,7 @@ def ventas_por_periodo(request):
     })
 
 
-@login_required
+@permission_required_any('billing.view_invoicedetail')
 def productos_mas_vendidos(request):
     """Ranking de productos por unidades vendidas (sumando todas las facturas activas)."""
     ranking = (
@@ -76,7 +79,7 @@ def productos_mas_vendidos(request):
     return render(request, 'reportes/productos_mas_vendidos.html', {'ranking': ranking})
 
 
-@login_required
+@permission_required_any('billing.view_product')
 def stock_bajo(request):
     """Productos cuyo stock está por debajo de un umbral configurable (?umbral=10)."""
     try:

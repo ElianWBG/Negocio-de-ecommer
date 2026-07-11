@@ -8,6 +8,7 @@ class Brand(models.Model):
     como la "tienda asociada" (vendedor)."""
     name = models.CharField(max_length=100, unique=True, verbose_name='Nombre de marca')
     description = models.TextField(blank=True, null=True, verbose_name='Descripción')
+    logo = models.ImageField(upload_to='brands/', blank=True, null=True, max_length=500, verbose_name='Logo')
     whatsapp = models.CharField(
         max_length=20, blank=True, default='',
         verbose_name='WhatsApp de la tienda',
