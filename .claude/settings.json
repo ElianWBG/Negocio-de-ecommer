@@ -31,7 +31,15 @@
       "Bash(python manage.py runserver 127.0.0.1:8007 --noreload)",
       "Read(//c/Users/PC/AppData/Local/Temp/**)",
       "Bash(python -c \"from config import settings; print\\('DEBUG=',settings.DEBUG\\)\")",
-      "Bash(python manage.py runserver 127.0.0.1:8008 --noreload)"
+      "Bash(python manage.py runserver 127.0.0.1:8008 --noreload)",
+      "Bash(cat railway.toml)",
+      "Bash(cat Procfile)",
+      "Bash(git check-ignore *)",
+      "Bash(npx --yes skills add https://github.com/greensock/gsap-skills)",
+      "Bash(cd \"C:\\\\Users\\\\PC\" && find . -maxdepth 5 -iname \"gsap-core\" -type d 2>/dev/null | head; echo \"--- home .agents ---\"; ls -la \"C:/Users/PC/.agents/skills\" 2>/dev/null | head; echo \"--- proyecto oculto ---\"; ls -a \"C:/Users/PC/Proyect/Negocio-de-ecommer\" 2>/dev/null | grep -iE \"agents|gsap\")",
+      "Read(//c/Users/PC/**)",
+      "Read(//c/Users/PC/.agents/skills/**)",
+      "Bash(python manage.py runserver 127.0.0.1:8011 --noreload)"
     ],
     "additionalDirectories": [
       "c:\\Users\\PC\\.claude\\projects\\c--Users-PC-Proyect-Negocio-de-ecommer\\memory"
