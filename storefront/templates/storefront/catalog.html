@@ -652,6 +652,9 @@
 
   /* CARDS de producto: borde navy 2px, sin radios, rotadas, se enderezan al hover */
   .product-card { border: 2px solid var(--navy); border-radius: 2px; box-shadow: var(--shadow-sm); }
+  /* Red de seguridad: cards y hero visibles por defecto. GSAP los oculta
+     inline (autoAlpha) solo si corre; si GSAP falla, nunca quedan invisibles. */
+  .product-card.reveal, .hero-row.reveal { opacity: 1; transform: none; }
   .product-grid .product-card:nth-child(odd)  { transform: rotate(-1deg); }
   .product-grid .product-card:nth-child(even) { transform: rotate(1deg); }
   .product-card:hover { transform: rotate(0deg) translateY(-4px) !important;
@@ -678,6 +681,9 @@
     display: flex; align-items: center; justify-content: center; text-align: center;
     font-size: .58rem; font-weight: 700; line-height: 1.05; text-transform: uppercase;
     transform: rotate(-8deg); aspect-ratio: 1/1; }
+  /* Variante con logo de marca: círculo paper, logo sin recortar (contain) */
+  .seller-seal-img { background: var(--paper); padding: 5px; }
+  .seller-seal-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .product-body { padding-top: 1.4rem; }
 
   /* Precio y CTA de la card */
@@ -913,11 +919,14 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/dist/typed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script>
   // Reveal en scroll — useInView({ once:true }) de interaction-design.
   // Respeta prefers-reduced-motion: muestra todo sin animar.
   (function () {
-    var nodes = document.querySelectorAll('.reveal');
+    // Las product-card y el hero los anima GSAP; el IO cubre el resto de .reveal
+    var nodes = document.querySelectorAll('.reveal:not(.product-card):not(.hero-row)');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reduce || !('IntersectionObserver' in window)) {
@@ -1293,6 +1302,11 @@
       if (!btn || btn.disabled) return;
       e.stopPropagation();
 
+      // Micro-feedback: pop de escala al click (transform, respeta reduced-motion)
+      if (window.gsap && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        gsap.fromTo(btn, { scale: 0.9 }, { scale: 1, duration: 0.4, ease: 'back.out(3)', clearProps: 'scale' });
+      }
+
       var card = btn.closest('.product-card');
       var url  = card && card.dataset.cartUrl;
       if (!url) return;
@@ -1331,7 +1345,7 @@
           btn.innerHTML = original;
           btn.disabled = false;
           btn.classList.remove('is-added', 'is-error');
-        }, 1800);
+        }, 1000);
       });
     });
   })();
@@ -1350,59 +1364,7 @@
     }, 2500);
   })();
 
-  // ====== Marcas — carrusel infinito (logo sale por izq, reaparece por der) ======
-  (function () {
-    var track = document.getElementById('brandTrack');
-    if (!track) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!track.children.length) return;
-
-    var wrap = track.parentElement;
-
-    function chipW(el) {
-      return el.getBoundingClientRect().width +
-             parseFloat(getComputedStyle(el).marginRight || 0);
-    }
-    // Clonar hasta que el belt cubra >= 2x el ancho visible (evita huecos).
-    var setW = 0;
-    for (var k = 0; k < track.children.length; k++) setW += chipW(track.children[k]);
-    var need = wrap.getBoundingClientRect().width * 2 + setW;
-    var originals = Array.prototype.slice.call(track.children);
-    var total = setW;
-    while (total < need) {
-      for (var j = 0; j < originals.length; j++) {
-        var c = originals[j].cloneNode(true);
-        c.setAttribute('aria-hidden', 'true');
-        c.setAttribute('tabindex', '-1');
-        track.appendChild(c);
-        total += chipW(c);
-      }
-    }
-
-    var SPEED = 55;            // px por segundo
-    var offset = 0, last = null, paused = false;
-    wrap.addEventListener('mouseenter', function () { paused = true; });
-    wrap.addEventListener('mouseleave', function () { paused = false; });
-
-    function step(t) {
-      if (last === null) last = t;
-      var dt = (t - last) / 1000; last = t;
-      if (!paused && document.visibilityState === 'visible') {
-        offset += SPEED * dt;
-        var first = track.firstElementChild;
-        var fw = chipW(first);
-        while (first && offset >= fw) {
-          offset -= fw;
-          track.appendChild(first);      // recicla: primero al final
-          first = track.firstElementChild;
-          fw = chipW(first);
-        }
-        track.style.transform = 'translateX(' + (-offset) + 'px)';
-      }
-      requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  })();
+  // ====== Marcas — marquee ahora lo maneja GSAP (ver bloque GSAP más abajo) ======
 
   // ====== Typewriter — hero subtitle ======
   (function () {
@@ -1412,7 +1374,7 @@
     var raw = row ? row.dataset.typed : '';
     var strings = raw ? raw.split('|').filter(Boolean) : [];
     if (!strings.length) strings = ['lo mejor en tecnología', 'accesorios premium', 'productos de calidad'];
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.Typed) {
       el.textContent = strings[0];
       return;
     }
@@ -1424,6 +1386,123 @@
       smartBackspace: true,
       showCursor: true,
       cursorChar: '|'
+    });
+  })();
+</script>
+
+<script>
+  // ============================================================
+  //  GSAP — animaciones del catálogo (transform/opacity únicamente)
+  //  Prioridades: 1 hover-crossfade cards · 2 grids stagger ·
+  //  3 marquee marcas · 4 hero on-load · 5 pop del botón (en cart-AJAX)
+  //  matchMedia gobierna reduced-motion y mobile.
+  // ============================================================
+  (function () {
+    // Fallback si el CDN de GSAP no cargó: mostrar cards/hero (llevan .reveal)
+    if (!window.gsap || !window.ScrollTrigger) {
+      document.querySelectorAll('.product-card, .hero-row').forEach(function (el) { el.classList.add('in-view'); });
+      return;
+    }
+    gsap.registerPlugin(ScrollTrigger);
+
+    var mm = gsap.matchMedia();
+    mm.add({
+      reduce:   '(prefers-reduced-motion: reduce)',
+      noReduce: '(prefers-reduced-motion: no-preference)',
+      isMobile: '(max-width: 640px)'
+    }, function (ctx) {
+      var c = ctx.conditions;
+
+      // Reduced-motion: no animar. Las cards/hero (con .reveal) ya las fuerza
+      // visible el CSS de prefers-reduced-motion. Nada más que hacer.
+      if (c.reduce) return;
+
+      // ---- 4) HERO: stagger rápido al cargar (headline, subtítulo, botón) ----
+      gsap.set('.hero-row', { autoAlpha: 1 });
+      gsap.from('.hero-banner .hb-text > *', {
+        y: 16, autoAlpha: 0, duration: 0.5, ease: 'power2.out', stagger: 0.12
+      });
+
+      // ---- 2) GRIDS: stagger fade-up con ScrollTrigger (distinto por sección) ----
+      // Estado inicial oculto ANTES de crear los batch.
+      gsap.set('#catalogGrid .product-card',      { autoAlpha: 0, y: 30 });
+      gsap.set('.product-grid.rail .product-card', { autoAlpha: 0, y: 26, x: 22 });
+
+      // "Lo más vendido": sube recto, stagger desde el inicio, power2.
+      ScrollTrigger.batch('#catalogGrid .product-card', {
+        start: 'top 88%',
+        onEnter: function (batch) {
+          gsap.to(batch, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out',
+            stagger: { each: 0.06, from: 'start' }, overwrite: true });
+        }
+      });
+      // "Top ofertas": entra desde la derecha, más lento, stagger desde el centro, back.
+      ScrollTrigger.batch('.product-grid.rail .product-card', {
+        start: 'top 85%',
+        onEnter: function (batch) {
+          gsap.to(batch, { autoAlpha: 1, y: 0, x: 0, duration: 0.6, ease: 'back.out(1.1)',
+            stagger: { each: 0.09, from: 'center' }, overwrite: true });
+        }
+      });
+
+      // ---- 1) CARD HOVER: crossfade automático entre imágenes (solo puntero) ----
+      if (!c.isMobile) {
+        document.querySelectorAll('.product-media').forEach(function (media) {
+          var slides = media.querySelectorAll('.pm-slide');
+          if (slides.length < 2) return;
+          var tl = gsap.timeline({ repeat: -1, paused: true });
+          for (var i = 1; i < slides.length; i++) {
+            tl.to(slides[i - 1], { autoAlpha: 0, duration: 0.5, ease: 'power1.inOut' }, '+=0.9')
+              .to(slides[i],     { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, '<');
+          }
+          // cierra el bucle: última -> primera
+          tl.to(slides[slides.length - 1], { autoAlpha: 0, duration: 0.5, ease: 'power1.inOut' }, '+=0.9')
+            .to(slides[0],                 { autoAlpha: 1, duration: 0.5, ease: 'power1.inOut' }, '<');
+
+          var card = media.closest('.product-card');
+          card.addEventListener('mouseenter', function () { tl.restart(); });
+          card.addEventListener('mouseleave', function () {
+            tl.pause(0);
+            gsap.set(slides, { clearProps: 'opacity,visibility' }); // vuelve a la .is-active (slide 0)
+          });
+        });
+      }
+
+      // ---- 3) MARCAS: marquee horizontal infinito, lento, pausa al hover ----
+      var track = document.getElementById('brandTrack');
+      if (track && track.children.length) {
+        var wrap = track.parentElement;
+        var trackWidth = function () {
+          var w = 0;
+          for (var k = 0; k < track.children.length; k++) {
+            var el = track.children[k];
+            w += el.getBoundingClientRect().width + parseFloat(getComputedStyle(el).marginRight || 0);
+          }
+          return w;
+        };
+        var oneSet = trackWidth();
+        var originals = Array.prototype.slice.call(track.children);
+        // Clona el set hasta cubrir contenedor + un set (bucle sin huecos)
+        while (trackWidth() < wrap.getBoundingClientRect().width + oneSet) {
+          originals.forEach(function (el) {
+            var cl = el.cloneNode(true);
+            cl.setAttribute('aria-hidden', 'true'); cl.setAttribute('tabindex', '-1');
+            track.appendChild(cl);
+          });
+        }
+        // Desplaza exactamente un set (contenido idéntico cada oneSet => seamless).
+        var loop = gsap.to(track, { x: -oneSet, duration: oneSet / 45, ease: 'none', repeat: -1 });
+        wrap.addEventListener('mouseenter', function () { loop.pause(); });
+        wrap.addEventListener('mouseleave', function () { loop.play(); });
+      }
+    });
+
+    // ---- ScrollTrigger.refresh() tras cargar imágenes de Cloudinary ----
+    // (pueden shiftear el layout y descuadrar los triggers)
+    var rt, refresh = function () { clearTimeout(rt); rt = setTimeout(function () { ScrollTrigger.refresh(); }, 150); };
+    window.addEventListener('load', refresh);
+    document.querySelectorAll('.product-media img, .hb-slide-img img').forEach(function (img) {
+      if (!img.complete) img.addEventListener('load', refresh, { once: true });
     });
   })();
 </script>

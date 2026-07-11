@@ -28,3 +28,8 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Agent skills (tooling local, no se despliega)
+.agents/
+.claude/skills/
+skills-lock.json

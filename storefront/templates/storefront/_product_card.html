@@ -30,7 +30,13 @@
     <a class="visit-store" href="{% url 'storefront:product_detail' product.pk %}">
       <i class="bi bi-eye"></i> Ver detalle
     </a>
+    {% if product.brand.logo %}
+    <span class="seller-seal seller-seal-img" title="Vendido por {{ product.brand.name }}">
+      <img src="{{ product.brand.logo.url }}" alt="{{ product.brand.name }}">
+    </span>
+    {% else %}
     <span class="seller-seal" title="Vendido por {{ product.brand.name }}">{{ product.brand.name }}</span>
+    {% endif %}
   </div>
   <div class="product-body">
     <a class="product-name" href="{% url 'storefront:product_detail' product.pk %}">{{ product.name }}</a>
