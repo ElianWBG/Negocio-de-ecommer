@@ -18,7 +18,23 @@
       "PowerShell(git pull --no-edit)",
       "Read(//c/Users/PC/.claude/skills/ui-ux-pro-max/**)",
       "Bash(python scripts/search.py \"e-commerce marketplace multivendor catalog product cards trustworthy\" --design-system -f markdown)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python manage.py showmigrations billing)",
+      "Bash(python -c \"import sqlite3;print\\([r[1] for r in sqlite3.connect\\('db.sqlite3'\\).execute\\('PRAGMA table_info\\(billing_brand\\)'\\)]\\)\")",
+      "Bash(cp db.sqlite3 \"db.sqlite3.bak-premigrate-$\\(date +%H%M%S\\)\")",
+      "Bash(python manage.py migrate billing)",
+      "Bash(python -c \"import playwright; print\\('playwright OK'\\)\")",
+      "Bash(where chrome *)",
+      "Bash(where msedge *)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application/**)",
+      "Bash(python manage.py runserver 127.0.0.1:8007 --noreload)",
+      "Read(//c/Users/PC/AppData/Local/Temp/**)",
+      "Bash(python -c \"from config import settings; print\\('DEBUG=',settings.DEBUG\\)\")",
+      "Bash(python manage.py runserver 127.0.0.1:8008 --noreload)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\PC\\.claude\\projects\\c--Users-PC-Proyect-Negocio-de-ecommer\\memory"
     ]
   }
 }

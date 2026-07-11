@@ -7,26 +7,36 @@
   <title>{% block title %}{{ config.nombre_tienda }}{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root {
-      --espresso:   {{ config.color_oscuro|default:"#0F1B33" }};
-      --rust:       {{ config.color_primario|default:"#2563EB" }};
-      --rust-dark:  color-mix(in srgb, {{ config.color_primario|default:"#2563EB" }} 85%, black);
-      --sand:       {{ config.color_fondo|default:"#F3F6FC" }};
-      --sand-dark:  #E7ECF6;
-      --border:     #D9E0EE;
-      --text:       {{ config.color_texto|default:"#0F1B33" }};
-      --muted:      #5B6B87;
-      --surface:    #FFFFFF;
-      --radius:     12px;
-      --shadow:     0 4px 24px rgba(15,27,51,.07);
-      --shadow-lg:  0 16px 44px rgba(15,27,51,.14);
-      --font-head:  'Sora', system-ui, sans-serif;
-      --font-body:  'Inter', system-ui, sans-serif;
-      --transition: .22s cubic-bezier(.4,0,.2,1);
-      --navbar:     {{ config.color_navbar|default:"#0F1B33" }};
+      /* ===== Dirección "Bazaar/Mercado" — paleta fija (no configurable) ===== */
+      --paper:      #FBF6EA;
+      --navy:       #1D2B4A;
+      --mustard:    #E8A93D;
+      --mustard-lt: #EDBF63;
+      --coral:      #E1503A;
+      --coral-dark: #C23E2A;
+      --pine:       #204A3C;
+
+      /* Aliases hacia los nombres que ya consume todo el sitio */
+      --espresso:   var(--navy);
+      --rust:       var(--coral);
+      --rust-dark:  var(--coral-dark);
+      --sand:       var(--paper);
+      --sand-dark:  #F1E7D0;
+      --border:     var(--navy);
+      --text:       var(--navy);
+      --muted:      #5A6478;
+      --surface:    var(--paper);
+      --radius:     0px;
+      --shadow:     4px 4px 0 var(--navy);
+      --shadow-lg:  6px 6px 0 var(--navy);
+      --font-head:  'Anton', system-ui, sans-serif;
+      --font-body:  'Work Sans', system-ui, sans-serif;
+      --transition: .15s ease;
+      --navbar:     var(--navy);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--sand); color: var(--text); font-size: 15px; line-height: 1.6; }
@@ -35,7 +45,8 @@
     .site-nav { background: var(--navbar); padding: 0 1.5rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 0 rgba(255,255,255,.05), 0 4px 24px rgba(0,0,0,.22); }
     .site-nav .inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
 
-    .site-logo { display: flex; align-items: center; gap: .6rem; font-family: var(--font-head); font-size: 1.5rem; font-weight: 600; color: #fff; text-decoration: none; letter-spacing: .02em; white-space: nowrap; flex-shrink: 0; }
+    .site-logo { display: flex; align-items: center; gap: .35rem; font-family: var(--font-head); font-size: 1.6rem; font-weight: 400; color: var(--paper); text-decoration: none; text-transform: uppercase; letter-spacing: .01em; white-space: nowrap; flex-shrink: 0; }
+    .logo-dot { color: var(--mustard); }
     .site-logo img { height: 34px; object-fit: contain; flex-shrink: 0; }
     .logo-sep { width: 1px; height: 20px; background: rgba(255,255,255,.18); flex-shrink: 0; }
 
@@ -44,16 +55,14 @@
     .nav-link:hover { color: #fff; background: rgba(255,255,255,.09); }
 
     /* ── SEARCH global integrada (patrón marketplace: search = CTA persistente) ── */
-    .nav-search { flex: 1; max-width: 520px; display: flex; align-items: center; gap: .5rem; background: rgba(255,255,255,.10); border: 1.5px solid rgba(255,255,255,.14); border-radius: 999px; padding: .32rem .32rem .32rem 1rem; transition: background var(--transition), border-color var(--transition); }
-    .nav-search:focus-within { background: #fff; border-color: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
-    .nav-search i { color: rgba(255,255,255,.6); font-size: .95rem; flex-shrink: 0; transition: color var(--transition); }
-    .nav-search:focus-within i { color: var(--muted); }
-    .nav-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: #fff; font-family: var(--font-body); font-size: .875rem; }
-    .nav-search input::placeholder { color: rgba(255,255,255,.55); }
-    .nav-search:focus-within input { color: var(--text); }
-    .nav-search:focus-within input::placeholder { color: var(--muted); }
-    .nav-search button { flex-shrink: 0; border: none; cursor: pointer; background: var(--rust); color: #fff; border-radius: 999px; padding: .42rem .95rem; font-size: .8rem; font-weight: 600; font-family: var(--font-body); display: inline-flex; align-items: center; gap: .35rem; transition: background var(--transition), transform var(--transition); }
-    .nav-search button:hover { background: var(--rust-dark); }
+    .nav-search { flex: 1; max-width: 520px; display: flex; align-items: center; gap: .5rem; background: var(--paper); border: 2px solid var(--mustard); border-radius: 6px; padding: .3rem .3rem .3rem 1rem; transition: border-color var(--transition); }
+    .nav-search:focus-within { border-color: var(--coral); }
+    .nav-search i { color: var(--muted); font-size: .95rem; flex-shrink: 0; }
+    .nav-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: var(--navy); font-family: var(--font-body); font-size: .875rem; }
+    .nav-search input::placeholder { color: var(--muted); }
+    .nav-search button { flex-shrink: 0; border: none; cursor: pointer; background: var(--coral); color: var(--paper); border-radius: 4px; padding: .44rem .95rem; font-size: .78rem; font-weight: 700; font-family: var(--font-body); text-transform: uppercase; letter-spacing: .02em; display: inline-flex; align-items: center; gap: .35rem; transition: background var(--transition), transform var(--transition); }
+    .nav-search button:hover { background: var(--coral-dark); }
+    .nav-search button:active { transform: scale(.96); }
     .nav-search button:active { transform: scale(.96); }
     .nav-search button span { display: inline; }
     @media (max-width: 900px) { .nav-search button span { display: none; } .nav-search button { padding: .42rem .6rem; } }
@@ -140,9 +149,9 @@
     .alert .close-btn { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 1rem; opacity: .5; padding: 0; line-height: 1; }
 
     /* ── BUTTONS ── */
-    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .65rem 1.3rem; border-radius: 8px; font-family: var(--font-body); font-size: .875rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; text-decoration: none; transition: all var(--transition); white-space: nowrap; }
-    .btn-primary { background: var(--rust); color: #fff; border-color: var(--rust); }
-    .btn-primary:hover { background: var(--rust-dark); border-color: var(--rust-dark); }
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .65rem 1.3rem; border-radius: 3px; font-family: var(--font-body); font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; cursor: pointer; border: 2px solid transparent; text-decoration: none; transition: all var(--transition); white-space: nowrap; }
+    .btn-primary { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+    .btn-primary:hover { background: var(--coral); border-color: var(--coral); }
     .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
     .btn-outline:hover { background: var(--sand-dark); border-color: var(--text); }
     .btn-dark { background: var(--espresso); color: #fff; border-color: var(--espresso); }
@@ -153,7 +162,7 @@
     .btn-full { width: 100%; justify-content: center; }
 
     /* ── CARDS ── */
-    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .card { background: var(--surface); border-radius: var(--radius); border: 2px solid var(--border); overflow: hidden; }
     .card-body { padding: 1.25rem; }
 
     /* ── FORMS ── */
@@ -269,6 +278,8 @@
       {% if config.logo %}
         <img src="{{ config.logo.url }}" alt="{{ config.nombre_tienda }}">
         <span class="logo-sep"></span>
+      {% else %}
+        <span class="logo-dot">•</span>
       {% endif %}
       <span>{{ config.nombre_tienda|truncatechars:22 }}</span>
     </a>

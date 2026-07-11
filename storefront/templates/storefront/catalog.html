@@ -30,11 +30,12 @@
     --brand-600: var(--rust-dark);
     --brand-50:  color-mix(in srgb, var(--rust) 10%, var(--surface));
     --ok:        #059669;
-    --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
-    --shadow-md: 0 10px 30px rgba(15,23,42,.10);
-    --shadow-lg: 0 24px 60px rgba(15,23,42,.16);
-    --r:  14px;
-    --r-sm: 10px;
+    /* Sombras duras offset (firma bazaar) en vez de sombras suaves */
+    --shadow-sm: 3px 3px 0 var(--navy);
+    --shadow-md: 5px 5px 0 var(--navy);
+    --shadow-lg: 7px 7px 0 var(--navy);
+    --r:  2px;
+    --r-sm: 2px;
   }
 
   body { background: var(--bg); color: var(--ink); }
@@ -172,12 +173,6 @@
   .visit-store:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
 
   .product-body { padding: .95rem 1rem 1.1rem; display: flex; flex-direction: column; flex: 1; }
-  .sold-by {
-    display: inline-flex; align-items: center; gap: .35rem;
-    font-size: .72rem; color: var(--ink-mute); margin-bottom: .45rem;
-  }
-  .sold-by i { font-size: .8rem; opacity: .8; }
-  .sold-by .store-name { color: var(--ink-soft); font-weight: 600; }
   .product-name {
     font-family: var(--font-body); font-size: 1rem; font-weight: 600; line-height: 1.35;
     color: var(--ink); margin: 0 0 .2rem; text-decoration: none;
@@ -598,6 +593,120 @@
     /* Homepage */
     .home-search, .cs-link, .see-all, .brand-chip .brand-logo, .promo-wide .pw-cta, .hero-mini .hm-cta, .filter-toggle, .filter-panel { transition: none !important; }
     .brand-chip:hover .brand-logo { transform: none !important; }
+  }
+
+  /* ============================================================
+     OVERRIDES — Dirección "Bazaar/Mercado" (paleta fija)
+     Anton + Work Sans · toldo diagonal · price-tag · cards rotadas
+     · sellos de vendedor · sombra dura offset. Gana por orden de cascada.
+     ============================================================ */
+
+  /* Chips de categoría: borde navy, rotados alternando, activo coral */
+  .cs-link { border: 1.5px solid var(--navy); border-radius: 20px; color: var(--navy);
+    text-transform: uppercase; font-weight: 700; font-size: .74rem; letter-spacing: .02em; }
+  .cat-strip .cs-link:nth-child(odd)  { transform: rotate(-1deg); }
+  .cat-strip .cs-link:nth-child(even) { transform: rotate(1deg); }
+  .cs-link:hover { background: var(--mustard); color: var(--navy); border-color: var(--navy); }
+  .cs-link.active { background: var(--coral) !important; color: var(--paper) !important; border-color: var(--coral); }
+
+  /* HERO como toldo de mercado (franjas diagonales mustard) */
+  .hero-banner { background: repeating-linear-gradient(115deg, var(--mustard) 0 26px, var(--mustard-lt) 26px 52px);
+    color: var(--navy); border: 2px solid var(--navy); border-radius: 2px; box-shadow: var(--shadow-md); }
+  .hero-banner::after { display: none; }
+  .hb-eyebrow { background: var(--navy); color: var(--paper); border-radius: 2px; font-weight: 700; text-transform: uppercase; }
+  .hero-banner h1 { font-family: var(--font-head); font-weight: 400; text-transform: uppercase; color: var(--navy); line-height: .95; }
+  .hero-banner p { color: var(--navy); opacity: .85; }
+  .hb-typed-row { color: var(--pine); }
+  .hb-typed-row .typed-cursor { color: var(--navy); }
+  .hb-cta { background: var(--navy); color: var(--paper); border-radius: 2px; font-weight: 700; text-transform: uppercase; }
+  .hb-cta:hover { background: var(--coral); color: var(--paper); }
+
+  /* Slide destacado del hero = PRICE TAG perforado (rotado, sombra dura) */
+  .hb-slide { background: var(--paper); border: 2px solid var(--navy); border-radius: 2px;
+    color: var(--navy); backdrop-filter: none; box-shadow: 5px 5px 0 var(--navy);
+    transform: translateY(10px) scale(.97) rotate(3deg); }
+  .hb-slide.is-active { transform: translateY(0) scale(1) rotate(3deg); }
+  .hb-slide::after { content: ''; position: absolute; top: 50%; right: -9px; transform: translateY(-50%);
+    width: 16px; height: 16px; background: var(--paper); border: 2px solid var(--navy); border-radius: 50%; }
+  .hb-slide-img { background: var(--pine); border-radius: 2px; }
+  .hb-slide-img i { color: rgba(255,255,255,.65); }
+  .hb-slide-brand { color: var(--coral); font-weight: 700; }
+  .hb-slide-name { color: var(--navy); }
+  .hb-slide-price { font-family: var(--font-head); font-weight: 400; color: var(--navy); font-size: 1.15rem; }
+
+  /* Minis del hero: paper con borde navy */
+  .hero-mini { border: 2px solid var(--navy); border-radius: 2px; color: var(--navy); }
+  .hero-mini.m1 { background: var(--sand-dark); }
+  .hero-mini.m2 { background: color-mix(in srgb, var(--mustard) 22%, var(--paper)); }
+  .hero-mini .hm-cta { background: var(--navy); color: var(--paper); border-radius: 2px; font-weight: 700; text-transform: uppercase; }
+  .hero-mini .hm-cta:hover { background: var(--coral); }
+
+  /* Encabezados de sección: Anton + regla navy */
+  .sec-ic { display: none; }
+  .sec-head h2 { font-family: var(--font-head); font-weight: 400; text-transform: uppercase; letter-spacing: .01em; display: flex; align-items: center; gap: .8rem; }
+  .sec-head h2::after { content: ''; flex: 1; height: 2px; background: var(--navy); opacity: .18; min-width: 30px; }
+  .sec-head .sec-sub { text-transform: none; font-family: var(--font-body); }
+  .home-sec--deals { border: 2px solid var(--coral); border-radius: 2px;
+    background: color-mix(in srgb, var(--coral) 6%, var(--paper)); box-shadow: 4px 4px 0 var(--coral); }
+  .deals-badge { border-radius: 2px; }
+
+  /* CARDS de producto: borde navy 2px, sin radios, rotadas, se enderezan al hover */
+  .product-card { border: 2px solid var(--navy); border-radius: 2px; box-shadow: var(--shadow-sm); }
+  .product-grid .product-card:nth-child(odd)  { transform: rotate(-1deg); }
+  .product-grid .product-card:nth-child(even) { transform: rotate(1deg); }
+  .product-card:hover { transform: rotate(0deg) translateY(-4px) !important;
+    box-shadow: var(--shadow-md); border-color: var(--navy); }
+  .product-card:focus-visible { box-shadow: var(--shadow-md); outline: 2px solid var(--coral); outline-offset: 2px; }
+  .product-media { background: var(--pine); border-bottom: 2px solid var(--navy); overflow: visible; }
+  .product-media .placeholder { color: rgba(255,255,255,.55); }
+  /* Sin zoom de imagen (el sello sobresale del media; evita derrames) */
+  .product-card:hover .product-media img,
+  .product-card:hover .pm-slide.is-active { transform: none; }
+  .product-body { padding-top: 1.8rem; }
+
+  /* Badge de stock: mustard (en stock) / gris (agotado), sharp, con borde navy */
+  .stock-tag { border-radius: 2px; box-shadow: none; text-transform: uppercase; border: 1.5px solid var(--navy); }
+  .stock-tag.in  { background: var(--mustard) !important; color: var(--navy) !important; border-color: var(--navy) !important; }
+  .stock-tag.out { background: #D7D2C4 !important; color: #5F5A4E !important; border-color: #5F5A4E !important; }
+  .qv-stock.in  { background: var(--mustard); color: var(--navy); border-color: var(--navy); }
+  .qv-stock.out { background: #D7D2C4; color: #5F5A4E; border-color: #5F5A4E; }
+
+  /* SELLO de vendedor: óvalo coral, texto 2 líneas, rotado -8°, esquina del thumb */
+  .seller-seal { position: absolute; bottom: -16px; left: 14px; z-index: 3;
+    min-width: 46px; max-width: 66px; padding: 8px 6px; border-radius: 50%;
+    background: var(--coral); color: var(--paper); border: 2px solid var(--navy);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-size: .58rem; font-weight: 700; line-height: 1.05; text-transform: uppercase;
+    transform: rotate(-8deg); aspect-ratio: 1/1; }
+  .product-body { padding-top: 1.4rem; }
+
+  /* Precio y CTA de la card */
+  .product-price { font-family: var(--font-head); font-weight: 400; font-size: 1.45rem; }
+  .btn-add-cart { background: var(--navy); border-radius: 2px; text-transform: uppercase; font-weight: 700; }
+  .btn-add-cart:hover:not(:disabled) { background: var(--coral); }
+  .product-view { border: 1.5px solid var(--navy); border-radius: 2px; color: var(--navy); }
+  .product-view:hover { background: var(--mustard); color: var(--navy); border-color: var(--navy); }
+
+  /* Quick-view panel sharp */
+  .qv-panel { border: 2px solid var(--navy); border-radius: 2px; }
+  .qv-title { font-family: var(--font-head); font-weight: 400; text-transform: uppercase; }
+  .qv-price { font-family: var(--font-head); font-weight: 400; }
+  .qv-btn { border-radius: 2px; text-transform: uppercase; font-weight: 700; }
+  .qv-btn.primary { background: var(--navy); }
+  .qv-btn.primary:hover { background: var(--coral); }
+
+  /* Marcas: círculos uniformes bazaar (navy + aro mustard), no arcoíris.
+     El bg inline por marca se sobreescribe con !important. */
+  .brand-logo { background: var(--navy) !important; color: var(--paper);
+    border: 2px solid var(--mustard); font-family: var(--font-head); font-weight: 400; }
+  .brand-chip:hover .brand-logo { border-color: var(--coral); box-shadow: 3px 3px 0 var(--navy); }
+  .brand-name { text-transform: uppercase; font-weight: 700; font-size: .72rem; }
+
+  /* Reduced-motion: sin rotación de chips/cards ni price-tag */
+  @media (prefers-reduced-motion: reduce) {
+    .cat-strip .cs-link, .product-grid .product-card { transform: none !important; }
+    .hb-slide { transform: translateY(0) scale(1) rotate(3deg) !important; }
+    .seller-seal { transform: rotate(-8deg) !important; }
   }
 </style>
 {% endblock %}

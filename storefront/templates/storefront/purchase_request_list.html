@@ -142,14 +142,14 @@
 .stat-value { font-size: 1.65rem; font-weight: 800; line-height: 1; color: #111; }
 .stat-label { font-size: .7rem; color: #999; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-top: 4px; }
 
-.stat-pending  { border-top-color: #f59e0b; }
-.stat-pending .stat-icon  { color: #f59e0b; }
-.stat-confirmed { border-top-color: #10b981; }
-.stat-confirmed .stat-icon { color: #10b981; }
-.stat-rejected  { border-top-color: #ef4444; }
-.stat-rejected .stat-icon  { color: #ef4444; }
-.stat-income    { border-top-color: var(--rust, #8B3A2A); }
-.stat-income .stat-icon    { color: var(--rust, #8B3A2A); }
+.stat-pending  { border-top-color: var(--mustard, #E8A93D); }
+.stat-pending .stat-icon  { color: #B07D14; }
+.stat-confirmed { border-top-color: var(--pine, #204A3C); }
+.stat-confirmed .stat-icon { color: var(--pine, #204A3C); }
+.stat-rejected  { border-top-color: var(--coral, #E1503A); }
+.stat-rejected .stat-icon  { color: var(--coral, #E1503A); }
+.stat-income    { border-top-color: var(--navy, #1D2B4A); }
+.stat-income .stat-icon    { color: var(--navy, #1D2B4A); }
 
 /* ── Filter bar ──────────────────────────────────────── */
 .filter-bar {
@@ -265,18 +265,19 @@
   padding-bottom: .7rem;
 }
 
-/* Row tints */
-.req-row-confirmada > td { background: rgba(16,185,129,.04); }
-.req-row-rechazada  > td { background: rgba(239,68,68,.04);  }
-.req-row-cancelada  > td { background: rgba(107,114,128,.04); }
+/* Row tints (paleta funcional, muy sutiles) */
+.req-row-confirmada > td { background: rgba(32,74,60,.05); }
+.req-row-rechazada  > td { background: rgba(225,80,58,.05);  }
+.req-row-cancelada  > td { background: rgba(95,90,78,.05); }
 
 /* Customer avatar */
 .customer-avatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--rust, #8B3A2A);
-  color: #fff;
+  background: var(--paper, #FBF6EA);
+  color: var(--navy, #1D2B4A);
+  border: 1.5px solid var(--navy, #1D2B4A);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -298,10 +299,12 @@
   font-weight: 600;
 }
 
-.status-pill-pendiente  { background: #fef3c7; color: #92400e; }
-.status-pill-confirmada { background: #d1fae5; color: #065f46; }
-.status-pill-rechazada  { background: #fee2e2; color: #991b1b; }
-.status-pill-cancelada  { background: #f3f4f6; color: #6b7280; }
+/* Estados: mustard=Pendiente, pine=Confirmada, coral=Rechazada, gris=Cancelada.
+   Fondo tintado claro + texto oscuro del mismo tono (contraste AA). */
+.status-pill-pendiente  { background: #FBEECB; color: #7A5410; }
+.status-pill-confirmada { background: #D3E4DC; color: #163A2D; }
+.status-pill-rechazada  { background: #FADAD4; color: #8F2C1B; }
+.status-pill-cancelada  { background: #E7E3D8; color: #5F5A4E; }
 
 /* Ver button */
 .btn-ver {

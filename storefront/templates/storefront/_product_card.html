@@ -30,11 +30,9 @@
     <a class="visit-store" href="{% url 'storefront:product_detail' product.pk %}">
       <i class="bi bi-eye"></i> Ver detalle
     </a>
+    <span class="seller-seal" title="Vendido por {{ product.brand.name }}">{{ product.brand.name }}</span>
   </div>
   <div class="product-body">
-    <span class="sold-by">
-      <i class="bi bi-shop-window"></i> Vendido por: <span class="store-name">{{ product.brand.name }}</span>
-    </span>
     <a class="product-name" href="{% url 'storefront:product_detail' product.pk %}">{{ product.name }}</a>
     <div class="product-cat">{{ product.group.name }}</div>
     <div class="product-foot">
