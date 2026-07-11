@@ -25,6 +25,29 @@ def group_required(*groups):
     return decorator
 
 
+def permission_required_any(*perms):
+    """
+    Decorador para FBVs. Exige al menos uno de los permisos indicados
+    (formato 'app_label.codename'). Superusuarios pasan siempre.
+
+    Uso:
+        @permission_required_any('billing.view_invoice', 'billing.add_invoice')
+        def invoice_list(request):
+            ...
+    """
+    def decorator(view_func):
+        @login_required
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if not request.user.is_superuser:
+                if not any(request.user.has_perm(p) for p in perms):
+                    messages.error(request, 'No tienes permisos para acceder a esta sección.')
+                    return redirect('billing:home')
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
+
+
 # Configurar logger para auditoría
 # Los mensajes se guardan en la consola y pueden redirigirse a archivo
 logger = logging.getLogger('audit')

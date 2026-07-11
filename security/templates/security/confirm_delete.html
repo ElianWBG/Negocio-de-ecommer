@@ -1,15 +1,15 @@
 {% extends 'billing/base.html' %}
-{% block title %}Confirm Delete{% endblock %}
+{% block title %}Confirmar eliminación{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-6">
     <div class="alert alert-danger">
-      <h4>Are you sure?</h4>
-      <p>You are about to delete: <strong>{{ object }}</strong></p>
+      <h4>¿Estás seguro?</h4>
+      <p>Estás por eliminar: <strong>{{ object }}</strong></p>
       <form method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Yes, delete</button>
-        <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a href="javascript:history.back()" class="btn btn-secondary">Cancelar</a>
       </form>
     </div>
   </div>

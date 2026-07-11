@@ -16,8 +16,8 @@ from .forms import (
 )
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
-from shared.mixins import GroupRequiredMixin
-from shared.decorators import audit_action, group_required
+from shared.mixins import PermissionRequiredAnyMixin
+from shared.decorators import audit_action, permission_required_any
 from billing.audit import log_action
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
@@ -204,7 +204,7 @@ class SignUpView(CreateView):
         return response
 
 # === BRAND (FBV) ===
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.view_brand')
 @audit_action('LIST_BRANDS')
 def brand_list(request):
     qs = Brand.objects.all()
@@ -285,7 +285,7 @@ def brand_update_visible_columns(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.add_brand')
 @audit_action('CREATE_BRAND')
 def brand_create(request):
     if request.method == 'POST':
@@ -298,7 +298,7 @@ def brand_create(request):
         form = BrandForm()
     return render(request, 'billing/brand_form.html', {'form': form, 'title': 'Crear Marca'})
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.view_brand')
 @audit_action('VIEW_BRAND')
 def brand_detail(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -309,7 +309,7 @@ def brand_detail(request, pk):
         'product_count': brand.products.count(),
     })
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.change_brand')
 @audit_action('UPDATE_BRAND')
 def brand_update(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -323,7 +323,7 @@ def brand_update(request, pk):
         form = BrandForm(instance=brand)
     return render(request, 'billing/brand_form.html', {'form': form, 'title': 'Editar Marca'})
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.delete_brand')
 @audit_action('DELETE_BRAND')
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
@@ -335,8 +335,8 @@ def brand_delete(request, pk):
 
 
 # === PRODUCTGROUP (CBV) ===
-class ProductGroupListView(GroupRequiredMixin, ExportListMixin, ListView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
+    permissions_required = ['billing.view_productgroup']
     model = ProductGroup
     template_name = 'billing/product_group_list.html'
     context_object_name = 'items'
@@ -401,20 +401,20 @@ class ProductGroupListView(GroupRequiredMixin, ExportListMixin, ListView):
         ctx['visible_columns_list'] = visible_columns
         return ctx
 
-class ProductGroupCreateView(GroupRequiredMixin, CreateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductGroupCreateView(PermissionRequiredAnyMixin, CreateView):
+    permissions_required = ['billing.add_productgroup']
     model = ProductGroup; form_class = ProductGroupForm
     template_name = 'billing/product_group_form.html'
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupUpdateView(GroupRequiredMixin, UpdateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductGroupUpdateView(PermissionRequiredAnyMixin, UpdateView):
+    permissions_required = ['billing.change_productgroup']
     model = ProductGroup; form_class = ProductGroupForm
     template_name = 'billing/product_group_form.html'
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupDetailView(GroupRequiredMixin, DetailView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductGroupDetailView(PermissionRequiredAnyMixin, DetailView):
+    permissions_required = ['billing.view_productgroup']
     model = ProductGroup
     template_name = 'billing/product_group_detail.html'
     context_object_name = 'group'
@@ -425,8 +425,8 @@ class ProductGroupDetailView(GroupRequiredMixin, DetailView):
         ctx['product_count'] = self.object.products.count()
         return ctx
 
-class ProductGroupDeleteView(GroupRequiredMixin, DeleteView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductGroupDeleteView(PermissionRequiredAnyMixin, DeleteView):
+    permissions_required = ['billing.delete_productgroup']
     model = ProductGroup
     template_name = 'billing/product_group_confirm_delete.html'
     success_url = reverse_lazy('billing:productgroup_list')
@@ -456,8 +456,8 @@ def productgroup_update_visible_columns(request):
 
 
 # === SUPPLIER (CBV) ===
-class SupplierListView(GroupRequiredMixin, ExportListMixin, ListView):
-    group_required = ['Analista de Compras', 'Administrador']
+class SupplierListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
+    permissions_required = ['billing.view_supplier']
     model = Supplier
     template_name = 'billing/supplier_list.html'
     context_object_name = 'items'
@@ -534,20 +534,20 @@ class SupplierListView(GroupRequiredMixin, ExportListMixin, ListView):
         ctx['visible_columns_list'] = visible_columns
         return ctx
 
-class SupplierCreateView(GroupRequiredMixin, CreateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class SupplierCreateView(PermissionRequiredAnyMixin, CreateView):
+    permissions_required = ['billing.add_supplier']
     model = Supplier; form_class = SupplierForm
     template_name = 'billing/supplier_form.html'
     success_url = reverse_lazy('billing:supplier_list')
 
-class SupplierUpdateView(GroupRequiredMixin, UpdateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class SupplierUpdateView(PermissionRequiredAnyMixin, UpdateView):
+    permissions_required = ['billing.change_supplier']
     model = Supplier; form_class = SupplierForm
     template_name = 'billing/supplier_form.html'
     success_url = reverse_lazy('billing:supplier_list')
 
-class SupplierDetailView(GroupRequiredMixin, DetailView):
-    group_required = ['Analista de Compras', 'Administrador']
+class SupplierDetailView(PermissionRequiredAnyMixin, DetailView):
+    permissions_required = ['billing.view_supplier']
     model = Supplier
     template_name = 'billing/supplier_detail.html'
     context_object_name = 'supplier'
@@ -558,8 +558,8 @@ class SupplierDetailView(GroupRequiredMixin, DetailView):
         ctx['product_count'] = self.object.products.count()
         return ctx
 
-class SupplierDeleteView(GroupRequiredMixin, DeleteView):
-    group_required = ['Analista de Compras', 'Administrador']
+class SupplierDeleteView(PermissionRequiredAnyMixin, DeleteView):
+    permissions_required = ['billing.delete_supplier']
     model = Supplier
     template_name = 'billing/supplier_confirm_delete.html'
     success_url = reverse_lazy('billing:supplier_list')
@@ -589,8 +589,8 @@ def supplier_update_visible_columns(request):
 
 
 # === PRODUCT (CBV) ===
-class ProductListView(GroupRequiredMixin, ExportListMixin, ListView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
+    permissions_required = ['billing.view_product']
     model = Product
     template_name = 'billing/product_list.html'
     context_object_name = 'items'
@@ -829,8 +829,8 @@ class ProductListView(GroupRequiredMixin, ExportListMixin, ListView):
         
         return ctx
 
-class ProductCreateView(GroupRequiredMixin, CreateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductCreateView(PermissionRequiredAnyMixin, CreateView):
+    permissions_required = ['billing.add_product']
     model = Product; form_class = ProductForm
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
@@ -843,8 +843,8 @@ class ProductCreateView(GroupRequiredMixin, CreateView):
         log_action(self.request, 'created', 'Product', self.object.pk, f'Producto creado: {self.object.name}')
         return response
 
-class ProductUpdateView(GroupRequiredMixin, UpdateView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductUpdateView(PermissionRequiredAnyMixin, UpdateView):
+    permissions_required = ['billing.change_product']
     model = Product; form_class = ProductForm
     template_name = 'billing/product_form.html'
     success_url = reverse_lazy('billing:product_list')
@@ -859,8 +859,8 @@ class ProductUpdateView(GroupRequiredMixin, UpdateView):
         log_action(self.request, 'updated', 'Product', self.object.pk, f'Producto actualizado: {self.object.name}')
         return response
 
-class ProductDeleteView(GroupRequiredMixin, DeleteView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductDeleteView(PermissionRequiredAnyMixin, DeleteView):
+    permissions_required = ['billing.delete_product']
     model = Product
     template_name = 'billing/product_confirm_delete.html'
     success_url = reverse_lazy('billing:product_list')
@@ -872,8 +872,8 @@ class ProductDeleteView(GroupRequiredMixin, DeleteView):
         return response
 
 
-class ProductDetailView(GroupRequiredMixin, DetailView):
-    group_required = ['Analista de Compras', 'Administrador']
+class ProductDetailView(PermissionRequiredAnyMixin, DetailView):
+    permissions_required = ['billing.view_product']
     model = Product
     template_name = 'billing/product_detail.html'
     context_object_name = 'product'
@@ -946,8 +946,8 @@ def product_update_visible_columns(request):
 
 
 # === CUSTOMER (CBV) ===
-class CustomerListView(GroupRequiredMixin, ExportListMixin, ListView):
-    group_required = ['Vendedor', 'Administrador']
+class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
+    permissions_required = ['billing.view_customer']
     model = Customer
     template_name = 'billing/customer_list.html'
     context_object_name = 'items'
@@ -1171,8 +1171,8 @@ class CustomerListView(GroupRequiredMixin, ExportListMixin, ListView):
 
         return ctx
 
-class CustomerCreateView(GroupRequiredMixin, CreateView):
-    group_required = ['Vendedor', 'Administrador']
+class CustomerCreateView(PermissionRequiredAnyMixin, CreateView):
+    permissions_required = ['billing.add_customer']
     model = Customer; form_class = CustomerForm
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
@@ -1182,8 +1182,8 @@ class CustomerCreateView(GroupRequiredMixin, CreateView):
         log_action(self.request, 'created', 'Customer', self.object.pk, f'Cliente creado: {self.object.full_name}')
         return response
 
-class CustomerUpdateView(GroupRequiredMixin, UpdateView):
-    group_required = ['Vendedor', 'Administrador']
+class CustomerUpdateView(PermissionRequiredAnyMixin, UpdateView):
+    permissions_required = ['billing.change_customer']
     model = Customer; form_class = CustomerForm
     template_name = 'billing/customer_form.html'
     success_url = reverse_lazy('billing:customer_list')
@@ -1193,8 +1193,8 @@ class CustomerUpdateView(GroupRequiredMixin, UpdateView):
         log_action(self.request, 'updated', 'Customer', self.object.pk, f'Cliente actualizado: {self.object.full_name}')
         return response
 
-class CustomerDetailView(GroupRequiredMixin, DetailView):
-    group_required = ['Vendedor', 'Administrador']
+class CustomerDetailView(PermissionRequiredAnyMixin, DetailView):
+    permissions_required = ['billing.view_customer']
     model = Customer
     template_name = 'billing/customer_detail.html'
     context_object_name = 'customer'
@@ -1209,8 +1209,8 @@ class CustomerDetailView(GroupRequiredMixin, DetailView):
             ctx['profile'] = None
         return ctx
 
-class CustomerDeleteView(GroupRequiredMixin, DeleteView):
-    group_required = ['Vendedor', 'Administrador']
+class CustomerDeleteView(PermissionRequiredAnyMixin, DeleteView):
+    permissions_required = ['billing.delete_customer']
     model = Customer
     template_name = 'billing/customer_confirm_delete.html'
     success_url = reverse_lazy('billing:customer_list')
@@ -1250,8 +1250,8 @@ def customer_update_visible_columns(request):
 
 
 # === INVOICE (CBV) ===
-class InvoiceListView(GroupRequiredMixin, ExportListMixin, ListView):
-    group_required = ['Vendedor', 'Administrador']
+class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
+    permissions_required = ['billing.view_invoice']
     model = Invoice
     template_name = 'billing/invoice_list.html'
     context_object_name = 'items'
@@ -1464,7 +1464,7 @@ class InvoiceListView(GroupRequiredMixin, ExportListMixin, ListView):
 
         return ctx
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.add_invoice')
 def invoice_create(request):
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
@@ -1550,8 +1550,8 @@ def api_product_info(request, pk):
     })
 
 
-class InvoiceDetailView(GroupRequiredMixin, DetailView):
-    group_required = ['Vendedor', 'Administrador']
+class InvoiceDetailView(PermissionRequiredAnyMixin, DetailView):
+    permissions_required = ['billing.view_invoice']
     model = Invoice
     template_name = 'billing/invoice_detail.html'
     context_object_name = 'invoice'
@@ -1593,8 +1593,8 @@ def invoice_update_visible_columns(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
-    group_required = ['Vendedor', 'Administrador']
+class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
+    permissions_required = ['billing.delete_invoice']
     model = Invoice
     template_name = 'billing/invoice_confirm_delete.html'
     success_url = reverse_lazy('billing:invoice_list')
@@ -1606,7 +1606,7 @@ class InvoiceDeleteView(GroupRequiredMixin, DeleteView):
         return response
 
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.view_invoice')
 def invoice_pdf(request, pk):
     """Server-generated PDF for a single invoice (opens inline in browser)."""
     from billing.services import build_invoice_pdf
@@ -1622,7 +1622,7 @@ def invoice_pdf(request, pk):
     return response
 
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.change_invoice')
 def register_payment(request, pk):
     """Registrar un pago (total o parcial) en una factura de crédito."""
     from billing.services import register_invoice_payment
@@ -1668,7 +1668,7 @@ def register_payment(request, pk):
 # Importar productos desde Excel
 # ─────────────────────────────────────────────
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.add_product')
 def product_import(request):
     """Vista principal de importación de productos desde .xlsx.
     Flujo: el usuario sube el archivo → validamos fila por fila →
@@ -1804,7 +1804,7 @@ def product_import(request):
     })
 
 
-@group_required('Analista de Compras', 'Administrador')
+@permission_required_any('billing.view_product')
 def product_import_template(request):
     """Descarga la plantilla Excel vacía con el formato correcto."""
     from openpyxl import Workbook
@@ -1881,7 +1881,7 @@ def product_import_template(request):
 # Importar clientes desde Excel
 # ─────────────────────────────────────────────
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.add_customer')
 def customer_import(request):
     """Importa clientes desde un .xlsx con columnas:
     cedula, nombre, apellido, email, telefono, direccion.
@@ -2007,7 +2007,7 @@ def customer_import(request):
     })
 
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.view_customer')
 def customer_import_template(request):
     """Descarga la plantilla Excel para importar clientes."""
     from openpyxl import Workbook
@@ -2155,7 +2155,7 @@ def _sales_summary(invoices):
     }
 
 
-@group_required('Administrador')
+@permission_required_any('billing.view_confignegocio')
 def report_sales(request):
     date_from, date_to = _get_report_dates(request)
     invoices = list(_sales_queryset(date_from, date_to))
@@ -2168,7 +2168,7 @@ def report_sales(request):
     })
 
 
-@group_required('Administrador')
+@permission_required_any('billing.view_confignegocio')
 def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -2248,7 +2248,7 @@ def report_sales_excel(request):
     return response
 
 
-@group_required('Administrador')
+@permission_required_any('billing.view_confignegocio')
 def report_sales_pdf(request):
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
@@ -2345,7 +2345,7 @@ def report_sales_pdf(request):
     return response
 
 
-@group_required('Administrador')
+@permission_required_any('billing.view_confignegocio')
 def report_stock(request):
     query = request.GET.get('q', '').strip()
     low_only = request.GET.get('low', '') == '1'
@@ -2366,7 +2366,7 @@ def report_stock(request):
     })
 
 
-@group_required('Administrador')
+@permission_required_any('billing.view_confignegocio')
 def report_stock_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -2431,7 +2431,7 @@ def report_stock_excel(request):
 # Configuración del negocio
 # ─────────────────────────────────────────────
 
-@group_required('Administrador')
+@permission_required_any('billing.change_confignegocio')
 def config_negocio_edit(request):
     """Vista para editar la configuración global del negocio."""
     from billing.models import ConfigNegocio
@@ -2534,7 +2534,7 @@ def config_negocio_edit(request):
 # Gestión de usuarios del panel
 # ─────────────────────────────────────────────
 
-@group_required('Administrador')
+@permission_required_any('auth.add_user', 'auth.change_user')
 def user_management(request):
     from django.contrib.auth import get_user_model
     from django.contrib.auth.models import Group
@@ -2585,7 +2585,7 @@ def user_management(request):
     })
 
 
-@group_required('Administrador')
+@permission_required_any('auth.delete_user')
 def delete_user(request, pk):
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -2612,7 +2612,7 @@ def delete_user(request, pk):
 # Registro de actividad (Audit Log)
 # ─────────────────────────────────────────────
 
-@group_required('Administrador')
+@permission_required_any('billing.view_auditlog')
 def activity_log(request):
     from billing.models import AuditLog
 
@@ -2641,7 +2641,7 @@ def activity_log(request):
 # Promociones (envío masivo de correo)
 # ─────────────────────────────────────────────
 
-@group_required('Vendedor', 'Administrador')
+@permission_required_any('billing.change_customer')
 def send_promotion(request):
     """Envía un correo HTML (promoción) a todos los clientes con email registrado."""
     from django.core.mail import EmailMultiAlternatives, get_connection

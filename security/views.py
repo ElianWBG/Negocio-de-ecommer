@@ -1,13 +1,13 @@
-from django.shortcuts import render
-from django.contrib.auth import login
+from itertools import groupby
+
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import User, Group, Permission
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.models import Group, Permission
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
-from shared.mixins import GroupRequiredMixin
-from .forms import UserRegisterForm, UserUpdateForm, GroupForm, PermissionForm
+from shared.mixins import GroupRequiredMixin, SuperuserRequiredMixin
+from .forms import GroupForm, PermissionForm
+from .permission_labels import app_section_label, permission_label_es
 
 # === MIXIN BASE: SOLO ADMINISTRADOR ===
 class AdminOnlyMixin(LoginRequiredMixin, GroupRequiredMixin):
@@ -15,56 +15,46 @@ class AdminOnlyMixin(LoginRequiredMixin, GroupRequiredMixin):
     group_required = ['Administrador']
     group_redirect_url = '/'
 
-# === AUTENTICACIÓN (CBV) ===
-class RegisterView(CreateView):
-    """Registro público con selección de rol."""
-    form_class = UserRegisterForm
-    template_name = 'security/register.html'
-    success_url = reverse_lazy('billing:home')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        login(self.request, self.object)   # inicia sesión automáticamente
-        return response
-
-class SecurityLoginView(LoginView):
-    """Login con CBV. Reutiliza el template de la PARTE 9."""
-    template_name = 'registration/login.html'
-
-class SecurityLogoutView(LogoutView):
-    """Logout con CBV. Redirige según LOGOUT_REDIRECT_URL."""
-    pass
-
-# === USUARIOS (solo Administrador) ===
-class UserListView(AdminOnlyMixin, ListView):
-    model = User
-    template_name = 'security/user_list.html'
-    context_object_name = 'items'
-
-class UserUpdateView(AdminOnlyMixin, UpdateView):
-    model = User
-    form_class = UserUpdateForm
-    template_name = 'security/user_form.html'
-    success_url = reverse_lazy('security:user_list')
-
-class UserDeleteView(AdminOnlyMixin, DeleteView):
-    model = User
-    template_name = 'security/confirm_delete.html'
-    success_url = reverse_lazy('security:user_list')
-
-# === ROLES / GROUP (solo Administrador) ===
+# === ROLES / GROUP (Administrador) ===
 class GroupListView(AdminOnlyMixin, ListView):
     model = Group
     template_name = 'security/group_list.html'
     context_object_name = 'items'
 
-class GroupCreateView(AdminOnlyMixin, CreateView):
+class PermissionGroupsContextMixin:
+    """Arma `permission_groups`: los permisos agrupados por app y traducidos
+    al español, para que group_form.html no muestre 100+ checkboxes técnicos
+    en una lista plana."""
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        current_ids = set()
+        if self.object is not None:
+            current_ids = set(self.object.permissions.values_list('id', flat=True))
+
+        qs = Permission.objects.select_related('content_type').order_by(
+            'content_type__app_label', 'content_type__model', 'codename'
+        )
+        permission_groups = []
+        for app_label, perms in groupby(qs, key=lambda p: p.content_type.app_label):
+            permission_groups.append({
+                'section': app_section_label(app_label),
+                'items': [
+                    {'permission': p, 'label': permission_label_es(p), 'checked': p.id in current_ids}
+                    for p in perms
+                ],
+            })
+        permission_groups.sort(key=lambda g: g['section'])
+        context['permission_groups'] = permission_groups
+        return context
+
+class GroupCreateView(AdminOnlyMixin, PermissionGroupsContextMixin, CreateView):
     model = Group
     form_class = GroupForm
     template_name = 'security/group_form.html'
     success_url = reverse_lazy('security:group_list')
 
-class GroupUpdateView(AdminOnlyMixin, UpdateView):
+class GroupUpdateView(AdminOnlyMixin, PermissionGroupsContextMixin, UpdateView):
     model = Group
     form_class = GroupForm
     template_name = 'security/group_form.html'
@@ -75,26 +65,26 @@ class GroupDeleteView(AdminOnlyMixin, DeleteView):
     template_name = 'security/confirm_delete.html'
     success_url = reverse_lazy('security:group_list')
 
-# === PERMISOS / PERMISSION (solo Administrador) ===
+# === PERMISOS / PERMISSION (lectura: Administrador · escritura: solo superusuario) ===
 class PermissionListView(AdminOnlyMixin, ListView):
     model = Permission
     template_name = 'security/permission_list.html'
     context_object_name = 'items'
     queryset = Permission.objects.select_related('content_type')
 
-class PermissionCreateView(AdminOnlyMixin, CreateView):
+class PermissionCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
     model = Permission
     form_class = PermissionForm
     template_name = 'security/permission_form.html'
     success_url = reverse_lazy('security:permission_list')
 
-class PermissionUpdateView(AdminOnlyMixin, UpdateView):
+class PermissionUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
     model = Permission
     form_class = PermissionForm
     template_name = 'security/permission_form.html'
     success_url = reverse_lazy('security:permission_list')
 
-class PermissionDeleteView(AdminOnlyMixin, DeleteView):
+class PermissionDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
     model = Permission
     template_name = 'security/confirm_delete.html'
     success_url = reverse_lazy('security:permission_list')

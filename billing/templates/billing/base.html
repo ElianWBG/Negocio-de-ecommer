@@ -268,12 +268,15 @@
   </div>
   {% endif %}
 
-  {% if panel_is_vendedor %}
+  {% if panel_is_vendedor or panel_is_soporte %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ventas</div>
+    {% if panel_is_soporte %}
     <a href="{% url 'storefront:purchase_request_list' %}" class="sidebar-link {% if 'solicitudes' in request.path %}active{% endif %}">
       <i class="bi bi-bell"></i> Solicitudes
     </a>
+    {% endif %}
+    {% if panel_is_vendedor %}
     <a href="{% url 'billing:invoice_list' %}" class="sidebar-link {% if 'invoices' in request.path %}active{% endif %}">
       <i class="bi bi-receipt"></i> Facturas
     </a>
@@ -283,6 +286,7 @@
     <a href="{% url 'billing:send_promotion' %}" class="sidebar-link {% if 'promociones' in request.path %}active{% endif %}">
       <i class="bi bi-megaphone"></i> Promociones
     </a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -295,6 +299,27 @@
     <a href="{% url 'billing:supplier_list' %}" class="sidebar-link {% if 'suppliers' in request.path %}active{% endif %}">
       <i class="bi bi-truck"></i> Proveedores
     </a>
+  </div>
+  {% endif %}
+
+  {% if panel_is_finanzas %}
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Finanzas</div>
+    {% if perms.cobros.view_cobrofactura %}
+    <a href="{% url 'cobros:invoice_pending_list' %}" class="sidebar-link {% if '/cobros/' in request.path %}active{% endif %}">
+      <i class="bi bi-cash-coin"></i> Cuentas por cobrar
+    </a>
+    {% endif %}
+    {% if perms.pagos.view_pagocompra %}
+    <a href="{% url 'pagos:purchase_pending_list' %}" class="sidebar-link {% if '/pagos/' in request.path %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> Cuentas por pagar
+    </a>
+    {% endif %}
+    {% if perms.billing.view_invoice or perms.purchasing.view_purchase or perms.billing.view_product %}
+    <a href="{% url 'reportes:index' %}" class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}">
+      <i class="bi bi-graph-up"></i> Reportes financieros
+    </a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -320,6 +345,14 @@
     <a href="{% url 'billing:activity_log' %}" class="sidebar-link {% if 'actividad' in request.path %}active{% endif %}">
       <i class="bi bi-clock-history"></i> Actividad
     </a>
+    <a href="{% url 'security:group_list' %}" class="sidebar-link {% if '/panel/roles/' in request.path and 'permissions' not in request.path %}active{% endif %}">
+      <i class="bi bi-shield-lock"></i> Roles y Permisos
+    </a>
+    {% if user.is_superuser %}
+    <a href="{% url 'security:permission_list' %}" class="sidebar-link {% if 'permissions' in request.path %}active{% endif %}">
+      <i class="bi bi-key"></i> Permisos (avanzado)
+    </a>
+    {% endif %}
   </div>
   {% endif %}
   {% endif %}
