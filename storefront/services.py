@@ -74,6 +74,7 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
     from django.utils.html import strip_tags
     from billing.models import ConfigNegocio
     from billing.services import build_invoice_pdf
+    from billing.xml_utils import generate_invoice_xml, invoice_xml_filename
 
     customer = purchase_request.customer
     if not customer.email:
@@ -114,13 +115,19 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
         )
         message.attach_alternative(html_content, 'text/html')
 
-        # Adjunta la factura en PDF (legible para el cliente).
+        # Adjunta la factura en PDF (formato RIDE, legible para el cliente).
         try:
             pdf_buffer = build_invoice_pdf(invoice)
             message.attach(f'factura_{invoice.pk:05d}.pdf', pdf_buffer.getvalue(), 'application/pdf')
         except Exception:
-            # Si falla la generación del PDF no debe bloquear el envío del correo.
             logger.exception('No se pudo generar el PDF de la factura para el pedido %s', purchase_request.pk)
+
+        # Adjunta también la factura en XML.
+        try:
+            xml_bytes = generate_invoice_xml(invoice)
+            message.attach(invoice_xml_filename(invoice), xml_bytes, 'application/xml')
+        except Exception:
+            logger.exception('No se pudo generar el XML de la factura para el pedido %s', purchase_request.pk)
 
         message.send(fail_silently=False)
     except Exception:

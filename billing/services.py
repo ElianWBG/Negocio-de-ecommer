@@ -3,236 +3,231 @@ from django.db import transaction
 from django.db.models import Sum
 
 
+def _clave_acceso_demo(invoice, config):
+    """Genera una clave de acceso de 49 dígitos (formato SRI) con dígito
+    verificador Módulo 11. DEMO: no corresponde a una autorización real."""
+    fecha = invoice.invoice_date.strftime('%d%m%Y')
+    ruc = ''.join(ch for ch in (getattr(config, 'ruc', '') or '') if ch.isdigit()).ljust(13, '0')[:13]
+    secuencial = f'{invoice.id:09d}'
+    cuerpo = (
+        f'{fecha}01{ruc}2001001{secuencial}12345678' '1'
+    )  # fecha(8)+tipo(2)+ruc(13)+amb(1)+serie(6)+sec(9)+cod(8)+tipoEmision(1) = 48
+    cuerpo = cuerpo[:48].ljust(48, '0')
+    pesos = [2, 3, 4, 5, 6, 7]
+    total = sum(int(d) * pesos[i % 6] for i, d in enumerate(reversed(cuerpo)))
+    dv = 11 - (total % 11)
+    dv = 0 if dv == 11 else (1 if dv == 10 else dv)
+    return f'{cuerpo}{dv}'
+
+
 def build_invoice_pdf(invoice):
-    """Build a ReportLab PDF for a single invoice. Returns a BytesIO buffer.
+    """Build a ReportLab PDF (formato tipo RIDE del SRI). Returns a BytesIO buffer.
 
     Shared by billing.views.invoice_pdf (staff) and
     storefront.views.customer_invoice_pdf (owner check).
     """
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
-    from reportlab.lib.units import cm
+    from reportlab.lib.units import cm, mm
     from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle,
-        Paragraph, Spacer, HRFlowable,
+        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
     from reportlab.lib.styles import ParagraphStyle
-    from reportlab.lib.enums import TA_RIGHT, TA_CENTER
+    from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
+    from reportlab.graphics.barcode import code128
     import io
+    from decimal import Decimal
     from django.utils import timezone
 
     from billing.models import ConfigNegocio
     config = ConfigNegocio.get()
 
-    espresso = colors.HexColor('#231A10')
-    rust     = colors.HexColor('#B5441B')
-    sand     = colors.HexColor('#F8F3EE')
-    grey     = colors.HexColor('#555555')
+    black = colors.HexColor('#111111')
+    line = colors.HexColor('#333333')
+    grey = colors.HexColor('#555555')
 
-    USABLE_W = A4[0] - 3 * cm  # portrait A4 minus 1.5cm margins each side
+    USABLE_W = A4[0] - 3 * cm
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
-        leftMargin=1.5*cm, rightMargin=1.5*cm,
-        topMargin=1.5*cm, bottomMargin=1.5*cm,
+        leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.2*cm, bottomMargin=1.2*cm,
     )
 
     def ps(name, **kw):
-        return ParagraphStyle(name, **kw)
+        base = dict(fontName='Helvetica', fontSize=8, textColor=black, leading=11)
+        base.update(kw)
+        return ParagraphStyle(name, **base)
 
-    s_store  = ps('Store', fontName='Helvetica-Bold', fontSize=13, textColor=espresso, spaceAfter=2)
-    s_slogan = ps('Slogan', fontName='Helvetica', fontSize=8, textColor=colors.grey, spaceAfter=3)
-    s_cinfo  = ps('CInfo', fontName='Helvetica', fontSize=8, textColor=grey)
-    s_itag   = ps('ITag',  fontName='Helvetica-Bold', fontSize=7, textColor=rust, alignment=TA_RIGHT, spaceAfter=2)
-    s_inum   = ps('INum',  fontName='Helvetica-Bold', fontSize=22, textColor=espresso,
-                  alignment=TA_RIGHT, leading=26, spaceAfter=3)
-    s_idate  = ps('IDate', fontName='Helvetica', fontSize=9, textColor=colors.grey,
-                  alignment=TA_RIGHT, spaceAfter=4)
-    s_sec    = ps('Sec',   fontName='Helvetica-Bold', fontSize=7, textColor=rust, spaceAfter=4)
-    s_cname  = ps('CName', fontName='Helvetica-Bold', fontSize=11, textColor=espresso, spaceAfter=2)
-    s_cdet   = ps('CDet',  fontName='Helvetica', fontSize=9, textColor=grey)
-    s_foot   = ps('Foot',  fontName='Helvetica', fontSize=7, textColor=colors.grey, alignment=TA_CENTER)
+    s_lbl = ps('lbl', fontName='Helvetica', fontSize=7.5, textColor=grey)
+    s_val = ps('val', fontName='Helvetica-Bold', fontSize=8.5)
+    s_sm = ps('sm', fontSize=7.5)
+    s_smb = ps('smb', fontName='Helvetica-Bold', fontSize=8)
+    s_big = ps('big', fontName='Helvetica-Bold', fontSize=13)
+    s_center = ps('c', alignment=TA_CENTER, fontSize=7)
 
-    elements = []
+    clave = _clave_acceso_demo(invoice, config)
+    numero = f'001-001-{invoice.id:09d}'
 
-    # ── Header ───────────────────────────────────────────────────
-    left_col = [Paragraph(config.nombre_tienda, s_store)]
-    if config.slogan:
-        left_col.append(Paragraph(config.slogan, s_slogan))
-    contacts = []
-    if config.email_contacto:
-        contacts.append(config.email_contacto)
-    if config.telefono:
-        contacts.append(config.telefono)
-    if contacts:
-        left_col.append(Paragraph('  '.join(contacts), s_cinfo))
-    if config.direccion:
-        left_col.append(Paragraph(config.direccion, s_cinfo))
-
-    right_col = [
-        Paragraph('FACTURA', s_itag),
-        Paragraph(f'#{invoice.id:05d}', s_inum),
-        Paragraph(invoice.invoice_date.strftime('%d/%m/%Y %H:%M'), s_idate),
-    ]
-
-    if invoice.estado == 'pagada':
-        est_color, est_text = colors.HexColor('#065F46'), 'Pagada'
-    elif invoice.estado == 'parcial':
-        est_color = colors.HexColor('#92400E')
-        est_text  = f'Pago parcial - Saldo ${invoice.saldo}'
+    # ── EMISOR (izq) ──────────────────────────────────────────────
+    emisor_cell = []
+    if getattr(config, 'logo', None):
+        try:
+            from reportlab.platypus import Image as RLImage
+            emisor_cell.append(RLImage(config.logo.path, width=4.5*cm, height=1.4*cm, kind='proportional'))
+            emisor_cell.append(Spacer(1, 4))
+        except Exception:
+            emisor_cell.append(Paragraph(config.nombre_tienda, s_big))
     else:
-        est_color = colors.HexColor('#991B1B')
-        est_text  = f'Pendiente - Saldo ${invoice.saldo}'
-    right_col.append(Paragraph(est_text, ps('Est', fontName='Helvetica-Bold', fontSize=8,
-                                            textColor=est_color, alignment=TA_RIGHT, spaceAfter=2)))
-    if invoice.tipo_pago == 'credito':
-        right_col.append(Paragraph('Credito', ps('Cred', fontName='Helvetica', fontSize=8,
-                                                  textColor=colors.HexColor('#1E40AF'), alignment=TA_RIGHT)))
+        emisor_cell.append(Paragraph(config.nombre_tienda, s_big))
+    emisor_cell.append(Spacer(1, 6))
+    emisor_cell.append(Paragraph(f'<b>{config.nombre_tienda}</b>', s_smb))
+    if config.direccion:
+        emisor_cell.append(Paragraph(f'Matriz: {config.direccion}', s_sm))
+        emisor_cell.append(Paragraph(f'Sucursal: {config.direccion}', s_sm))
+    emisor_cell.append(Paragraph(
+        f'OBLIGADO A LLEVAR CONTABILIDAD: {getattr(config, "obligado_contabilidad", "NO") or "NO"}', s_sm))
 
-    hdr = Table([[left_col, right_col]], colWidths=[USABLE_W * 0.55, USABLE_W * 0.45])
-    hdr.setStyle(TableStyle([
-        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
-        ('TOPPADDING',    (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    # ── Recuadro comprobante (der) ────────────────────────────────
+    bc = code128.Code128(clave, barHeight=11*mm, barWidth=0.32*mm)
+    comp_rows = [
+        [Paragraph(f'RUC: {getattr(config, "ruc", "") or "N/A"}', s_smb)],
+        [Paragraph('<b>FACTURA</b>', ps('f', fontSize=10))],
+        [Paragraph(f'No.: {numero}', s_smb)],
+        [Paragraph('NÚMERO DE AUTORIZACIÓN', s_lbl)],
+        [Paragraph(clave, s_sm)],
+        [Paragraph('FECHA Y HORA DE AUTORIZACIÓN', s_lbl)],
+        [Paragraph(invoice.invoice_date.strftime('%d/%m/%Y %H:%M:%S'), s_sm)],
+        [Paragraph('AMBIENTE: PRUEBAS &nbsp;&nbsp; EMISIÓN: NORMAL', s_sm)],
+        [Paragraph('CLAVE DE ACCESO', s_lbl)],
+        [bc],
+        [Paragraph(clave, s_center)],
+    ]
+    comp = Table(comp_rows, colWidths=[USABLE_W * 0.46 - 6])
+    comp.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), 6), ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 2), ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('BOX', (0, 0), (-1, -1), 0.7, line),
+        ('ALIGN', (0, 9), (0, 10), 'CENTER'),
     ]))
-    elements.append(hdr)
-    elements.append(HRFlowable(width='100%', thickness=3, color=rust, spaceBefore=2, spaceAfter=10))
 
-    # ── Facturado a ──────────────────────────────────────────────
-    elements.append(Paragraph('FACTURADO A', s_sec))
-    elements.append(Paragraph(invoice.customer.full_name, s_cname))
-    if invoice.customer.email:
-        elements.append(Paragraph(invoice.customer.email, s_cdet))
-    if invoice.customer.phone:
-        elements.append(Paragraph(invoice.customer.phone, s_cdet))
-    elements.append(Paragraph(f'CI / RUC: {invoice.customer.dni}', s_cdet))
-    elements.append(Spacer(1, 10))
-    elements.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#F0F0F0'), spaceAfter=8))
+    top = Table([[emisor_cell, comp]], colWidths=[USABLE_W * 0.54, USABLE_W * 0.46])
+    top.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOX', (0, 0), (0, 0), 0.7, line),
+        ('LEFTPADDING', (0, 0), (0, 0), 8), ('RIGHTPADDING', (0, 0), (0, 0), 8),
+        ('TOPPADDING', (0, 0), (0, 0), 8), ('BOTTOMPADDING', (0, 0), (0, 0), 8),
+        ('LEFTPADDING', (1, 0), (1, 0), 4),
+    ]))
+    elements = [top, Spacer(1, 6)]
 
-    # ── Product table ─────────────────────────────────────────────
-    elements.append(Paragraph('DETALLE DE PRODUCTOS', s_sec))
+    # ── Banda comprador ───────────────────────────────────────────
+    cust = invoice.customer
+    comprador = Table([
+        [Paragraph(f'<b>Razón Social / Nombres y Apellidos:</b> {cust.full_name}', s_sm)],
+        [Paragraph(f'<b>RUC / C.I.:</b> {cust.dni} &nbsp;&nbsp;&nbsp; '
+                   f'<b>Fecha Emisión:</b> {invoice.invoice_date.strftime("%d/%m/%Y")} &nbsp;&nbsp;&nbsp; '
+                   f'<b>Guía Remisión:</b> --', s_sm)],
+        [Paragraph(f'<b>Dirección:</b> {cust.address or "--"}', s_sm)],
+    ], colWidths=[USABLE_W])
+    comprador.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 0.7, line),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8), ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements += [comprador, Spacer(1, 6)]
+
+    # ── Detalle de productos ──────────────────────────────────────
     details = invoice.details.select_related('product', 'product__brand').all()
-    rows = [['#', 'Producto', 'Marca', 'Cant.', 'P. Unit.', 'Subtotal']]
-    for i, d in enumerate(details, 1):
+    head = ['Cod.\nPrincipal', 'Cod.\nAuxiliar', 'Cant.', 'Descripción', 'Precio\nUnitario', 'Desc.', 'Precio Total']
+    rows = [[Paragraph(f'<b>{h}</b>', s_center) for h in head]]
+    for d in details:
         rows.append([
-            str(i),
-            d.product.name,
-            d.product.brand.name,
-            str(d.quantity),
-            f'${d.unit_price}',
-            f'${d.subtotal}',
+            Paragraph(str(d.product_id), s_sm),
+            Paragraph('--', s_sm),
+            Paragraph(str(d.quantity), s_center),
+            Paragraph(d.product.name, s_sm),
+            Paragraph(f'{d.unit_price}', ps('r', alignment=TA_RIGHT, fontSize=8)),
+            Paragraph('0.00', ps('r2', alignment=TA_RIGHT, fontSize=8)),
+            Paragraph(f'{d.subtotal}', ps('r3', alignment=TA_RIGHT, fontSize=8)),
         ])
-
-    prod = Table(rows, colWidths=[0.7*cm, 6.5*cm, 4.0*cm, 1.7*cm, 2.5*cm, 2.6*cm], repeatRows=1)
+    prod = Table(rows, colWidths=[2.0*cm, 1.6*cm, 1.2*cm, USABLE_W - 11.1*cm, 2.1*cm, 1.4*cm, 2.8*cm], repeatRows=1)
     prod.setStyle(TableStyle([
-        ('BACKGROUND',     (0, 0), (-1, 0),  espresso),
-        ('TEXTCOLOR',      (0, 0), (-1, 0),  colors.white),
-        ('FONTNAME',       (0, 0), (-1, 0),  'Helvetica-Bold'),
-        ('FONTNAME',       (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE',       (0, 0), (-1, -1), 9),
-        ('ALIGN',          (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN',          (1, 0), (2, -1),  'LEFT'),
-        ('ALIGN',          (4, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME',       (-1, 1), (-1, -1), 'Helvetica-Bold'),
-        ('TEXTCOLOR',      (-1, 1), (-1, -1), rust),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [sand, colors.white]),
-        ('GRID',           (0, 0), (-1, -1), 0.3, colors.HexColor('#DDD3C5')),
-        ('TOPPADDING',     (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING',  (0, 0), (-1, -1), 5),
-        ('LEFTPADDING',    (1, 0), (2, -1),  4),
+        ('GRID', (0, 0), (-1, -1), 0.5, line),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
-    elements.append(prod)
-    elements.append(Spacer(1, 10))
+    elements += [prod, Spacer(1, 6)]
 
-    # ── Totals (right-aligned) ────────────────────────────────────
-    tot = Table(
-        [
-            ['Subtotal',  f'${invoice.subtotal}'],
-            ['IVA (15%)', f'${invoice.tax}'],
-            ['', ''],
-            ['TOTAL',     f'${invoice.total}'],
-        ],
-        colWidths=[4*cm, 3*cm],
-    )
+    # ── Forma de pago (izq) + Totales (der) ───────────────────────
+    forma = Table([
+        [Paragraph('<b>Forma de pago</b>', s_center), Paragraph('<b>Total</b>', s_center),
+         Paragraph('<b>Plazo</b>', s_center), Paragraph('<b>Unidad de\ntiempo</b>', s_center)],
+        [Paragraph('OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO', s_sm),
+         Paragraph(f'{invoice.total}', s_center), Paragraph('0', s_center), Paragraph('Días', s_center)],
+    ], colWidths=[3.4*cm, 1.8*cm, 1.3*cm, 1.9*cm])
+    forma.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, line),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+    ]))
+
+    money = lambda v: f'{Decimal(v):.2f}'
+    tot_rows = [
+        ['SUBTOTAL SIN IMPUESTOS', money(invoice.subtotal)],
+        ['SUBTOTAL 0%', '0.00'],
+        ['SUBTOTAL 15%', money(invoice.subtotal)],
+        ['SUBTOTAL No sujeto IVA', '0.00'],
+        ['SUBTOTAL Exento de IVA', '0.00'],
+        ['TOTAL DESCUENTO', '0.00'],
+        ['ICE', '0.00'],
+        ['IVA 15%', money(invoice.tax)],
+        ['PROPINA / SERVICIO', '0.00'],
+        ['VALOR TOTAL', money(invoice.total)],
+    ]
+    tot = Table([[Paragraph(f'<b>{k}</b>', ps('k', fontSize=7.5)),
+                  Paragraph(v, ps('v', alignment=TA_RIGHT, fontSize=8))] for k, v in tot_rows],
+                colWidths=[4.6*cm, 2.6*cm])
     tot.setStyle(TableStyle([
-        ('BACKGROUND',    (0, 0), (-1, -1), sand),
-        ('FONTNAME',      (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE',      (0, 0), (-1, -1), 9),
-        ('ALIGN',         (0, 0), (-1, -1), 'RIGHT'),
-        ('TEXTCOLOR',     (0, 0), (0, 2),   grey),
-        ('TEXTCOLOR',     (1, 0), (1, 2),   espresso),
-        ('FONTNAME',      (0, 3), (-1, 3),  'Helvetica-Bold'),
-        ('FONTSIZE',      (0, 3), (-1, 3),  12),
-        ('TEXTCOLOR',     (0, 3), (-1, 3),  rust),
-        ('LINEABOVE',     (0, 3), (-1, 3),  0.5, colors.HexColor('#E5E7EB')),
-        ('TOPPADDING',    (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 8),
-        ('TOPPADDING',    (0, 2), (-1, 2),  1),
-        ('BOTTOMPADDING', (0, 2), (-1, 2),  1),
+        ('GRID', (0, 0), (-1, -1), 0.5, line),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#EFEFEF')),
+        ('TOPPADDING', (0, 0), (-1, -1), 2), ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5), ('RIGHTPADDING', (0, 0), (-1, -1), 5),
     ]))
-    spacer_w = USABLE_W - 7 * cm
-    wrap = Table([['', tot]], colWidths=[spacer_w, 7*cm])
-    wrap.setStyle(TableStyle([
-        ('LEFTPADDING',   (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
-        ('TOPPADDING',    (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+    bottom = Table([[forma, tot]], colWidths=[USABLE_W - 7.5*cm, 7.5*cm])
+    bottom.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP')]))
+    elements += [bottom, Spacer(1, 8)]
+
+    # ── Información adicional ──────────────────────────────────────
+    info_rows = [[Paragraph('<b>Información Adicional</b>', s_center)]]
+    adic = [
+        ('Emisor', config.nombre_tienda),
+        ('RUC', getattr(config, 'ruc', '') or 'N/A'),
+        ('Matriz', config.direccion or '--'),
+        ('Obligado a llevar contabilidad', getattr(config, 'obligado_contabilidad', 'NO') or 'NO'),
+        ('Email cliente', cust.email or '--'),
+        ('Número de pedido cliente', f'{invoice.id:08d}'),
+    ]
+    info = Table(
+        [[Paragraph('<b>Información Adicional</b>', s_center), '']] +
+        [[Paragraph(k, s_sm), Paragraph(str(v), s_sm)] for k, v in adic],
+        colWidths=[5*cm, USABLE_W - 5*cm],
+    )
+    info.setStyle(TableStyle([
+        ('SPAN', (0, 0), (1, 0)),
+        ('BOX', (0, 0), (-1, -1), 0.7, line),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, line),
+        ('INNERGRID', (0, 1), (-1, -1), 0.3, colors.HexColor('#CCCCCC')),
+        ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
     ]))
-    elements.append(wrap)
+    elements += [info, Spacer(1, 10)]
 
-    # ── Payment history (if any) ──────────────────────────────────
-    payments = list(invoice.payments.select_related('registered_by').all())
-    if payments:
-        elements.append(Spacer(1, 14))
-        elements.append(HRFlowable(width='100%', thickness=0.5,
-                                   color=colors.HexColor('#E5E7EB'), spaceAfter=8))
-        elements.append(Paragraph('HISTORIAL DE PAGOS', s_sec))
-        pay_rows = [['Fecha', 'Monto', 'Metodo', 'Registrado por']]
-        for p in payments:
-            reg = p.registered_by
-            reg_name = (reg.get_full_name() or reg.username) if reg else '-'
-            pay_rows.append([
-                p.payment_date.strftime('%d/%m/%Y %H:%M'),
-                f'${p.amount}',
-                p.get_method_display(),
-                reg_name,
-            ])
-        pay = Table(pay_rows,
-                    colWidths=[3.5*cm, 2.5*cm, 3.0*cm, USABLE_W - 9*cm],
-                    repeatRows=1)
-        pay.setStyle(TableStyle([
-            ('BACKGROUND',     (0, 0), (-1, 0),  espresso),
-            ('TEXTCOLOR',      (0, 0), (-1, 0),  colors.white),
-            ('FONTNAME',       (0, 0), (-1, 0),  'Helvetica-Bold'),
-            ('FONTNAME',       (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE',       (0, 0), (-1, -1), 8),
-            ('ALIGN',          (1, 0), (1, -1),  'RIGHT'),
-            ('FONTNAME',       (1, 1), (1, -1),  'Helvetica-Bold'),
-            ('TEXTCOLOR',      (1, 1), (1, -1),  colors.HexColor('#065F46')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [sand, colors.white]),
-            ('GRID',           (0, 0), (-1, -1), 0.3, colors.HexColor('#DDD3C5')),
-            ('TOPPADDING',     (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING',  (0, 0), (-1, -1), 4),
-        ]))
-        elements.append(pay)
-
-    # ── Footer disclaimer ─────────────────────────────────────────
-    elements.append(Spacer(1, 20))
-    elements.append(HRFlowable(width='100%', thickness=0.5,
-                               color=colors.HexColor('#E9ECEF'), spaceAfter=6))
-    now_str = timezone.localtime().strftime('%d/%m/%Y %H:%M')
     elements.append(Paragraph(
-        f'Documento generado el {now_str}. '
-        'Este documento NO es un comprobante fiscal electronico ni una factura '
-        'SRI autorizada y no tiene validez tributaria.',
-        s_foot,
-    ))
+        'Documento con formato RIDE. NO es un comprobante fiscal electrónico '
+        'autorizado por el SRI y no tiene validez tributaria.',
+        ps('foot', fontSize=6.5, textColor=grey, alignment=TA_CENTER)))
 
     doc.build(elements)
     return buffer
