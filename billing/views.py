@@ -289,7 +289,7 @@ def brand_update_visible_columns(request):
 @audit_action('CREATE_BRAND')
 def brand_create(request):
     if request.method == 'POST':
-        form = BrandForm(request.POST)
+        form = BrandForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, 'Marca creada exitosamente!')
@@ -314,7 +314,7 @@ def brand_detail(request, pk):
 def brand_update(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
-        form = BrandForm(request.POST, instance=brand)
+        form = BrandForm(request.POST, request.FILES, instance=brand)
         if form.is_valid():
             form.save()
             messages.success(request, 'Marca actualizada exitosamente!')
