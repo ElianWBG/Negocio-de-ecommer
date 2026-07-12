@@ -10,6 +10,7 @@ Combina un **panel administrativo** (catálogo, ventas, compras, cobros, pagos, 
 - [Roles y permisos](#roles-y-permisos)
 - [Listados: filtros, paginación y exportación](#listados-filtros-paginación-y-exportación)
 - [Pagos y notificaciones](#pagos-y-notificaciones)
+- [Personalización de marca](#personalización-de-marca)
 - [Microservicio de facturación SRI (opcional)](#microservicio-de-facturación-sri-opcional)
 - [Stack técnico](#stack-técnico)
 - [Cómo ejecutar el proyecto](#cómo-ejecutar-el-proyecto)
@@ -109,7 +110,18 @@ Luego se añaden los botones en la plantilla apuntando a `?<filtros>&export=pdf`
 - **PayPal**: creación y captura de orden vía API (`PAYPAL_CLIENT_ID` / `PAYPAL_SECRET`).
 - **Transferencia/pago manual**: el cliente sube comprobante y un vendedor confirma.
 - **Email**: en desarrollo usa el backend de consola; en producción se usa **SendGrid** como único proveedor (`SENDGRID_API_KEY`), para verificación de cuenta de clientes, confirmación de pedidos, envío de facturas y promociones masivas.
+- **Correo de bienvenida**: al registrarse, el cliente recibe un correo HTML con el diseño de marca (`storefront/views.py::_send_welcome_email`), usando el nombre, color y dirección configurados en `ConfigNegocio` y un botón directo al login de la tienda.
+- El remitente por defecto (`DEFAULT_FROM_EMAIL`) debe ser una dirección **verificada en SendGrid** (Settings → Sender Authentication) — sin eso, el correo tiende a caer en spam o rebota, especialmente si es una dirección `@gmail.com`/`@outlook.com` (esos dominios aplican DMARC estricto y rechazan correo enviado por servidores de terceros como SendGrid). Lo ideal a futuro es autenticar un dominio propio en SendGrid en vez de un Single Sender.
 - Notificación al proveedor (`ADMIN_NOTIFICATION_EMAIL`) cuando llega una solicitud de compra nueva.
+
+## Personalización de marca
+
+Todo lo visual de la tienda y el panel sale de un único registro `ConfigNegocio` (editable en **Panel → Configuración del negocio**), sin tocar código:
+
+- Nombre, slogan, logo, colores (primario, oscuro, fondo, navbar, texto), imagen del hero.
+- El **logo** subido ahí se usa también como favicon (ícono de la pestaña del navegador) tanto en la tienda pública como en el panel administrativo.
+- Secciones opcionales "Sobre nosotros" / "Por qué elegirnos" y banner promocional.
+- Datos de contacto (RUC, email, teléfono, WhatsApp, dirección) y redes sociales.
 
 ## Microservicio de facturación SRI (opcional)
 
@@ -193,8 +205,9 @@ Definidas en `.env` (ver `.env.example` completo):
 | `DATABASE_URL` | Conexión Postgres, formato `postgres://usuario:password@host:puerto/bd`. |
 | `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID` | Botón de pago con tarjeta. |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` | Pagos con PayPal. |
-| `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` | Envío de correo (consola en local, SMTP en producción). |
-| `SENDGRID_API_KEY` | Envío de correo vía SendGrid (proveedor usado en producción). |
+| `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Envío de correo (consola en local, SMTP en producción). |
+| `DEFAULT_FROM_EMAIL` | Remitente de todos los correos del sistema. Debe estar verificado en SendGrid (Single Sender o dominio autenticado) para no caer en spam; por defecto en `config/settings.py` si no se define en el entorno. |
+| `SENDGRID_API_KEY` | Envío de correo vía SendGrid (proveedor usado en producción, `config/email_backend.py`). |
 | `ADMIN_NOTIFICATION_EMAIL` | Correo que recibe alertas de pedidos nuevos. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Almacenamiento de imágenes en producción. |
 
