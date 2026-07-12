@@ -39,7 +39,9 @@
       "Bash(cd \"C:\\\\Users\\\\PC\" && find . -maxdepth 5 -iname \"gsap-core\" -type d 2>/dev/null | head; echo \"--- home .agents ---\"; ls -la \"C:/Users/PC/.agents/skills\" 2>/dev/null | head; echo \"--- proyecto oculto ---\"; ls -a \"C:/Users/PC/Proyect/Negocio-de-ecommer\" 2>/dev/null | grep -iE \"agents|gsap\")",
       "Read(//c/Users/PC/**)",
       "Read(//c/Users/PC/.agents/skills/**)",
-      "Bash(python manage.py runserver 127.0.0.1:8011 --noreload)"
+      "Bash(python manage.py runserver 127.0.0.1:8011 --noreload)",
+      "Bash(python -c \"import django,os;os.environ.setdefault\\('DJANGO_SETTINGS_MODULE','config.settings'\\);django.setup\\(\\);from billing.models import ConfigNegocio;c=ConfigNegocio.get\\(\\);print\\('logo:',repr\\(getattr\\(c.logo,'name',None\\)\\)\\);print\\('nombre:',c.nombre_tienda\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('storefront/services.py',encoding='utf-8'\\).read\\(\\)\\); print\\('services.py OK'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\PC\\.claude\\projects\\c--Users-PC-Proyect-Negocio-de-ecommer\\memory"

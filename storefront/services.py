@@ -88,9 +88,21 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
         f'<td style="padding:4px 8px;text-align:right;">${d.subtotal}</td></tr>'
         for d in invoice.details.all()
     )
+    # Logo de la tienda (ConfigNegocio.logo). En producción con Cloudinary,
+    # .url es una URL absoluta https que los clientes de correo cargan bien.
+    logo_html = ''
+    if config and getattr(config, 'logo', None):
+        try:
+            logo_html = (
+                f'<img src="{config.logo.url}" alt="{store_name}" '
+                f'style="max-height:56px;max-width:220px;margin-bottom:14px;">'
+            )
+        except Exception:
+            logo_html = ''
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width:560px; margin:0 auto;">
-      <h2 style="color:#B5441B;">¡Gracias por tu compra, {customer.first_name}!</h2>
+      {logo_html}
+      <h2 style="color:#1D2B4A;">¡Gracias por tu compra, {customer.first_name}!</h2>
       <p>Tu pedido #{purchase_request.id} fue confirmado. Aquí el resumen:</p>
       <table style="width:100%; border-collapse:collapse;">
         <thead>
