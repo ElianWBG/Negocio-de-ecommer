@@ -205,9 +205,14 @@ class SignUpView(CreateView):
         self.object.set_unusable_password()
         self.object.save()
         from billing.services import _send_panel_verification_code
-        _send_panel_verification_code(self.object, request=self.request)
-        messages.success(self.request, f'Se ha enviado un código de verificación a {self.object.email}. Revisa tu correo para crear tu contraseña.')
-        return redirect(self.success_url)
+        code_obj = _send_panel_verification_code(self.object, request=self.request)
+        verify_url = reverse_lazy('billing:verify_panel_code')
+        messages.success(self.request, f'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{self.object.username}</strong>')
+        from django.http import QueryDict
+        qs = QueryDict(mutable=True)
+        qs['email'] = self.object.email
+        qs['code'] = code_obj.code
+        return redirect(f'{verify_url}?{qs.urlencode()}')
 
 # === BRAND (FBV) ===
 @permission_required_any('billing.view_brand')
@@ -2574,6 +2579,8 @@ def user_management(request):
                 messages.error(request, f'El usuario "{username}" ya existe.')
             elif not email:
                 messages.error(request, 'El correo electrónico es obligatorio para crear un usuario.')
+            elif User.objects.filter(email=email).exists():
+                messages.error(request, f'El correo "{email}" ya está en uso por otro usuario.')
             else:
                 u = User.objects.create_user(username=username, email=email, is_active=False)
                 u.set_unusable_password()
@@ -2658,7 +2665,7 @@ def verify_panel_code(request):
             messages.error(request, 'No existe un usuario con ese correo.')
             return render(request, 'billing/verify_code.html')
 
-        vc = PanelVerificationCode.objects.filter(user=user).first()
+        vc = PanelVerificationCode.objects.filter(user=user).order_by('-created_at').first()
 
         if not vc:
             messages.error(request, 'No hay un código de verificación. Solicita uno nuevo.')
@@ -2690,16 +2697,21 @@ def verify_panel_code(request):
         user.is_active = True
         user.save()
 
-        messages.success(request, 'Cuenta verificada. Ahora puedes iniciar sesión.')
+        messages.success(request, f'Cuenta verificada. Ahora inicia sesión con tu usuario: <strong>{user.username}</strong> y la contraseña que creaste.')
         return redirect('login')
 
     verify_user = None
+    show_code = None
     email = request.GET.get('email', '')
+    code_param = request.GET.get('code', '')
     if email:
         verify_user = User.objects.filter(email=email).first()
+        if code_param:
+            show_code = code_param
 
     return render(request, 'billing/verify_code.html', {
         'verify_user': verify_user,
+        'show_code': show_code,
     })
 
 

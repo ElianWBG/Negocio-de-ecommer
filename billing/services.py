@@ -314,9 +314,11 @@ def _generate_verification_code():
 def _send_panel_verification_code(user, request=None):
     if not user.email:
         return None
-    code_obj, created = PanelVerificationCode.objects.update_or_create(
+    PanelVerificationCode.objects.filter(user=user).delete()
+    code_obj = PanelVerificationCode.objects.create(
         user=user,
-        defaults={'code': _generate_verification_code(), 'is_used': False},
+        code=_generate_verification_code(),
+        is_used=False,
     )
     from django.urls import reverse
     if request:
