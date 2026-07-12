@@ -2566,16 +2566,17 @@ def user_management(request):
         elif action == 'create_user':
             username = request.POST.get('username', '').strip()
             email = request.POST.get('email', '').strip()
-            password = request.POST.get('password', '').strip()
             group_name = request.POST.get('group_name', '')
-            if not username or not password:
-                messages.error(request, 'Usuario y contraseña son obligatorios.')
+            if not username:
+                messages.error(request, 'El nombre de usuario es obligatorio.')
             elif User.objects.filter(username=username).exists():
                 messages.error(request, f'El usuario "{username}" ya existe.')
             elif not email:
                 messages.error(request, 'El correo electrónico es obligatorio para crear un usuario.')
             else:
-                u = User.objects.create_user(username=username, email=email, password=password, is_active=False)
+                u = User.objects.create_user(username=username, email=email, is_active=False)
+                u.set_unusable_password()
+                u.save(update_fields=['password'])
                 if group_name:
                     try:
                         u.groups.add(Group.objects.get(name=group_name))
@@ -2583,7 +2584,7 @@ def user_management(request):
                         pass
                 from billing.services import _send_panel_verification_code
                 _send_panel_verification_code(u)
-                messages.success(request, f'Usuario {username} creado. Se ha enviado un código de verificación a {email}.')
+                messages.success(request, f'Usuario {username} creado. Se ha enviado un enlace de verificación a {email}.')
 
         return redirect('billing:user_management')
 
@@ -2655,14 +2656,42 @@ def verify_panel_code(request):
             messages.error(request, 'Código incorrecto. Intenta de nuevo.')
             return render(request, 'billing/verify_code.html')
 
+        password = request.POST.get('password', '')
+        password_confirm = request.POST.get('password_confirm', '')
+        needs_password = user.has_usable_password() is False
+
+        if needs_password:
+            if not password or len(password) < 6:
+                messages.error(request, 'La contraseña debe tener al menos 6 caracteres.')
+                return render(request, 'billing/verify_code.html', {'show_password': True})
+            if password != password_confirm:
+                messages.error(request, 'Las contraseñas no coinciden.')
+                return render(request, 'billing/verify_code.html', {'show_password': True})
+            user.set_password(password)
+
         vc.is_used = True
         vc.save()
         user.is_active = True
         user.save(update_fields=['is_active'])
-        messages.success(request, 'Correo verificado correctamente. Ahora puedes iniciar sesión.')
+
+        if needs_password:
+            messages.success(request, 'Cuenta verificada y contraseña creada. Ahora puedes iniciar sesión.')
+        else:
+            messages.success(request, 'Correo verificado correctamente. Ahora puedes iniciar sesión.')
         return redirect('login')
 
-    return render(request, 'billing/verify_code.html')
+    needs_password = False
+    email = request.GET.get('email', '')
+    if email:
+        try:
+            user = User.objects.get(email=email)
+            needs_password = user.has_usable_password() is False
+        except User.DoesNotExist:
+            pass
+
+    return render(request, 'billing/verify_code.html', {
+        'show_password': needs_password,
+    })
 
 
 # ─────────────────────────────────────────────
