@@ -318,10 +318,13 @@ def _send_panel_verification_code(user):
         user=user,
         defaults={'code': _generate_verification_code(), 'is_used': False},
     )
+    from django.urls import reverse
+    verify_url = f'{settings.SITE_URL}{reverse("billing:verify_panel_code")}'
     subject = 'Tu código de verificación — Panel de Administración'
     html_content = render_to_string('billing/emails/verification_code.html', {
         'user': user,
         'code': code_obj.code,
+        'verify_url': verify_url,
     })
     msg = EmailMultiAlternatives(
         subject=subject,

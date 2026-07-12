@@ -5,10 +5,11 @@
   <div style="max-width: 480px; margin: auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,.08);">
     <h2 style="color: #1D2B4A; margin-top: 0;">Verificación de cuenta</h2>
     <p>Hola <strong>{{ user.first_name|default:user.username }}</strong>,</p>
-    <p>Has creado una cuenta en el panel de administración. Usa el siguiente código para verificar tu correo:</p>
+    <p>Has creado una cuenta en el panel de administración. Haz clic en el siguiente botón para verificar tu correo:</p>
     <div style="text-align: center; margin: 24px 0;">
-      <span style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; background: #f0f0f0; padding: 12px 24px; border-radius: 8px; color: #1D2B4A;">{{ code }}</span>
+      <a href="{{ verify_url }}?email={{ user.email|urlencode }}" style="display: inline-block; background: #1D2B4A; color: #fff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600;">Verificar cuenta</a>
     </div>
+    <p style="color: #666;">O usa este código en la página de verificación: <strong style="font-size: 20px; letter-spacing: 4px;">{{ code }}</strong></p>
     <p style="color: #666;">Este código expira en 24 horas. Si no solicitaste esta cuenta, ignora este mensaje.</p>
     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
     <p style="font-size: 12px; color: #999;">— Sistema de ventas</p>

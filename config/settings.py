@@ -65,6 +65,7 @@ EMAIL_TIMEOUT = 10
 ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', default='')
 PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
 PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
+SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
 # Application definition
 
