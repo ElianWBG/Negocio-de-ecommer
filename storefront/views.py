@@ -108,25 +108,84 @@ def customer_register(request):
     return render(request, 'storefront/register.html', {'form': form})
 
 
+_WELCOME_EMAIL_TEMPLATE = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a __STORE_NAME__</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; color: #333333; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { background-color: __COLOR__; padding: 30px 20px; text-align: center; color: #ffffff; }
+        .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
+        .content { padding: 30px 20px; text-align: left; line-height: 1.6; }
+        .content h2 { color: __COLOR__; margin-top: 0; font-size: 22px; }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button { background-color: __COLOR__; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 16px; }
+        .footer { background-color: #eeeeee; padding: 20px; text-align: center; font-size: 12px; color: #666666; line-height: 1.5; }
+        .footer a { color: __COLOR__; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>__STORE_NAME_UPPER__</h1>
+        </div>
+
+        <div class="content">
+            <h2>¡Tu aventura acaba de comenzar! 🚀🎮</h2>
+
+            <p>Hola, <strong>__NAME__</strong>,</p>
+            <p>Nos emociona muchísimo darte la bienvenida. Tu cuenta ha sido creada con éxito usando el correo <strong>__EMAIL__</strong>.</p>
+
+            <p>Ya puedes iniciar sesión y explorar nuestro catálogo, armar tu carrito y hacer tu primer pedido en minutos.</p>
+
+            <div class="button-container">
+                <a href="__LOGIN_URL__" class="button">INICIAR SESIÓN Y EXPLORAR</a>
+            </div>
+
+            <p>Si tienes alguna duda o necesitas ayuda, simplemente responde a este correo. ¡Estamos aquí para ayudarte!</p>
+            <p>¡Que empiecen las partidas!<br><strong>El equipo de __STORE_NAME__</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>Recibes este correo porque creaste una cuenta en nuestra tienda online __STORE_NAME__.</p>
+            <p><strong>__STORE_NAME__</strong>__ADDRESS_LINE__</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+
 def _send_welcome_email(user):
     """Envía un correo de bienvenida cuando un cliente se registra.
     Si falla el envío, no interrumpe el registro (fail_silently)."""
     from django.core.mail import EmailMultiAlternatives
     from django.utils.html import strip_tags
+    from django.conf import settings
     from billing.models import ConfigNegocio
 
     if not user.email:
         return
     config = ConfigNegocio.objects.first()
-    store_name = (config.nombre_tienda if config else None) or 'nuestra tienda'
-    html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width:560px; margin:0 auto;">
-      <h2 style="color:#B5441B;">¡Bienvenido/a a {store_name}, {user.first_name}!</h2>
-      <p>Tu cuenta se creó correctamente con el correo <strong>{user.email}</strong>.</p>
-      <p>Ya puedes iniciar sesión y explorar nuestro catálogo.</p>
-      <p style="margin-top:2rem; color:#888; font-size:.85rem;">Este es un correo automático, no respondas a este mensaje.</p>
-    </div>
-    """
+    store_name = (config.nombre_tienda if config else None) or 'Nuestra Tienda'
+    color = (config.color_primario if config else None) or '#d84315'
+    address_line = f'<br>{config.direccion}' if (config and config.direccion) else ''
+    site_url = getattr(settings, 'SITE_URL', 'https://web-production-667ad.up.railway.app')
+    login_url = f'{site_url.rstrip("/")}/login/'
+
+    html_content = (
+        _WELCOME_EMAIL_TEMPLATE
+        .replace('__COLOR__', color)
+        .replace('__STORE_NAME_UPPER__', store_name.upper())
+        .replace('__STORE_NAME__', store_name)
+        .replace('__NAME__', user.first_name or user.email)
+        .replace('__EMAIL__', user.email)
+        .replace('__LOGIN_URL__', login_url)
+        .replace('__ADDRESS_LINE__', address_line)
+    )
     try:
         message = EmailMultiAlternatives(
             subject=f'¡Bienvenido/a a {store_name}!',
