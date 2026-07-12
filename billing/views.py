@@ -2625,10 +2625,26 @@ def delete_user(request, pk):
 def verify_panel_code(request):
     from django.contrib.auth import get_user_model
     from .models import PanelVerificationCode
+    from billing.services import _send_panel_verification_code
 
     User = get_user_model()
 
     if request.method == 'POST':
+        action = request.POST.get('action', 'verify')
+
+        if action == 'resend':
+            email = request.POST.get('email', '').strip()
+            if not email:
+                messages.error(request, 'Ingresa tu correo.')
+                return render(request, 'billing/verify_code.html')
+            user = User.objects.filter(email=email).first()
+            if user:
+                _send_panel_verification_code(user, request=request)
+                messages.success(request, 'Se ha enviado un nuevo código a tu correo.')
+            else:
+                messages.error(request, 'No existe un usuario con ese correo.')
+            return render(request, 'billing/verify_code.html')
+
         email = request.POST.get('email', '').strip()
         code = request.POST.get('code', '').strip()
 
@@ -2636,20 +2652,23 @@ def verify_panel_code(request):
             messages.error(request, 'Completa todos los campos.')
             return render(request, 'billing/verify_code.html')
 
-        users = User.objects.filter(email=email)
-        if not users.exists():
+        user = User.objects.filter(email=email).first()
+        if not user:
             messages.error(request, 'No existe un usuario con ese correo.')
             return render(request, 'billing/verify_code.html')
-        user = users.first()
 
-        try:
-            vc = PanelVerificationCode.objects.get(user=user, is_used=False)
-        except PanelVerificationCode.DoesNotExist:
-            messages.error(request, 'No hay un código pendiente para este usuario.')
+        vc = PanelVerificationCode.objects.filter(user=user).first()
+
+        if not vc:
+            messages.error(request, 'No hay un código de verificación. Solicita uno nuevo.')
             return render(request, 'billing/verify_code.html')
 
+        if vc.is_used:
+            messages.info(request, 'Este código ya fue usado. Tu cuenta ya debería estar activa. Intenta iniciar sesión.')
+            return redirect('login')
+
         if vc.is_expired:
-            messages.error(request, 'El código ha expirado.')
+            messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
             return render(request, 'billing/verify_code.html')
 
         if vc.code != code:
