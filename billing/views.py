@@ -2697,7 +2697,7 @@ def verify_panel_code(request):
         user.is_active = True
         user.save()
 
-        messages.success(request, f'Cuenta verificada. Ahora inicia sesión con tu usuario: <strong>{user.username}</strong> y la contraseña que creaste.')
+        messages.success(request, f'Cuenta verificada. Ahora inicia sesión con tu usuario: {user.username} y la contraseña que creaste.')
         return redirect('login')
 
     verify_user = None
