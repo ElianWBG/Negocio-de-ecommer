@@ -970,7 +970,7 @@ def _paypal_access_token():
         f'{settings.PAYPAL_CLIENT_ID}:{settings.PAYPAL_SECRET}'.encode()
     ).decode()
     data = _paypal_request(
-        'https://api-m.sandbox.paypal.com/v1/oauth2/token',
+        f'{settings.PAYPAL_API_BASE}/v1/oauth2/token',
         data=b'grant_type=client_credentials',
         headers={
             'Authorization': f'Basic {credentials}',
@@ -985,6 +985,7 @@ def pay_with_paypal(request, pk):
     return render(request, 'storefront/payment_paypal.html', {
         'purchase_request': purchase_request,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'paypal_sdk_base': settings.PAYPAL_SDK_BASE,
     })
 
 
@@ -997,7 +998,7 @@ def paypal_create_order(request, pk):
     try:
         token = _paypal_access_token()
         order = _paypal_request(
-            'https://api-m.sandbox.paypal.com/v2/checkout/orders',
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders',
             data=json.dumps({
                 'intent': 'CAPTURE',
                 'purchase_units': [{
@@ -1030,7 +1031,7 @@ def paypal_capture(request, pk):
             return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
         token = _paypal_access_token()
         capture_data = _paypal_request(
-            f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{order_id}/capture',
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
             data=b'{}',
             headers={
                 'Authorization': f'Bearer {token}',

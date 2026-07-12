@@ -69,6 +69,15 @@ PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
 PAYPAL_TIMEOUT = env.int('PAYPAL_TIMEOUT', default=20)
 # Total de intentos por llamada (incluye el primero) ante fallos transitorios: timeout, 5xx, red caída.
 PAYPAL_MAX_ATTEMPTS = env.int('PAYPAL_MAX_ATTEMPTS', default=3)
+# Entorno de PayPal: 'sandbox' (pruebas) o 'live' (producción, dinero real).
+# En producción DEBE ser 'live' y las credenciales deben ser las de la app Live,
+# si no el SDK abre popups contra el entorno equivocado y falla la autenticación.
+PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')
+_PAYPAL_LIVE = PAYPAL_MODE.strip().lower() == 'live'
+# Base de la API REST (server-side).
+PAYPAL_API_BASE = 'https://api-m.paypal.com' if _PAYPAL_LIVE else 'https://api-m.sandbox.paypal.com'
+# Base del SDK JS que carga el navegador (client-side).
+PAYPAL_SDK_BASE = 'https://www.paypal.com' if _PAYPAL_LIVE else 'https://www.sandbox.paypal.com'
 SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
 # Application definition

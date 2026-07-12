@@ -47,7 +47,7 @@
   <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
 </div>
 
-<script src="https://www.sandbox.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card"></script>
+<script src="{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card"></script>
 <script>
 const createOrderUrl = "{% url 'storefront:paypal_create_order' purchase_request.pk %}";
 const captureUrl = "{% url 'storefront:paypal_capture' purchase_request.pk %}";
