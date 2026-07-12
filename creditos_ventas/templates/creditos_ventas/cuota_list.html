@@ -38,6 +38,7 @@
             <a href="{% url 'creditos_ventas:pago_cuota_create' c.pk %}" class="btn btn-sm btn-success">Registrar pago</a>
             {% endif %}
             <a href="{% url 'creditos_ventas:cuota_payment_history' c.pk %}" class="btn btn-sm btn-outline-secondary">Historial</a>
+            <a href="{% url 'creditos_ventas:comprobante_cuota' c.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">Comprobante</a>
           </td>
         </tr>
         {% empty %}

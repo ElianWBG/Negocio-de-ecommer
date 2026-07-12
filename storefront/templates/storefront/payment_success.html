@@ -1,5 +1,22 @@
 {% extends 'storefront/base_public.html' %}
 {% block title %}Pago aprobado{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cuotas-recap { max-width: 640px; margin: 2rem auto 0; text-align: left; }
+  .cuotas-recap h3 { font-family: var(--font-head); font-size: 1.1rem; margin-bottom: .85rem; text-align: center; }
+  .cuota-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: .6rem; background: var(--surface); font-size: .875rem;
+  }
+  .cuota-row .cuota-info { display: flex; flex-direction: column; gap: .15rem; }
+  .cuota-row .cuota-num { font-weight: 700; }
+  .cuota-row .cuota-fecha { color: var(--muted); font-size: .8rem; }
+  .cuota-row .cuota-valor { font-weight: 700; color: var(--rust); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="result-center">
   <div class="icon" style="color:var(--rust);">💳</div>
@@ -7,4 +24,20 @@
   <p>Gracias, {{ purchase_request.customer.first_name }}. Tu compra fue confirmada{% if purchase_request.invoice %} — Factura #{{ purchase_request.invoice.id }}{% endif %}. Pronto recibirás más información.</p>
   <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark btn-lg">Volver al catálogo</a>
 </div>
+
+{% if purchase_request.invoice.tipo_pago == 'credito' %}
+<div class="cuotas-recap">
+  <h3>Tu cronograma de cuotas</h3>
+  {% for cuota in purchase_request.invoice.cuotas.all %}
+  <div class="cuota-row">
+    <div class="cuota-info">
+      <span class="cuota-num">Cuota {{ cuota.numero }}</span>
+      <span class="cuota-fecha">Vence el {{ cuota.fecha_vencimiento|date:"d/m/Y" }}</span>
+    </div>
+    <span class="cuota-valor">${{ cuota.valor }}</span>
+    <a href="{% url 'creditos_ventas:comprobante_cuota' cuota.pk %}" class="btn btn-outline btn-sm">Ver comprobante</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}

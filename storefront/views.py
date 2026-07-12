@@ -25,7 +25,7 @@ from billing.models import Product, ProductGroup, Customer, Brand
 from . import payphone
 from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
-from .services import confirm_purchase_request, InsufficientStockError
+from .services import confirm_purchase_request, confirm_purchase_request_credito, InsufficientStockError
 CART_SESSION_KEY = 'storefront_cart'
 
 
@@ -798,6 +798,27 @@ def pay_manual(request, pk):
         purchase_request.payment_method = 'manual'
         purchase_request.save()
     return redirect('storefront:request_success', pk=purchase_request.pk)
+
+
+def pay_with_credit(request, pk):
+    """Confirma el pedido a crédito directo: genera la Factura real y su
+    cronograma de cuotas de una sola vez."""
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if request.method != 'POST':
+        return redirect('storefront:payment_choice', pk=purchase_request.pk)
+
+    try:
+        numero_cuotas = int(request.POST.get('numero_cuotas', 0))
+    except ValueError:
+        numero_cuotas = 0
+
+    try:
+        confirm_purchase_request_credito(purchase_request, numero_cuotas)
+    except (InsufficientStockError, ValueError) as e:
+        messages.error(request, str(e))
+        return redirect('storefront:payment_choice', pk=purchase_request.pk)
+
+    return redirect('storefront:payment_success', pk=purchase_request.pk)
 
 
 def pay_with_card(request, pk):

@@ -12,6 +12,30 @@ from .models import CuotaVenta
 from .services import generar_cuotas, registrar_pago_cuota
 
 
+def comprobante_cuota(request, pk):
+    """Comprobante único e imprimible de una cuota: accesible por el cliente
+    dueño de la factura, o por el staff con permiso de ver cuotas."""
+    cuota = get_object_or_404(
+        CuotaVenta.objects.select_related('factura', 'factura__customer'), pk=pk
+    )
+    user = request.user
+    is_owner = hasattr(user, 'customer_profile') and user.customer_profile.pk == cuota.factura.customer_id
+    is_staff_viewer = user.is_authenticated and (user.is_superuser or user.has_perm('creditos_ventas.view_cuotaventa'))
+
+    if not (is_owner or is_staff_viewer):
+        from django.urls import reverse
+        request.session['next_after_login'] = reverse('creditos_ventas:comprobante_cuota', args=[cuota.pk])
+        messages.info(request, 'Inicia sesión para ver tu comprobante.')
+        return redirect('storefront:customer_login')
+
+    codigo = f'CV-{cuota.factura_id:05d}-{cuota.numero:02d}'
+    total_cuotas = cuota.factura.cuotas.count()
+
+    return render(request, 'creditos_ventas/comprobante_cuota.html', {
+        'cuota': cuota, 'codigo': codigo, 'total_cuotas': total_cuotas,
+    })
+
+
 @permission_required_any('creditos_ventas.add_cuotaventa')
 def generar_cuotas_view(request, factura_id):
     """Genera el cronograma de cuotas de una factura a crédito (una sola vez)."""

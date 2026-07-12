@@ -67,6 +67,67 @@ def confirm_purchase_request(purchase_request):
     return invoice
 
 
+def confirm_purchase_request_credito(purchase_request, numero_cuotas):
+    """Convierte una PurchaseRequest pendiente en una Factura a CRÉDITO, con
+    su cronograma de cuotas generado automáticamente.
+
+    Mismo mecanismo "todo o nada" que confirm_purchase_request (descuento de
+    stock atómico), más la verificación del límite de crédito del cliente:
+    si no hay stock suficiente o el crédito no alcanza, no se crea ni la
+    factura ni las cuotas, y no se descuenta nada.
+    """
+    from billing.services import check_credit_limit
+    from creditos_ventas.services import generar_cuotas
+
+    if numero_cuotas <= 0:
+        raise ValueError('El número de cuotas debe ser mayor a cero.')
+
+    with transaction.atomic():
+        invoice = Invoice.objects.create(customer=purchase_request.customer, tipo_pago='credito')
+
+        for detail in purchase_request.details.select_related('product'):
+            updated = Product.objects.filter(
+                pk=detail.product_id,
+                stock__gte=detail.quantity
+            ).update(stock=F('stock') - detail.quantity)
+            if not updated:
+                raise InsufficientStockError(
+                    f'"{detail.product.name}" ya no tiene stock suficiente '
+                    f'para confirmar {detail.quantity} unidades.'
+                )
+            InvoiceDetail.objects.create(
+                invoice=invoice,
+                product=detail.product,
+                quantity=detail.quantity,
+                unit_price=detail.unit_price,
+            )
+
+        subtotal = sum(d.subtotal for d in invoice.details.all())
+        invoice.subtotal = subtotal
+        invoice.tax = subtotal * Decimal('0.15')
+        invoice.total = invoice.subtotal + invoice.tax
+
+        check_credit_limit(purchase_request.customer, invoice.total)
+
+        invoice.saldo = invoice.total
+        invoice.estado = 'pendiente'
+        invoice.save()
+
+        generar_cuotas(invoice, numero_cuotas)
+
+        purchase_request.status = 'confirmada'
+        purchase_request.invoice = invoice
+        purchase_request.payment_method = 'credito'
+        purchase_request.reviewed_at = timezone.now()
+        purchase_request.save()
+
+    try:
+        _send_purchase_confirmation_email(purchase_request, invoice)
+    except Exception as e:
+        logger.exception('Error al enviar correo de confirmación para pedido #%s: %s', purchase_request.pk, e)
+    return invoice
+
+
 def _send_purchase_confirmation_email(purchase_request, invoice):
     """Envía un correo de confirmación al cliente cuando su compra se confirma.
     Si falla el envío, no interrumpe la confirmación (fail_silently)."""

@@ -11,6 +11,7 @@ class PurchaseRequest(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('manual', 'Revisión manual del proveedor'),
         ('tarjeta', 'Tarjeta de crédito/débito (PayPhone)'),
+        ('credito', 'Crédito directo (cuotas)'),
     ]
 
     customer = models.ForeignKey(

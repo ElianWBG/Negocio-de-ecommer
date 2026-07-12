@@ -10,13 +10,15 @@
   .recap-totals { margin-top: .75rem; padding-top: .75rem; border-top: 2px solid var(--border); }
   .recap-totals .row { display: flex; justify-content: space-between; font-size: .9rem; padding: .2rem 0; }
   .recap-totals .total { font-weight: 700; font-size: 1.1rem; color: var(--rust); }
-  .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .payment-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
   .pay-option { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 1.75rem; display: flex; flex-direction: column; transition: border-color var(--transition), box-shadow var(--transition); }
   .pay-option.featured { border-color: var(--rust); }
   .pay-option .icon { font-size: 2rem; margin-bottom: .75rem; }
   .pay-option h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: .5rem; }
   .pay-option p { color: var(--muted); font-size: .875rem; flex: 1; margin-bottom: 1.25rem; line-height: 1.6; }
+  @media (max-width: 900px) { .payment-options { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 560px) { .payment-options { grid-template-columns: 1fr; } }
+  .credit-cuota-estimate { font-size: .95rem; font-weight: 700; color: var(--rust); margin: .5rem 0 1rem; }
 </style>
 {% endblock %}
 {% block content %}
@@ -53,6 +55,23 @@
       </a>
     </div>
     <div class="pay-option">
+      <div class="icon" style="color:var(--rust);"><i class="bi bi-calendar3"></i></div>
+      <h3>Pagar a crédito</h3>
+      <p>Tu pedido se confirma de inmediato como factura a crédito, con un cronograma de cuotas mensuales.</p>
+      <form method="post" action="{% url 'storefront:pay_with_credit' purchase_request.pk %}" id="credit-form">
+        {% csrf_token %}
+        <label class="form-label" for="numero_cuotas" style="font-size:.85rem; font-weight:600; display:block; margin-bottom:.35rem;">Número de cuotas</label>
+        <select name="numero_cuotas" id="numero_cuotas" class="form-select" style="width:100%; height:42px; border:1.5px solid var(--border); border-radius:8px; padding:0 .6rem; margin-bottom:.25rem;">
+          <option value="3">3 cuotas</option>
+          <option value="6" selected>6 cuotas</option>
+          <option value="9">9 cuotas</option>
+          <option value="12">12 cuotas</option>
+        </select>
+        <p class="credit-cuota-estimate">Cuota estimada: <strong id="credit-cuota-monto">$0.00</strong>/mes</p>
+        <button type="submit" class="btn btn-primary btn-full">Confirmar compra a crédito</button>
+      </form>
+    </div>
+    <div class="pay-option">
       <div class="icon" style="color:var(--muted);">💬</div>
       <h3>Solicitar sin pagar ahora</h3>
       <p>El negocio revisará tu solicitud y se pondrá en contacto contigo para coordinar el pago y la entrega.</p>
@@ -63,4 +82,18 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  var select = document.getElementById('numero_cuotas');
+  var out = document.getElementById('credit-cuota-monto');
+  if (!select || !out) return;
+  var total = parseFloat('{{ purchase_request.total_estimado|stringformat:"f" }}') || 0;
+  function recalc() {
+    var n = parseInt(select.value, 10) || 1;
+    out.textContent = '$' + (total / n).toFixed(2);
+  }
+  select.addEventListener('change', recalc);
+  recalc();
+})();
+</script>
 {% endblock %}

@@ -30,6 +30,7 @@ urlpatterns = [
     path('solicitar/', views.checkout, name='checkout'),
     path('solicitud/<int:pk>/pago/', views.payment_choice, name='payment_choice'),
     path('solicitud/<int:pk>/pago/manual/', views.pay_manual, name='pay_manual'),
+    path('solicitud/<int:pk>/pago/credito/', views.pay_with_credit, name='pay_with_credit'),
     path('solicitud/<int:pk>/pago/tarjeta/', views.pay_with_card, name='pay_with_card'),
     path('solicitud/<int:pk>/pago/paypal/', views.pay_with_paypal, name='pay_with_paypal'),
     path('solicitud/<int:pk>/pago/paypal/create-order/', views.paypal_create_order, name='paypal_create_order'),
