@@ -34,6 +34,16 @@
           {% for error in form.document_number.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
         </div>
       </div>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Tipo de pago</label>
+          {{ form.tipo_pago }}
+          {% for error in form.tipo_pago.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          <small class="text-muted d-block mt-1">
+            Si eliges "Crédito" podrás generar un cronograma de cuotas desde el detalle de la compra.
+          </small>
+        </div>
+      </div>
       {% if form.non_field_errors %}
         <div class="text-danger small mb-3">{{ form.non_field_errors }}</div>
       {% endif %}

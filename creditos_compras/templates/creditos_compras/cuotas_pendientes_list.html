@@ -1,0 +1,75 @@
+{% extends 'billing/base.html' %}
+{% block title %}Cuotas de compras a crédito{% endblock %}
+{% block content %}
+<h2 class="mb-3">Cuotas de compras a crédito</h2>
+
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body pb-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label form-label-sm mb-1">Proveedor</label>
+        <input type="text" name="supplier" class="form-control form-control-sm" value="{{ request.GET.supplier }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label form-label-sm mb-1">Vence desde</label>
+        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label form-label-sm mb-1">Vence hasta</label>
+        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label form-label-sm mb-1">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>Pendientes</option>
+          <option value="pagada" {% if estado_filtro == 'pagada' %}selected{% endif %}>Pagadas</option>
+          <option value="todas" {% if estado_filtro == 'todas' %}selected{% endif %}>Todas</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-sm btn-primary">Buscar</button>
+        <a href="{% url 'creditos_compras:cuotas_pendientes_list' %}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body">
+    <div class="small text-muted">Total pendiente por pagar (según filtros)</div>
+    <div class="fs-3 fw-bold text-danger">${{ total_pendiente }}</div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <table class="table table-striped table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Compra</th><th>Proveedor</th><th>N° cuota</th><th>Vencimiento</th><th>Valor</th><th>Saldo</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cuotas %}
+        <tr class="{% if c.estado == 'pendiente' and c.fecha_vencimiento < hoy %}table-danger{% elif c.estado == 'pendiente' and c.fecha_vencimiento <= limite_proximo %}table-warning{% endif %}">
+          <td><a href="{% url 'creditos_compras:cuota_list' c.compra_id %}">#{{ c.compra_id }}</a></td>
+          <td>{{ c.compra.supplier }}</td>
+          <td>{{ c.numero }}</td>
+          <td>{{ c.fecha_vencimiento|date:"d/m/Y" }}</td>
+          <td>${{ c.valor }}</td>
+          <td><strong>${{ c.saldo }}</strong></td>
+          <td>
+            {% if c.estado == 'pagada' %}<span class="badge bg-success">Pagada</span>
+            {% elif c.fecha_vencimiento < hoy %}<span class="badge bg-danger">Vencida</span>
+            {% elif c.fecha_vencimiento <= limite_proximo %}<span class="badge bg-warning text-dark">Próxima a vencer</span>
+            {% else %}<span class="badge bg-secondary">Pendiente</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No hay cuotas para los filtros seleccionados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

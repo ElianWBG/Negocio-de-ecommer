@@ -14,10 +14,15 @@ from .models import PagoCompra
 
 @permission_required_any('pagos.view_pagocompra')
 def purchase_pending_list(request):
-    """Lista únicamente las compras a crédito que aún tienen saldo pendiente."""
+    """Lista únicamente las compras a crédito que aún tienen saldo pendiente.
+
+    Las compras que ya tienen un cronograma de cuotas generado (app
+    creditos_compras) se excluyen de aquí: sus pagos se registran por
+    cuota, no como abono libre contra el saldo total.
+    """
     purchases = Purchase.objects.filter(
         tipo_pago='credito', estado='pendiente'
-    ).select_related('supplier').order_by('-purchase_date')
+    ).exclude(cuotas__isnull=False).select_related('supplier').order_by('-purchase_date')
 
     g = request.GET
     if supplier := g.get('supplier', '').strip():
@@ -34,6 +39,14 @@ def pago_create(request, compra_id):
     if compra.estado == 'anulada':
         messages.error(request, 'No se puede registrar un pago sobre una compra anulada.')
         return redirect('pagos:purchase_pending_list')
+
+    if compra.cuotas.exists():
+        messages.error(
+            request,
+            'Esta compra tiene un cronograma de cuotas generado. '
+            'Registra los pagos desde el módulo de cuotas.'
+        )
+        return redirect('creditos_compras:cuota_list', compra_id=compra.id)
 
     if request.method == 'POST':
         form = PagoCompraForm(request.POST, initial={'compra': compra})

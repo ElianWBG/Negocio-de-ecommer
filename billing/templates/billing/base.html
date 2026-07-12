@@ -347,6 +347,11 @@
       <i class="bi bi-cash-stack"></i> Cuentas por pagar
     </a>
     {% endif %}
+    {% if perms.creditos_compras.view_cuotacompra %}
+    <a href="{% url 'creditos_compras:cuotas_pendientes_list' %}" class="sidebar-link {% if '/creditos-compras/' in request.path %}active{% endif %}">
+      <i class="bi bi-calendar3"></i> Cuotas de crédito
+    </a>
+    {% endif %}
     {% if perms.billing.view_invoice or perms.purchasing.view_purchase or perms.billing.view_product %}
     <a href="{% url 'reportes:index' %}" class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}">
       <i class="bi bi-graph-up"></i> Reportes financieros

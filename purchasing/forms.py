@@ -7,13 +7,14 @@ class PurchaseForm(forms.ModelForm):
     """Formulario para la cabecera de la compra."""
     class Meta:
         model = Purchase
-        fields = ['supplier', 'document_number']
+        fields = ['supplier', 'document_number', 'tipo_pago']
         widgets = {
             'supplier': forms.Select(attrs={'class': 'form-select'}),
             'document_number': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'N° de factura del proveedor',
             }),
+            'tipo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
 
 

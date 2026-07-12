@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'storefront',
     'cobros',
     'pagos',
+    'creditos_compras',
     'reportes',
     'security',
     'widget_tweaks',

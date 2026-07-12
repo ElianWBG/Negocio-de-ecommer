@@ -44,6 +44,12 @@ def _get_export_value(obj, col_key):
         return obj.total
     elif col_key == 'is_active':
         return 'Activo' if obj.is_active else 'Inactivo'
+    elif col_key == 'tipo_pago':
+        return obj.get_tipo_pago_display()
+    elif col_key == 'estado':
+        return obj.get_estado_display()
+    elif col_key == 'saldo':
+        return obj.saldo
     return getattr(obj, col_key, '-')
 
 
@@ -119,6 +125,11 @@ def purchase_create(request):
                     purchase.subtotal = subtotal
                     purchase.tax = subtotal * Decimal('0.15')   # IVA 15%
                     purchase.total = purchase.subtotal + purchase.tax
+
+                    if purchase.tipo_pago == 'credito':
+                        purchase.saldo = purchase.total
+                        purchase.estado = 'pendiente'
+
                     purchase.save()
 
                     # Reto opcional: la compra reabastece inventario (la venta resta, la compra suma)
@@ -163,6 +174,8 @@ def purchase_detail(request, pk):
         'purchase': purchase,
         'details': details,
         'total_units': sum(d.quantity for d in details),
+        'tiene_cuotas': purchase.cuotas.exists(),
+        'tiene_pagos_libres': purchase.pagos.exists(),
     })
 
 

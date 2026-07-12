@@ -46,6 +46,12 @@ class Purchase(models.Model):
     def __str__(self):
         return f'Purchase #{self.id} - {self.supplier}'
 
+    def save(self, *args, **kwargs):
+        if self.tipo_pago == 'contado' and self.estado != 'anulada':
+            self.saldo = Decimal('0')
+            self.estado = 'pagada'
+        super().save(*args, **kwargs)
+
 
 class PurchaseDetail(models.Model):
     """Líneas de compra. Cada fila es un producto adquirido."""

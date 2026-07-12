@@ -1,0 +1,44 @@
+{% extends 'billing/base.html' %}
+{% block title %}Registrar pago de cuota{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-primary text-white py-3">
+        <h4 class="mb-0">Registrar pago — Cuota {{ cuota.numero }} (Compra #{{ cuota.compra_id }})</h4>
+      </div>
+      <div class="card-body p-4">
+        <p class="mb-1">Proveedor: <strong>{{ cuota.compra.supplier }}</strong></p>
+        <p class="mb-1">Valor de la cuota: <strong>${{ cuota.valor }}</strong></p>
+        <p class="mb-3">Saldo actual: <strong>${{ cuota.saldo }}</strong></p>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form.cuota }}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fecha de pago</label>
+            {{ form.fecha }}
+            {% for error in form.fecha.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor</label>
+            {{ form.valor }}
+            {% for error in form.valor.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Observación</label>
+            {{ form.observacion }}
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4">Guardar</button>
+            <a href="{% url 'creditos_compras:cuota_payment_history' cuota.pk %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

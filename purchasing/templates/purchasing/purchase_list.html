@@ -83,6 +83,17 @@
               <td><strong class="text-success">${{ item.total }}</strong></td>
               {% elif col_key == 'is_active' %}
               <td>{% if item.is_active %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}</td>
+              {% elif col_key == 'tipo_pago' %}
+              <td>{% if item.tipo_pago == 'credito' %}<span class="badge bg-warning text-dark">Crédito</span>{% else %}<span class="badge bg-info text-dark">Contado</span>{% endif %}</td>
+              {% elif col_key == 'estado' %}
+              <td>
+                {% if item.estado == 'pagada' %}<span class="badge bg-success">Pagada</span>
+                {% elif item.estado == 'anulada' %}<span class="badge bg-secondary">Anulada</span>
+                {% elif item.estado == 'parcial' %}<span class="badge bg-primary">Parcial</span>
+                {% else %}<span class="badge bg-warning text-dark">Pendiente</span>{% endif %}
+              </td>
+              {% elif col_key == 'saldo' %}
+              <td>${{ item.saldo }}</td>
               {% endif %}
             {% endfor %}
             <td class="text-end text-nowrap">

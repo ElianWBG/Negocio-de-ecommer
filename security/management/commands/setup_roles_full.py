@@ -30,12 +30,16 @@ ROLES = {
         'view_product', 'add_product', 'change_product', 'delete_product',
         # Compras a proveedores
         'view_purchase', 'add_purchase', 'delete_purchase',
+        # Generar el cronograma de cuotas de una compra a crédito
+        'view_cuotacompra', 'add_cuotacompra',
     ],
 
     # Contador / Finanzas: cuentas por cobrar/pagar y reportes financieros
     'Contador': [
         'view_cobrofactura', 'add_cobrofactura', 'change_cobrofactura', 'delete_cobrofactura',
         'view_pagocompra', 'add_pagocompra', 'change_pagocompra', 'delete_pagocompra',
+        'view_cuotacompra', 'change_cuotacompra',
+        'view_pagocuotacompra', 'add_pagocuotacompra',
         'view_invoice', 'view_purchase', 'view_invoicedetail', 'view_product', 'view_customer', 'view_supplier',
     ],
 

@@ -45,6 +45,45 @@
             <small class="text-muted d-block mb-1">TOTAL</small>
             <strong style="font-size: 1.8rem; color: #155724;">${{ purchase.total }}</strong>
           </div>
+
+          <div class="text-center mb-3">
+            {% if purchase.tipo_pago == 'credito' %}
+              <span class="badge bg-warning text-dark p-2 me-1" style="font-size: 0.9rem;">Crédito</span>
+            {% else %}
+              <span class="badge bg-info text-dark p-2 me-1" style="font-size: 0.9rem;">Contado</span>
+            {% endif %}
+            {% if purchase.estado == 'pagada' %}
+              <span class="badge bg-success p-2" style="font-size: 0.9rem;">Pagada</span>
+            {% elif purchase.estado == 'anulada' %}
+              <span class="badge bg-secondary p-2" style="font-size: 0.9rem;">Anulada</span>
+            {% elif purchase.estado == 'parcial' %}
+              <span class="badge bg-primary p-2" style="font-size: 0.9rem;">Parcial</span>
+            {% else %}
+              <span class="badge bg-warning text-dark p-2" style="font-size: 0.9rem;">Pendiente</span>
+            {% endif %}
+          </div>
+          {% if purchase.tipo_pago == 'credito' %}
+          <div class="alert alert-light text-center border" role="alert">
+            <small class="text-muted d-block mb-1">Saldo pendiente</small>
+            <strong style="font-size: 1.1rem;">${{ purchase.saldo }}</strong>
+          </div>
+          {% if tiene_cuotas %}
+            <a href="{% url 'creditos_compras:cuota_list' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
+              <i class="bi bi-calendar3"></i> Ver cuotas
+            </a>
+          {% elif tiene_pagos_libres %}
+            <a href="{% url 'pagos:payment_history' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
+              <i class="bi bi-cash-stack"></i> Ver pagos
+            </a>
+          {% elif purchase.estado == 'pendiente' %}
+            <a href="{% url 'creditos_compras:generar_cuotas' purchase.id %}" class="btn btn-warning w-100 mb-2">
+              <i class="bi bi-calendar-plus"></i> Generar Cuotas
+            </a>
+            <a href="{% url 'pagos:pago_create' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
+              <i class="bi bi-cash-stack"></i> Registrar pago libre
+            </a>
+          {% endif %}
+          {% endif %}
         </div>
       </div>
 
