@@ -2625,6 +2625,8 @@ def delete_user(request, pk):
 def verify_panel_code(request):
     from django.contrib.auth import get_user_model
     from .models import PanelVerificationCode
+    import logging
+    logger = logging.getLogger(__name__)
 
     User = get_user_model()
 
@@ -2686,8 +2688,10 @@ def verify_panel_code(request):
         try:
             user = User.objects.get(email=email)
             needs_password = not user.has_usable_password()
-        except User.DoesNotExist:
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
             pass
+        except Exception as e:
+            logger.error(f'Error en verify_panel_code: {e}', exc_info=True)
 
     return render(request, 'billing/verify_code.html', {
         'show_password': needs_password,
