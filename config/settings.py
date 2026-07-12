@@ -65,6 +65,10 @@ EMAIL_TIMEOUT = 10
 ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', default='')
 PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
 PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
+# Segundos de espera máx. por llamada a PayPal antes de abortar (evita colgar el worker).
+PAYPAL_TIMEOUT = env.int('PAYPAL_TIMEOUT', default=20)
+# Total de intentos por llamada (incluye el primero) ante fallos transitorios: timeout, 5xx, red caída.
+PAYPAL_MAX_ATTEMPTS = env.int('PAYPAL_MAX_ATTEMPTS', default=3)
 SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
 # Application definition

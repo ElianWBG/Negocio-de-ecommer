@@ -933,13 +933,43 @@ def purchase_request_reject(request, pk):
 # PayPal
 # ---------------------------------------------------------------------
 
+def _paypal_request(url, data, headers, timeout=None, attempts=None):
+    """Hace un POST a PayPal y devuelve el JSON. Reintenta ante fallos
+    transitorios (timeout, 5xx, red caída), causa típica del error
+    intermitente. Timeout y nº de intentos configurables por env
+    (PAYPAL_TIMEOUT, PAYPAL_MAX_ATTEMPTS). Lanza Exception si falla todo."""
+    import json, time, urllib.request, urllib.error, socket
+    if timeout is None:
+        timeout = getattr(settings, 'PAYPAL_TIMEOUT', 20)
+    if attempts is None:
+        attempts = max(1, getattr(settings, 'PAYPAL_MAX_ATTEMPTS', 3))
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode(errors='replace')
+            # 4xx (ej. pago rechazado) no se reintenta; 5xx sí.
+            if e.code < 500:
+                raise Exception(f'PayPal {e.code}: {body}')
+            last_error = Exception(f'PayPal {e.code}: {body}')
+        except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+            last_error = e
+        if attempt < attempts - 1:
+            # Backoff exponencial: 0.5s, 1s, 2s...
+            time.sleep(0.5 * (2 ** attempt))
+    raise last_error
+
+
 def _paypal_access_token():
     """Obtiene un access token de la API de PayPal sandbox."""
-    import json, urllib.request, base64
+    import base64
     credentials = base64.b64encode(
         f'{settings.PAYPAL_CLIENT_ID}:{settings.PAYPAL_SECRET}'.encode()
     ).decode()
-    req = urllib.request.Request(
+    data = _paypal_request(
         'https://api-m.sandbox.paypal.com/v1/oauth2/token',
         data=b'grant_type=client_credentials',
         headers={
@@ -947,8 +977,7 @@ def _paypal_access_token():
             'Content-Type': 'application/x-www-form-urlencoded',
         },
     )
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())['access_token']
+    return data['access_token']
 
 
 def pay_with_paypal(request, pk):
@@ -962,12 +991,12 @@ def pay_with_paypal(request, pk):
 @require_POST
 def paypal_create_order(request, pk):
     """Crea una orden en PayPal server-side y devuelve el order ID."""
-    import json, urllib.request
+    import json
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     total = '{:.2f}'.format(purchase_request.total_estimado)
     try:
         token = _paypal_access_token()
-        req = urllib.request.Request(
+        order = _paypal_request(
             'https://api-m.sandbox.paypal.com/v2/checkout/orders',
             data=json.dumps({
                 'intent': 'CAPTURE',
@@ -981,26 +1010,26 @@ def paypal_create_order(request, pk):
                 'Content-Type': 'application/json',
             },
         )
-        with urllib.request.urlopen(req) as resp:
-            order = json.loads(resp.read())
         return JsonResponse({'id': order['id']})
     except Exception as e:
         logger.exception('PayPal error: %s', e)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'No se pudo iniciar el pago. Intenta de nuevo.'}, status=502)
 
 
 def paypal_capture(request, pk):
     """Captura el pago después de que PayPal lo aprueba."""
-    import json, urllib.request
+    import json
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
 
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=pk)
 
-    order_id = json.loads(request.body).get('orderID')
     try:
+        order_id = json.loads(request.body).get('orderID')
+        if not order_id:
+            return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
         token = _paypal_access_token()
-        req = urllib.request.Request(
+        capture_data = _paypal_request(
             f'https://api-m.sandbox.paypal.com/v2/checkout/orders/{order_id}/capture',
             data=b'{}',
             headers={
@@ -1008,11 +1037,11 @@ def paypal_capture(request, pk):
                 'Content-Type': 'application/json',
             },
         )
-        with urllib.request.urlopen(req) as resp:
-            capture_data = json.loads(resp.read())
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
     except Exception as e:
         logger.exception('PayPal error: %s', e)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
 
     if capture_data.get('status') == 'COMPLETED':
         purchase_request.payment_method = 'tarjeta'
