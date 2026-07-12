@@ -5,14 +5,21 @@
   <div class="col-md-5">
     <div class="card shadow">
       <div class="card-header bg-dark text-white">
-        <h4>{% if show_password %}Crear contraseña{% else %}Verificar código{% endif %}</h4>
+        <h4>{% if show_password %}Crear contraseña{% else %}Verificar cuenta{% endif %}</h4>
       </div>
       <div class="card-body">
-        {% if show_password %}
-        <p class="text-muted">Tu cuenta fue creada por un administrador. Ingresa el código y crea una contraseña para activarla.</p>
-        {% else %}
-        <p class="text-muted">Ingresa el código que enviamos a tu correo para activar tu cuenta.</p>
+        {% if verify_user %}
+        <div style="background: #f0f4ff; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; border-left: 4px solid #1D2B4A;">
+          <p style="margin: 0 0 4px; font-weight: 600; color: #1D2B4A;">{{ verify_user.username }}</p>
+          <p style="margin: 0; font-size: 13px; color: #555;">{{ verify_user.email }}</p>
+          {% if verify_user.groups.all %}
+          <p style="margin: 4px 0 0; font-size: 13px; color: #555;">
+            Rol: {% for g in verify_user.groups.all %}<span style="background: #e0e7ff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">{{ g.name }}</span>{% endfor %}
+          </p>
+          {% endif %}
+        </div>
         {% endif %}
+        <p class="text-muted">Se ha creado una cuenta para ti. Ingresa el código de verificación para activarla.</p>
         <form method="post">
           {% csrf_token %}
           <div class="mb-3">

@@ -2674,14 +2674,20 @@ def verify_panel_code(request):
         messages.success(request, 'Cuenta verificada. Ahora puedes iniciar sesión.')
         return redirect('login')
 
+    verify_user = None
     show_pw = False
     email = request.GET.get('email', '')
     if email:
         user = User.objects.filter(email=email).first()
-        if user and not user.has_usable_password():
-            show_pw = True
+        if user:
+            verify_user = user
+            if not user.has_usable_password():
+                show_pw = True
 
-    return render(request, 'billing/verify_code.html', {'show_password': show_pw})
+    return render(request, 'billing/verify_code.html', {
+        'show_password': show_pw,
+        'verify_user': verify_user,
+    })
 
 
 # ─────────────────────────────────────────────
