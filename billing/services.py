@@ -311,7 +311,7 @@ def _generate_verification_code():
     return f'{secrets.randbelow(1000000):06d}'
 
 
-def _send_panel_verification_code(user):
+def _send_panel_verification_code(user, request=None):
     if not user.email:
         return None
     code_obj, created = PanelVerificationCode.objects.update_or_create(
@@ -319,7 +319,10 @@ def _send_panel_verification_code(user):
         defaults={'code': _generate_verification_code(), 'is_used': False},
     )
     from django.urls import reverse
-    verify_url = f'{settings.SITE_URL}{reverse("billing:verify_panel_code")}'
+    if request:
+        verify_url = request.build_absolute_uri(reverse('billing:verify_panel_code'))
+    else:
+        verify_url = f'{settings.SITE_URL}{reverse("billing:verify_panel_code")}'
     subject = 'Tu código de verificación — Panel de Administración'
     html_content = render_to_string('billing/emails/verification_code.html', {
         'user': user,

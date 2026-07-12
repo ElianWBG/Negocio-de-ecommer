@@ -18,7 +18,7 @@
           <div class="mb-3">
             <label class="form-label">Correo electrónico</label>
             <input type="email" name="email" class="form-control" required
-                   value="{{ request.GET.email|default:'' }}">
+                   value="{{ request.POST.email|default:request.GET.email|default:'' }}">
           </div>
           <div class="mb-3">
             <label class="form-label">Código de verificación</label>

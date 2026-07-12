@@ -204,7 +204,7 @@ class SignUpView(CreateView):
         self.object.is_active = False
         self.object.save(update_fields=['is_active'])
         from billing.services import _send_panel_verification_code
-        _send_panel_verification_code(self.object)
+        _send_panel_verification_code(self.object, request=self.request)
         messages.success(self.request, f'Se ha enviado un código de verificación a {self.object.email}. Revisa tu correo.')
         return response
 
@@ -2583,7 +2583,7 @@ def user_management(request):
                     except Group.DoesNotExist:
                         pass
                 from billing.services import _send_panel_verification_code
-                _send_panel_verification_code(u)
+                _send_panel_verification_code(u, request=request)
                 messages.success(request, f'Usuario {username} creado. Se ha enviado un enlace de verificación a {email}.')
 
         return redirect('billing:user_management')
@@ -2658,7 +2658,7 @@ def verify_panel_code(request):
 
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        needs_password = user.has_usable_password() is False
+        needs_password = not user.has_usable_password()
 
         if needs_password:
             if not password or len(password) < 6:
@@ -2685,7 +2685,7 @@ def verify_panel_code(request):
     if email:
         try:
             user = User.objects.get(email=email)
-            needs_password = user.has_usable_password() is False
+            needs_password = not user.has_usable_password()
         except User.DoesNotExist:
             pass
 
