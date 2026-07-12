@@ -197,10 +197,15 @@ def home(request):
 class SignUpView(CreateView):
     form_class = SignUpForm
     template_name = 'registration/signup.html'
-    success_url = reverse_lazy('billing:home')
+    success_url = reverse_lazy('billing:verify_panel_code')
+
     def form_valid(self, form):
         response = super().form_valid(form)
-        login(self.request, self.object)
+        self.object.is_active = False
+        self.object.save(update_fields=['is_active'])
+        from billing.services import _send_panel_verification_code
+        _send_panel_verification_code(self.object)
+        messages.success(self.request, f'Se ha enviado un código de verificación a {self.object.email}. Revisa tu correo.')
         return response
 
 # === BRAND (FBV) ===
@@ -2567,14 +2572,18 @@ def user_management(request):
                 messages.error(request, 'Usuario y contraseña son obligatorios.')
             elif User.objects.filter(username=username).exists():
                 messages.error(request, f'El usuario "{username}" ya existe.')
+            elif not email:
+                messages.error(request, 'El correo electrónico es obligatorio para crear un usuario.')
             else:
-                u = User.objects.create_user(username=username, email=email, password=password)
+                u = User.objects.create_user(username=username, email=email, password=password, is_active=False)
                 if group_name:
                     try:
                         u.groups.add(Group.objects.get(name=group_name))
                     except Group.DoesNotExist:
                         pass
-                messages.success(request, f'Usuario {username} creado correctamente.')
+                from billing.services import _send_panel_verification_code
+                _send_panel_verification_code(u)
+                messages.success(request, f'Usuario {username} creado. Se ha enviado un código de verificación a {email}.')
 
         return redirect('billing:user_management')
 
@@ -2606,6 +2615,54 @@ def delete_user(request, pk):
         return redirect('billing:user_management')
 
     return render(request, 'billing/user_delete_confirm.html', {'target_user': target})
+
+
+# ─────────────────────────────────────────────
+# Verificación de código del panel
+# ─────────────────────────────────────────────
+
+def verify_panel_code(request):
+    from django.contrib.auth import get_user_model
+    from .models import PanelVerificationCode
+
+    User = get_user_model()
+
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        code = request.POST.get('code', '').strip()
+
+        if not email or not code:
+            messages.error(request, 'Completa ambos campos.')
+            return render(request, 'billing/verify_code.html')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, 'No existe un usuario con ese correo.')
+            return render(request, 'billing/verify_code.html')
+
+        try:
+            vc = PanelVerificationCode.objects.get(user=user, is_used=False)
+        except PanelVerificationCode.DoesNotExist:
+            messages.error(request, 'No hay un código de verificación pendiente. Solicita uno nuevo.')
+            return render(request, 'billing/verify_code.html')
+
+        if vc.is_expired:
+            messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
+            return render(request, 'billing/verify_code.html')
+
+        if vc.code != code:
+            messages.error(request, 'Código incorrecto. Intenta de nuevo.')
+            return render(request, 'billing/verify_code.html')
+
+        vc.is_used = True
+        vc.save()
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        messages.success(request, 'Correo verificado correctamente. Ahora puedes iniciar sesión.')
+        return redirect('login')
+
+    return render(request, 'billing/verify_code.html')
 
 
 # ─────────────────────────────────────────────

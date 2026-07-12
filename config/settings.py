@@ -46,8 +46,12 @@ PAYPHONE_TOKEN = env('PAYPHONE_TOKEN', default='')
 PAYPHONE_STORE_ID = env('PAYPHONE_STORE_ID', default='')
 
 # Email — en desarrollo imprime en la terminal (EMAIL_BACKEND=console).
-# En producción configura EMAIL_HOST, EMAIL_PORT, etc. en el .env.
-EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+# En Railway usa SendGrid automáticamente si SENDGRID_API_KEY está definida.
+SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
+if SENDGRID_API_KEY:
+    EMAIL_BACKEND = 'config.email_backend.SendGridEmailBackend'
+else:
+    EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
@@ -61,7 +65,6 @@ EMAIL_TIMEOUT = 10
 ADMIN_NOTIFICATION_EMAIL = env('ADMIN_NOTIFICATION_EMAIL', default='')
 PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
 PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
-SENDGRID_API_KEY = env('SENDGRID_API_KEY', default='')
 
 # Application definition
 

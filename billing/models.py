@@ -331,3 +331,23 @@ class AuditLog(models.Model):
     def __str__(self):
         return f'[{self.action}] {self.model_name} #{self.object_id} by {self.user}'
 
+
+class PanelVerificationCode(models.Model):
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='panel_verification_code')
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Código de verificación del panel'
+        verbose_name_plural = 'Códigos de verificación del panel'
+
+    def __str__(self):
+        return f'Código para {self.user.username}'
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() > self.created_at + timedelta(hours=24)
+

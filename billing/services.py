@@ -1,6 +1,12 @@
+import secrets
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from .models import PanelVerificationCode
 
 
 def _clave_acceso_demo(invoice, config):
@@ -299,3 +305,33 @@ def check_credit_limit(customer, new_invoice_total):
             f'Este cliente tiene ${pending_debt:.2f} de deuda pendiente y un límite de '
             f'crédito de ${limit:.2f}. La factura de ${total:.2f} excedería ese límite.'
         )
+
+
+def _generate_verification_code():
+    return f'{secrets.randbelow(1000000):06d}'
+
+
+def _send_panel_verification_code(user):
+    if not user.email:
+        return None
+    code_obj, created = PanelVerificationCode.objects.update_or_create(
+        user=user,
+        defaults={'code': _generate_verification_code(), 'is_used': False},
+    )
+    subject = 'Tu código de verificación — Panel de Administración'
+    html_content = render_to_string('billing/emails/verification_code.html', {
+        'user': user,
+        'code': code_obj.code,
+    })
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=strip_tags(html_content),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[user.email],
+    )
+    msg.attach_alternative(html_content, 'text/html')
+    try:
+        msg.send(fail_silently=False)
+    except Exception:
+        pass
+    return code_obj

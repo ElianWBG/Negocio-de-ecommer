@@ -72,6 +72,10 @@ urlpatterns = [
     # Configuración del negocio
     path('configuracion/', views.config_negocio_edit, name='config_negocio'),
 
+    # Verificación de código
+    path('verify/', views.verify_panel_code, name='verify_panel_code'),
+    path('verify/<int:user_id>/', views.verify_panel_code, name='verify_panel_code_with_user'),
+
     # Gestión de usuarios
     path('usuarios/', views.user_management, name='user_management'),
     path('usuarios/<int:pk>/eliminar/', views.delete_user, name='delete_user'),
