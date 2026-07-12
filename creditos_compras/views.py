@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
+from billing.models import Supplier
 from purchasing.models import Purchase
 from shared.decorators import permission_required_any
 
@@ -126,7 +127,7 @@ def cuotas_pendientes_list(request):
         cuotas = cuotas.filter(estado=estado)
 
     if supplier := g.get('supplier', '').strip():
-        cuotas = cuotas.filter(compra__supplier__name__icontains=supplier)
+        cuotas = cuotas.filter(compra__supplier_id=supplier)
     if date_from := g.get('date_from', '').strip():
         cuotas = cuotas.filter(fecha_vencimiento__gte=date_from)
     if date_to := g.get('date_to', '').strip():
@@ -142,4 +143,5 @@ def cuotas_pendientes_list(request):
         'limite_proximo': hoy + timedelta(days=7),
         'total_pendiente': total_pendiente,
         'estado_filtro': estado,
+        'suppliers': Supplier.objects.order_by('name'),
     })

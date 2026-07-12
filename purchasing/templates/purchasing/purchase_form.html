@@ -39,8 +39,14 @@
           <label class="form-label fw-bold">Tipo de pago</label>
           {{ form.tipo_pago }}
           {% for error in form.tipo_pago.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6" id="cuotas-field-wrapper" style="display:none;">
+          <label class="form-label fw-bold">Número de cuotas</label>
+          {{ form.numero_cuotas }}
+          {% for error in form.numero_cuotas.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           <small class="text-muted d-block mt-1">
-            Si eliges "Crédito" podrás generar un cronograma de cuotas desde el detalle de la compra.
+            Cuota estimada: <strong id="cuota-estimada">$0.00</strong> cada 30 días.
+            Si lo dejas en blanco, podrás generar las cuotas después desde el detalle de la compra.
           </small>
         </div>
       </div>
@@ -212,6 +218,43 @@
     document.getElementById('purchase-subtotal').textContent = '$' + subtotal.toFixed(2);
     document.getElementById('purchase-tax').textContent = '$' + tax.toFixed(2);
     document.getElementById('purchase-total').textContent = '$' + total.toFixed(2);
+
+    recalcCuotaEstimada(total);
+  }
+
+  // Muestra/oculta el campo "Número de cuotas" según el tipo de pago,
+  // y calcula en vivo cuánto valdría cada cuota (total / número de cuotas).
+  var tipoPagoSelect = document.getElementById('id_tipo_pago');
+  var cuotasWrapper = document.getElementById('cuotas-field-wrapper');
+  var numeroCuotasInput = document.getElementById('id_numero_cuotas');
+  var cuotaEstimadaEl = document.getElementById('cuota-estimada');
+
+  function recalcCuotaEstimada(total) {
+    if (!cuotaEstimadaEl) return;
+    var n = parseInt(numeroCuotasInput && numeroCuotasInput.value, 10);
+    if (n > 0) {
+      cuotaEstimadaEl.textContent = '$' + (total / n).toFixed(2);
+    } else {
+      cuotaEstimadaEl.textContent = '$0.00';
+    }
+  }
+
+  function toggleCuotasField() {
+    if (!tipoPagoSelect || !cuotasWrapper) return;
+    var esCredito = tipoPagoSelect.value === 'credito';
+    cuotasWrapper.style.display = esCredito ? '' : 'none';
+    if (!esCredito && numeroCuotasInput) numeroCuotasInput.value = '';
+  }
+
+  if (tipoPagoSelect) {
+    tipoPagoSelect.addEventListener('change', function () {
+      toggleCuotasField();
+      recalcTotals();
+    });
+    toggleCuotasField();
+  }
+  if (numeroCuotasInput) {
+    numeroCuotasInput.addEventListener('input', recalcTotals);
   }
 
   function attachRemove(btn) {

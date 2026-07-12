@@ -12,6 +12,8 @@ from billing.models import Product, Supplier
 from shared.decorators import audit_action, permission_required_any
 from shared.column_export import export_visible_columns_excel, export_visible_columns_pdf
 
+from creditos_compras.services import generar_cuotas
+
 from .column_config import (
     get_purchase_visible_columns, get_all_purchase_columns,
     validate_purchase_visible_columns, PURCHASE_DEFAULT_VISIBLE_COLUMNS
@@ -137,6 +139,13 @@ def purchase_create(request):
                         Product.objects.filter(pk=detail.product_id).update(
                             stock=F('stock') + detail.quantity
                         )
+
+                    # Si es a crédito y se indicó número de cuotas, se genera
+                    # el cronograma de una vez (si no, queda pendiente y se
+                    # puede generar después desde el detalle de la compra).
+                    numero_cuotas = form.cleaned_data.get('numero_cuotas')
+                    if purchase.tipo_pago == 'credito' and numero_cuotas:
+                        generar_cuotas(purchase, numero_cuotas)
             except IntegrityError:
                 messages.error(
                     request,
@@ -144,13 +153,14 @@ def purchase_create(request):
                     f'"{form.cleaned_data.get("document_number")}" para este proveedor.'
                 )
             else:
-                messages.success(
-                    request,
-                    f'Compra #{purchase.id} registrada. Total: ${purchase.total}'
-                )
+                mensaje = f'Compra #{purchase.id} registrada. Total: ${purchase.total}'
+                if purchase.tipo_pago == 'credito' and form.cleaned_data.get('numero_cuotas'):
+                    mensaje += f'. Se generaron {form.cleaned_data["numero_cuotas"]} cuotas.'
+                messages.success(request, mensaje)
                 return redirect('purchasing:purchase_list')
     else:
-        form = PurchaseForm()
+        siguiente_numero = f'OC-{Purchase.objects.count() + 1:06d}'
+        form = PurchaseForm(initial={'document_number': siguiente_numero})
         formset = PurchaseDetailFormSet()
 
     return render(request, 'purchasing/purchase_form.html', {

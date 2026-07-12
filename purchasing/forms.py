@@ -5,6 +5,13 @@ from .models import Purchase, PurchaseDetail
 
 class PurchaseForm(forms.ModelForm):
     """Formulario para la cabecera de la compra."""
+
+    numero_cuotas = forms.IntegerField(
+        required=False, min_value=1,
+        label='Número de cuotas',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+    )
+
     class Meta:
         model = Purchase
         fields = ['supplier', 'document_number', 'tipo_pago']
@@ -16,6 +23,13 @@ class PurchaseForm(forms.ModelForm):
             }),
             'tipo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        numero_cuotas = cleaned_data.get('numero_cuotas')
+        if numero_cuotas and cleaned_data.get('tipo_pago') != 'credito':
+            self.add_error('numero_cuotas', 'El número de cuotas solo aplica a compras a crédito.')
+        return cleaned_data
 
 
 # Formset: permite agregar MÚLTIPLES líneas de producto dentro de UNA compra.

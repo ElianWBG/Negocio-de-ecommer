@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
+from billing.models import Supplier
 from purchasing.models import Purchase
 from shared.decorators import permission_required_any
 from .forms import PagoCompraForm
@@ -26,9 +27,12 @@ def purchase_pending_list(request):
 
     g = request.GET
     if supplier := g.get('supplier', '').strip():
-        purchases = purchases.filter(supplier__name__icontains=supplier)
+        purchases = purchases.filter(supplier_id=supplier)
 
-    return render(request, 'pagos/purchase_pending_list.html', {'purchases': purchases})
+    return render(request, 'pagos/purchase_pending_list.html', {
+        'purchases': purchases,
+        'suppliers': Supplier.objects.order_by('name'),
+    })
 
 
 @permission_required_any('pagos.add_pagocompra')

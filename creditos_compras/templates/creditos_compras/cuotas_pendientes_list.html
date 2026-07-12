@@ -8,7 +8,12 @@
     <form method="get" class="row g-2 align-items-end">
       <div class="col-md-3">
         <label class="form-label form-label-sm mb-1">Proveedor</label>
-        <input type="text" name="supplier" class="form-control form-control-sm" value="{{ request.GET.supplier }}">
+        <select name="supplier" class="form-select form-select-sm">
+          <option value="">-- Todos --</option>
+          {% for s in suppliers %}
+          <option value="{{ s.pk }}" {% if request.GET.supplier == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div class="col-md-2">
         <label class="form-label form-label-sm mb-1">Vence desde</label>
