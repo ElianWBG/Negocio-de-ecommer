@@ -1,24 +1,29 @@
 from django import forms
 from django.forms import inlineformset_factory
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from decimal import Decimal
 from .models import Brand, ProductGroup, Supplier, Product, Customer, Invoice, InvoiceDetail
 
 
-class SignUpForm(UserCreationForm):
+class SignUpForm(forms.ModelForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
     first_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2']
+        fields = ['username', 'first_name', 'last_name', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for f in self.fields:
             self.fields[f].widget.attrs['class'] = 'form-control'
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError('Este usuario ya existe.')
+        return username
 
 
 class BrandForm(forms.ModelForm):

@@ -200,13 +200,14 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('billing:verify_panel_code')
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        self.object = form.save(commit=False)
         self.object.is_active = False
-        self.object.save(update_fields=['is_active'])
+        self.object.set_unusable_password()
+        self.object.save()
         from billing.services import _send_panel_verification_code
         _send_panel_verification_code(self.object, request=self.request)
-        messages.success(self.request, f'Se ha enviado un código de verificación a {self.object.email}. Revisa tu correo.')
-        return response
+        messages.success(self.request, f'Se ha enviado un código de verificación a {self.object.email}. Revisa tu correo para crear tu contraseña.')
+        return redirect(self.success_url)
 
 # === BRAND (FBV) ===
 @permission_required_any('billing.view_brand')
@@ -2676,14 +2677,13 @@ def verify_panel_code(request):
             return render(request, 'billing/verify_code.html')
 
         password = request.POST.get('password', '')
-        if not user.has_usable_password():
-            if not password or len(password) < 6:
-                messages.error(request, 'Crea una contraseña de al menos 6 caracteres.')
-                return render(request, 'billing/verify_code.html')
-            if password != request.POST.get('password_confirm', ''):
-                messages.error(request, 'Las contraseñas no coinciden.')
-                return render(request, 'billing/verify_code.html')
-            user.set_password(password)
+        if not password or len(password) < 6:
+            messages.error(request, 'Crea una contraseña de al menos 6 caracteres.')
+            return render(request, 'billing/verify_code.html')
+        if password != request.POST.get('password_confirm', ''):
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return render(request, 'billing/verify_code.html')
+        user.set_password(password)
 
         vc.is_used = True
         vc.save()
@@ -2694,17 +2694,11 @@ def verify_panel_code(request):
         return redirect('login')
 
     verify_user = None
-    show_pw = False
     email = request.GET.get('email', '')
     if email:
-        user = User.objects.filter(email=email).first()
-        if user:
-            verify_user = user
-            if not user.has_usable_password():
-                show_pw = True
+        verify_user = User.objects.filter(email=email).first()
 
     return render(request, 'billing/verify_code.html', {
-        'show_password': show_pw,
         'verify_user': verify_user,
     })
 

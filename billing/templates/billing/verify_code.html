@@ -5,7 +5,7 @@
   <div class="col-md-5">
     <div class="card shadow">
       <div class="card-header bg-dark text-white">
-        <h4>{% if show_password %}Crear contraseña{% else %}Verificar cuenta{% endif %}</h4>
+        <h4>Crear contraseña y verificar cuenta</h4>
       </div>
       <div class="card-body">
         {% if verify_user %}
@@ -33,7 +33,6 @@
                    maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
                    placeholder="123456">
           </div>
-          {% if show_password %}
           <div class="mb-3">
             <label class="form-label">Nueva contraseña</label>
             <input type="password" name="password" class="form-control" required minlength="6" placeholder="Mínimo 6 caracteres">
@@ -42,10 +41,7 @@
             <label class="form-label">Confirmar contraseña</label>
             <input type="password" name="password_confirm" class="form-control" required placeholder="Repite la contraseña">
           </div>
-          {% endif %}
-          <button type="submit" class="btn btn-primary w-100">
-            {% if show_password %}Verificar y crear contraseña{% else %}Verificar{% endif %}
-          </button>
+          <button type="submit" class="btn btn-primary w-100">Verificar y crear contraseña</button>
         </form>
         <form method="post" class="mt-2">
           {% csrf_token %}
