@@ -2625,8 +2625,6 @@ def delete_user(request, pk):
 def verify_panel_code(request):
     from django.contrib.auth import get_user_model
     from .models import PanelVerificationCode
-    import logging
-    logger = logging.getLogger(__name__)
 
     User = get_user_model()
 
@@ -2635,67 +2633,55 @@ def verify_panel_code(request):
         code = request.POST.get('code', '').strip()
 
         if not email or not code:
-            messages.error(request, 'Completa ambos campos.')
+            messages.error(request, 'Completa todos los campos.')
             return render(request, 'billing/verify_code.html')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        users = User.objects.filter(email=email)
+        if not users.exists():
             messages.error(request, 'No existe un usuario con ese correo.')
             return render(request, 'billing/verify_code.html')
+        user = users.first()
 
         try:
             vc = PanelVerificationCode.objects.get(user=user, is_used=False)
         except PanelVerificationCode.DoesNotExist:
-            messages.error(request, 'No hay un código de verificación pendiente. Solicita uno nuevo.')
+            messages.error(request, 'No hay un código pendiente para este usuario.')
             return render(request, 'billing/verify_code.html')
 
         if vc.is_expired:
-            messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
+            messages.error(request, 'El código ha expirado.')
             return render(request, 'billing/verify_code.html')
 
         if vc.code != code:
-            messages.error(request, 'Código incorrecto. Intenta de nuevo.')
+            messages.error(request, 'Código incorrecto.')
             return render(request, 'billing/verify_code.html')
 
         password = request.POST.get('password', '')
-        password_confirm = request.POST.get('password_confirm', '')
-        needs_password = not user.has_usable_password()
-
-        if needs_password:
+        if not user.has_usable_password():
             if not password or len(password) < 6:
-                messages.error(request, 'La contraseña debe tener al menos 6 caracteres.')
-                return render(request, 'billing/verify_code.html', {'show_password': True})
-            if password != password_confirm:
+                messages.error(request, 'Crea una contraseña de al menos 6 caracteres.')
+                return render(request, 'billing/verify_code.html')
+            if password != request.POST.get('password_confirm', ''):
                 messages.error(request, 'Las contraseñas no coinciden.')
-                return render(request, 'billing/verify_code.html', {'show_password': True})
+                return render(request, 'billing/verify_code.html')
             user.set_password(password)
 
         vc.is_used = True
         vc.save()
         user.is_active = True
-        user.save(update_fields=['is_active'])
+        user.save()
 
-        if needs_password:
-            messages.success(request, 'Cuenta verificada y contraseña creada. Ahora puedes iniciar sesión.')
-        else:
-            messages.success(request, 'Correo verificado correctamente. Ahora puedes iniciar sesión.')
+        messages.success(request, 'Cuenta verificada. Ahora puedes iniciar sesión.')
         return redirect('login')
 
-    needs_password = False
+    show_pw = False
     email = request.GET.get('email', '')
     if email:
-        try:
-            user = User.objects.get(email=email)
-            needs_password = not user.has_usable_password()
-        except (User.DoesNotExist, User.MultipleObjectsReturned):
-            pass
-        except Exception as e:
-            logger.error(f'Error en verify_panel_code: {e}', exc_info=True)
+        user = User.objects.filter(email=email).first()
+        if user and not user.has_usable_password():
+            show_pw = True
 
-    return render(request, 'billing/verify_code.html', {
-        'show_password': needs_password,
-    })
+    return render(request, 'billing/verify_code.html', {'show_password': show_pw})
 
 
 # ─────────────────────────────────────────────
