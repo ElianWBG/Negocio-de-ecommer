@@ -88,6 +88,12 @@ class CustomerForm(forms.ModelForm):
 
 
 class InvoiceForm(forms.ModelForm):
+    numero_cuotas = forms.IntegerField(
+        required=False, min_value=1,
+        label='Número de cuotas',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+    )
+
     class Meta:
         model = Invoice
         fields = ['customer', 'tipo_pago']
@@ -95,6 +101,13 @@ class InvoiceForm(forms.ModelForm):
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'tipo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        numero_cuotas = cleaned_data.get('numero_cuotas')
+        if numero_cuotas and cleaned_data.get('tipo_pago') != 'credito':
+            self.add_error('numero_cuotas', 'El número de cuotas solo aplica a facturas a crédito.')
+        return cleaned_data
 
 
 class InvoicePaymentForm(forms.Form):

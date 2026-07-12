@@ -1533,11 +1533,22 @@ def invoice_create(request):
                             invoice.estado = 'pendiente'
 
                         invoice.save()
+
+                        # Si es a crédito y se indicó número de cuotas, se genera
+                        # el cronograma de una vez (si no, queda pendiente y se
+                        # puede generar después desde el detalle de la factura).
+                        numero_cuotas = form.cleaned_data.get('numero_cuotas')
+                        if invoice.tipo_pago == 'credito' and numero_cuotas:
+                            from creditos_ventas.services import generar_cuotas
+                            generar_cuotas(invoice, numero_cuotas)
                 except ValueError as e:
                     messages.error(request, str(e))
                 else:
                     log_action(request, 'created', 'Invoice', invoice.id, f'Factura #{invoice.id} creada. Total: ${invoice.total}')
-                    messages.success(request, f'Factura #{invoice.id} creada! Total: ${invoice.total}')
+                    mensaje = f'Factura #{invoice.id} creada! Total: ${invoice.total}'
+                    if invoice.tipo_pago == 'credito' and form.cleaned_data.get('numero_cuotas'):
+                        mensaje += f'. Se generaron {form.cleaned_data["numero_cuotas"]} cuotas.'
+                    messages.success(request, mensaje)
                     return redirect('billing:invoice_list')
     else:
         form = InvoiceForm()
@@ -1574,6 +1585,8 @@ class InvoiceDetailView(PermissionRequiredAnyMixin, DetailView):
         ctx['details'] = details
         ctx['total_units'] = sum(d.quantity for d in details)
         ctx['payments'] = invoice.payments.select_related('registered_by').all()
+        ctx['tiene_cuotas'] = invoice.cuotas.exists()
+        ctx['tiene_pagos_libres'] = invoice.payments.exists() or invoice.cobros.exists()
         return ctx
 
 
@@ -1642,6 +1655,14 @@ def register_payment(request, pk):
     if invoice.tipo_pago != 'credito' or invoice.saldo <= 0:
         messages.warning(request, 'Esta factura no tiene saldo pendiente.')
         return redirect('billing:invoice_detail', pk=pk)
+
+    if invoice.cuotas.exists():
+        messages.error(
+            request,
+            'Esta factura tiene un cronograma de cuotas generado. '
+            'Registra los pagos desde el módulo de cuotas.'
+        )
+        return redirect('creditos_ventas:cuota_list', factura_id=invoice.id)
 
     if request.method == 'POST':
         form = InvoicePaymentForm(request.POST)

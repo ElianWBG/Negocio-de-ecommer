@@ -57,6 +57,25 @@
   .btn-whatsapp { background:#25D366; color:#fff; border-color:#25D366; width:100%; justify-content:center; margin-top:.75rem; }
   .btn-whatsapp:hover { background:#1ebe5d; border-color:#1ebe5d; color:#fff; }
 
+  /* Tabs de forma de pago (PayPal / Crédito directo) */
+  .pay-tabs { display:flex; gap:.5rem; margin-bottom:1rem; }
+  .pay-tab {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:.4rem;
+    padding:.6rem .75rem; border-radius:8px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--muted); font-size:.85rem; font-weight:600;
+    cursor:pointer; transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .pay-tab:hover { border-color:var(--muted); color:var(--text); }
+  .pay-tab.is-active { border-color:var(--rust); color:var(--rust); background:var(--brand-50, var(--sand)); }
+
+  .pay-panel { margin-bottom:1.25rem; padding:1rem; border-radius:8px; background:var(--sand-dark); border:1px solid var(--border); }
+  .cuota-estimate { font-size:1rem; font-weight:700; color:var(--rust); margin:.75rem 0 .4rem; }
+  .cuota-note { font-size:.78rem; color:var(--muted); line-height:1.5; margin:0; }
+  .cuota-note .bi { margin-right:.25rem; }
+
+  .btn-paypal { background:#003087; color:#fff; border-color:#003087; margin-top:.75rem; }
+  .btn-paypal:hover { background:#001c54; border-color:#001c54; color:#fff; }
+
   /* Acerca de */
   .product-about { margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border); }
   .product-about > h4 { font-family:var(--font-head); font-size:1rem; font-weight:600; color:var(--text); margin-bottom:.85rem; }
@@ -133,8 +152,35 @@
         </span>
       </div>
 
-      <form method="post" action="{% url 'storefront:cart_add' product.pk %}">
+      <div class="pay-tabs" role="tablist">
+        <button type="button" class="pay-tab is-active" data-pay-tab="paypal">
+          <i class="bi bi-paypal"></i> PayPal
+        </button>
+        <button type="button" class="pay-tab" data-pay-tab="credito">
+          <i class="bi bi-calendar3"></i> Crédito directo
+        </button>
+      </div>
+
+      <div class="pay-panel" data-pay-panel="credito" hidden>
+        <label class="qty-label" for="cuotasSelect">Cuotas</label>
+        <select id="cuotasSelect" class="qty-display" style="width:100%; height:42px; border:1.5px solid var(--border); border-radius:8px; padding:0 .6rem;">
+          <option value="3">3 cuotas</option>
+          <option value="6">6 cuotas</option>
+          <option value="9">9 cuotas</option>
+          <option value="12" selected>12 cuotas</option>
+          <option value="18">18 cuotas</option>
+        </select>
+        <p class="cuota-estimate">Cuota estimada: <strong id="cuotaMonto">$0.00</strong>/mes</p>
+        <p class="cuota-note">
+          <i class="bi bi-info-circle"></i>
+          Simulación referencial, sin compromiso. Agrega el producto al carrito y coordina
+          el crédito directo con nosotros al finalizar tu pedido.
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'storefront:cart_add' product.pk %}" id="add-cart-form">
         {% csrf_token %}
+        <input type="hidden" name="next" id="cart-next" value="">
         <div class="qty-section">
           <p class="qty-label">Cantidad</p>
           <div class="qty-controls">
@@ -143,8 +189,11 @@
             <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;" id="add-cart-btn">
           <i class="bi bi-bag-plus"></i> Agregar al carrito
+        </button>
+        <button type="submit" class="btn btn-paypal btn-lg" style="width:100%; display:none;" id="pay-paypal-btn">
+          <i class="bi bi-paypal"></i> Pagar con PayPal
         </button>
       </form>
     {% else %}
@@ -190,6 +239,7 @@ function changeQty(delta) {
   if (val < 1) val = 1;
   if (val > max) val = max;
   input.value = val;
+  if (typeof window.recalcCuotaEstimate === 'function') window.recalcCuotaEstimate();
 }
 
 (function () {
@@ -198,6 +248,41 @@ function changeQty(delta) {
   var phone = '{{ config.whatsapp|wa_digits }}';
   var msg = 'Hola, estoy interesado en el producto: {{ product.name|escapejs }} - ${{ product.unit_price }}. ¿Tienen disponibilidad?';
   btn.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+})();
+
+(function () {
+  var tabs = document.querySelectorAll('.pay-tab');
+  var creditoPanel = document.querySelector('[data-pay-panel="credito"]');
+  var paypalBtn = document.getElementById('pay-paypal-btn');
+  var cartNext = document.getElementById('cart-next');
+  var cuotasSelect = document.getElementById('cuotasSelect');
+  var cuotaMonto = document.getElementById('cuotaMonto');
+  var unitPrice = parseFloat('{{ product.unit_price|stringformat:"f" }}') || 0;
+
+  if (!tabs.length) return;
+
+  function recalcCuota() {
+    if (!cuotasSelect || !cuotaMonto) return;
+    var qty = parseInt(document.getElementById('qty').value, 10) || 1;
+    var n = parseInt(cuotasSelect.value, 10) || 1;
+    cuotaMonto.textContent = '$' + ((unitPrice * qty) / n).toFixed(2);
+  }
+  window.recalcCuotaEstimate = recalcCuota;
+
+  function setTab(name) {
+    tabs.forEach(function (t) { t.classList.toggle('is-active', t.dataset.payTab === name); });
+    if (creditoPanel) creditoPanel.hidden = name !== 'credito';
+    if (paypalBtn) paypalBtn.style.display = name === 'paypal' ? '' : 'none';
+    if (cartNext) cartNext.value = name === 'paypal' ? 'checkout' : '';
+    if (name === 'credito') recalcCuota();
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { setTab(t.dataset.payTab); });
+  });
+  if (cuotasSelect) cuotasSelect.addEventListener('change', recalcCuota);
+
+  setTab('paypal');
 })();
 
 (function () {

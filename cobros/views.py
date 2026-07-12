@@ -14,10 +14,15 @@ from .models import CobroFactura
 
 @permission_required_any('cobros.view_cobrofactura')
 def invoice_pending_list(request):
-    """Lista únicamente las facturas a crédito que aún tienen saldo pendiente."""
+    """Lista únicamente las facturas a crédito que aún tienen saldo pendiente.
+
+    Las facturas que ya tienen un cronograma de cuotas generado (app
+    creditos_ventas) se excluyen de aquí: sus pagos se registran por
+    cuota, no como abono libre contra el saldo total.
+    """
     invoices = Invoice.objects.filter(
         tipo_pago='credito', estado='pendiente'
-    ).select_related('customer').order_by('-invoice_date')
+    ).exclude(cuotas__isnull=False).select_related('customer').order_by('-invoice_date')
 
     g = request.GET
     if customer := g.get('customer', '').strip():
@@ -35,6 +40,14 @@ def cobro_create(request, factura_id):
     if factura.estado == 'anulada':
         messages.error(request, 'No se puede registrar un pago sobre una factura anulada.')
         return redirect('cobros:invoice_pending_list')
+
+    if factura.cuotas.exists():
+        messages.error(
+            request,
+            'Esta factura tiene un cronograma de cuotas generado. '
+            'Registra los pagos desde el módulo de cuotas.'
+        )
+        return redirect('creditos_ventas:cuota_list', factura_id=factura.id)
 
     if request.method == 'POST':
         form = CobroFacturaForm(request.POST, initial={'factura': factura})

@@ -349,7 +349,12 @@
     {% endif %}
     {% if perms.creditos_compras.view_cuotacompra %}
     <a href="{% url 'creditos_compras:cuotas_pendientes_list' %}" class="sidebar-link {% if '/creditos-compras/' in request.path %}active{% endif %}">
-      <i class="bi bi-calendar3"></i> Cuotas de crédito
+      <i class="bi bi-calendar3"></i> Cuotas de compra
+    </a>
+    {% endif %}
+    {% if perms.creditos_ventas.view_cuotaventa %}
+    <a href="{% url 'creditos_ventas:cuotas_pendientes_list' %}" class="sidebar-link {% if '/creditos-ventas/' in request.path %}active{% endif %}">
+      <i class="bi bi-calendar-check"></i> Cuotas de venta
     </a>
     {% endif %}
     {% if perms.billing.view_invoice or perms.purchasing.view_purchase or perms.billing.view_product %}

@@ -1,0 +1,38 @@
+{% extends 'billing/base.html' %}
+{% block title %}Generar cuotas{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-warning text-dark py-3">
+        <h4 class="mb-0">Generar cuotas — Factura #{{ factura.id }}</h4>
+      </div>
+      <div class="card-body p-4">
+        <p class="mb-1">Cliente: <strong>{{ factura.customer }}</strong></p>
+        <p class="mb-3">Total de la factura: <strong>${{ factura.total }}</strong></p>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Número de cuotas</label>
+            {{ form.numero_cuotas }}
+            {% for error in form.numero_cuotas.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="alert alert-light border small">
+            <i class="bi bi-info-circle"></i>
+            La primera cuota vence 30 días después de la fecha de la factura, y las
+            siguientes cada 30 días. El total se reparte equitativamente entre las cuotas.
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-warning px-4">Generar cuotas</button>
+            <a href="{% url 'billing:invoice_detail' factura.id %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

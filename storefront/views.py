@@ -433,6 +433,11 @@ def cart_add(request, pk):
             messages.warning(request, warning)
         else:
             messages.success(request, f'"{product.name}" agregado al carrito.')
+
+        # El botón "Pagar con PayPal" del detalle de producto manda directo
+        # a checkout en vez de dejar al cliente en la página del carrito.
+        if request.POST.get('next') == 'checkout':
+            return redirect('storefront:checkout')
     return redirect('storefront:cart_view')
 
 

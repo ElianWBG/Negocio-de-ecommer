@@ -10,6 +10,7 @@ urlpatterns = [
     path('panel/cobros/', include('cobros.urls')),
     path('panel/pagos/', include('pagos.urls')),
     path('panel/creditos-compras/', include('creditos_compras.urls')),
+    path('panel/creditos-ventas/', include('creditos_ventas.urls')),
     path('panel/reportes/', include('reportes.urls')),
     path('panel/roles/', include('security.urls')),
     path('panel/', include('billing.urls')),

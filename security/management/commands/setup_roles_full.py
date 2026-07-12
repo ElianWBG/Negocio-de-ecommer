@@ -20,6 +20,8 @@ ROLES = {
         'view_product',
         # Aprobar/rechazar pedidos hechos desde la tienda
         'view_purchaserequest', 'change_purchaserequest',
+        # Generar el cronograma de cuotas de una factura a crédito
+        'view_cuotaventa', 'add_cuotaventa',
     ],
 
     # El Analista de Compras gestiona el catálogo completo y las compras a proveedores
@@ -40,6 +42,8 @@ ROLES = {
         'view_pagocompra', 'add_pagocompra', 'change_pagocompra', 'delete_pagocompra',
         'view_cuotacompra', 'change_cuotacompra',
         'view_pagocuotacompra', 'add_pagocuotacompra',
+        'view_cuotaventa', 'change_cuotaventa',
+        'view_pagocuotaventa', 'add_pagocuotaventa',
         'view_invoice', 'view_purchase', 'view_invoicedetail', 'view_product', 'view_customer', 'view_supplier',
     ],
 

@@ -18,10 +18,21 @@
   <a href="{% url 'billing:invoice_create' %}" class="btn btn-sm btn-outline-success">
     <i class="bi bi-plus-circle"></i> Nueva factura
   </a>
-  {% if invoice.is_active and invoice.saldo > 0 %}
+  {% if invoice.is_active and invoice.saldo > 0 and not tiene_cuotas %}
   <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-sm btn-success">
     <i class="bi bi-cash-coin"></i> Registrar pago
   </a>
+  {% endif %}
+  {% if invoice.is_active and invoice.tipo_pago == 'credito' %}
+    {% if tiene_cuotas %}
+    <a href="{% url 'creditos_ventas:cuota_list' invoice.pk %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-calendar3"></i> Ver cuotas
+    </a>
+    {% elif invoice.estado == 'pendiente' and not tiene_pagos_libres %}
+    <a href="{% url 'creditos_ventas:generar_cuotas' invoice.pk %}" class="btn btn-sm btn-warning">
+      <i class="bi bi-calendar-plus"></i> Generar Cuotas
+    </a>
+    {% endif %}
   {% endif %}
   {% if invoice.is_active %}
   <a href="{% url 'billing:invoice_delete' invoice.pk %}" class="btn btn-sm btn-outline-danger ms-auto">
@@ -178,7 +189,7 @@
 <div class="card border-0 shadow-sm mb-4 no-print" style="max-width:860px;margin:0 auto;">
   <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
     <span class="fw-semibold small"><i class="bi bi-cash-stack me-1"></i> Historial de pagos</span>
-    {% if invoice.is_active and invoice.saldo > 0 %}
+    {% if invoice.is_active and invoice.saldo > 0 and not tiene_cuotas %}
     <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-sm btn-success">
       <i class="bi bi-plus-circle"></i> Registrar pago
     </a>
@@ -211,7 +222,7 @@
     </div>
   </div>
 </div>
-{% elif invoice.is_active and invoice.saldo > 0 %}
+{% elif invoice.is_active and invoice.saldo > 0 and not tiene_cuotas %}
 <div class="text-center mb-4 no-print" style="max-width:860px;margin:0 auto;">
   <a href="{% url 'billing:register_payment' invoice.pk %}" class="btn btn-success">
     <i class="bi bi-cash-coin me-1"></i> Registrar primer pago — Saldo ${{ invoice.saldo }}
