@@ -519,6 +519,22 @@
   .sec-ic { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 11px; font-size: 1.1rem; flex-shrink: 0; }
   .sec-ic.best  { background: var(--sand-dark); color: var(--espresso); }
   .sec-ic.deals { background: color-mix(in srgb, var(--rust) 16%, #fff); color: var(--rust-dark); }
+  .sec-ic.total { background: color-mix(in srgb, var(--brand) 14%, var(--surface)); color: var(--brand-600); }
+
+  /* Paginación de "Productos totales" */
+  .pt-pagination { display: flex; justify-content: center; align-items: center; gap: .35rem; margin-top: 1.4rem; list-style: none; }
+  .pt-pagination li { display: flex; }
+  .pt-pagination a, .pt-pagination span {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px; padding: 0 .5rem;
+    border-radius: 10px; font-size: .85rem; font-weight: 600;
+    text-decoration: none; color: var(--ink);
+    border: 1px solid var(--line); background: var(--surface);
+    transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out);
+  }
+  .pt-pagination a:hover { background: var(--brand-50); color: var(--brand-600); }
+  .pt-pagination .pt-active span { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .pt-pagination .pt-disabled span { color: var(--ink-mute); opacity: .5; }
 
   /* "Top ofertas": marco + fondo de acento para separarla claramente de "Lo más vendido" */
   .home-sec--deals {
@@ -862,6 +878,44 @@
       </div>
       {% endif %}
     </section>
+
+    {% if not has_filter and todos_page %}
+    <!-- PRODUCTOS TOTALES -->
+    <section class="home-sec reveal" id="todos">
+      <div class="sec-head">
+        <div class="sec-title-wrap">
+          <span class="sec-ic total"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+          <h2>Productos totales<span class="sec-sub"><strong>{{ todos_page.paginator.count }}</strong> producto{{ todos_page.paginator.count|pluralize }} en total</span></h2>
+        </div>
+      </div>
+      {% if todos_page.object_list %}
+      <div class="product-grid">
+        {% for product in todos_page %}{% include 'storefront/_product_card.html' %}{% endfor %}
+      </div>
+      {% if todos_page.paginator.num_pages > 1 %}
+      <ul class="pt-pagination">
+        {% if todos_page.has_previous %}
+        <li><a href="?pt={{ todos_page.previous_page_number }}#todos">‹</a></li>
+        {% else %}
+        <li class="pt-disabled"><span>‹</span></li>
+        {% endif %}
+        {% for num in todos_page.paginator.page_range %}
+          {% if num == todos_page.number %}
+          <li class="pt-active"><span>{{ num }}</span></li>
+          {% elif num > todos_page.number|add:"-3" and num < todos_page.number|add:"3" %}
+          <li><a href="?pt={{ num }}#todos">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if todos_page.has_next %}
+        <li><a href="?pt={{ todos_page.next_page_number }}#todos">›</a></li>
+        {% else %}
+        <li class="pt-disabled"><span>›</span></li>
+        {% endif %}
+      </ul>
+      {% endif %}
+      {% endif %}
+    </section>
+    {% endif %}
 
     {% if not has_filter %}
     <!-- EXPLORA POR CATEGORÍA -->

@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from shared.decorators import permission_required_any
 from django.core.mail import send_mail
+from django.core.paginator import Paginator
 from django.conf import settings
 from django.db.models import Q, Min, Max
 from django.http import JsonResponse
@@ -303,6 +304,13 @@ def catalog_list(request):
 
     has_filter = bool(query or group_id or brand_id)
 
+    # "Productos totales": TODO el catálogo activo, paginado (solo en portada).
+    # Se arma antes de recortar "products" a los 10 de "Lo más vendido".
+    todos_page = None
+    if not has_filter:
+        todos_paginator = Paginator(products.order_by('name'), 12)
+        todos_page = todos_paginator.get_page(request.GET.get('pt'))
+
     # En portada, "Lo más vendido" muestra máximo 10 productos.
     if not has_filter:
         products = products[:10]
@@ -363,6 +371,7 @@ def catalog_list(request):
         'recommended': recommended,
         'sidebar_brands': sidebar_brands,
         'featured_rotation': featured_rotation,
+        'todos_page': todos_page,
     })
 
 
