@@ -67,7 +67,7 @@ const createOrderUrl = "{% url 'creditos_ventas:paypal_create_order_cuota' cuota
 const captureUrl = "{% url 'creditos_ventas:paypal_capture_cuota' cuota.pk %}";
 const csrfToken = "{{ csrf_token }}";
 const paypalSdkSrc = "{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card";
-const MAX_AMOUNT = parseFloat("{{ cuota.saldo }}");
+const MAX_AMOUNT = parseFloat("{{ cuota.saldo|stringformat:'.2f' }}");
 
 var amountInput = document.getElementById('amount-input');
 var amountDisplay = document.getElementById('amount-display');
@@ -155,6 +155,11 @@ paypal.Buttons({
     });
   },
   onError: function(err) {
+    paypalOrderInFlight = false;
+    var btnContainer = document.getElementById('paypal-button-container');
+    btnContainer.style.opacity = '1';
+    btnContainer.style.pointerEvents = 'auto';
+    console.error('PayPal onError:', err);
     showMsg('<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Ocurrió un error con PayPal. Intenta de nuevo.</div>');
   },
   onCancel: function() {
