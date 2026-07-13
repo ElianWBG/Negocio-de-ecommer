@@ -15,17 +15,35 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def emitir_factura_sri(invoice) -> dict | None:
+def emitir_factura_sri(invoice, purchase_request=None) -> dict | None:
     """Envía la factura al microservicio SRI.
 
     Retorna el dict de respuesta del micro (con id, estado, clave_acceso…)
     o None si el micro no está configurado o la llamada falla.
+    El micro también se encarga de enviar el correo al cliente.
     """
     base_url = getattr(settings, 'SRI_MICRO_URL', '').rstrip('/')
     if not base_url:
         return None
 
     api_key = getattr(settings, 'SRI_MICRO_API_KEY', '')
+
+    # Contexto de tienda para que el micro pueda armar el email con el diseño correcto
+    from billing.models import ConfigNegocio
+    config = ConfigNegocio.objects.first()
+    store_name = (config.nombre_tienda if config else None) or 'nuestra tienda'
+    logo_url = ''
+    if config and getattr(config, 'logo', None):
+        try:
+            logo_url = config.logo.url
+        except Exception:
+            pass
+
+    tipo_pago_label = {
+        'contado': 'EFECTIVO / TRANSFERENCIA',
+        'credito': 'CRÉDITO (CUOTAS)',
+        'paypal': 'PAYPAL',
+    }.get(invoice.tipo_pago, (invoice.tipo_pago or '').upper())
 
     items = [
         {
@@ -48,6 +66,11 @@ def emitir_factura_sri(invoice) -> dict | None:
         'cliente_direccion': getattr(customer, 'address', '') or '',
         'cliente_telefono': getattr(customer, 'phone', '') or '',
         'items': items,
+        'store_name': store_name,
+        'logo_url': logo_url,
+        'tipo_pago_label': tipo_pago_label,
+        'pedido_id': purchase_request.id if purchase_request else None,
+        'factura_id_principal': invoice.pk,
     }
 
     try:
