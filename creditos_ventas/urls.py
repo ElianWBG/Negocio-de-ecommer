@@ -14,4 +14,7 @@ urlpatterns = [
     path('cuota/<int:pk>/pagar-paypal/create-order/', views.paypal_create_order_cuota, name='paypal_create_order_cuota'),
     path('cuota/<int:pk>/pagar-paypal/capture/', views.paypal_capture_cuota, name='paypal_capture_cuota'),
     path('pago/<int:pk>/recibo/', views.recibo_pago, name='recibo_pago'),
+    path('factura/<int:factura_pk>/pagar-cuotas/', views.pagar_cuotas_multi_paypal, name='pagar_cuotas_multi_paypal'),
+    path('factura/<int:factura_pk>/pagar-cuotas/create-order/', views.paypal_create_order_cuotas, name='paypal_create_order_cuotas'),
+    path('factura/<int:factura_pk>/pagar-cuotas/capture/', views.paypal_capture_cuotas, name='paypal_capture_cuotas'),
 ]

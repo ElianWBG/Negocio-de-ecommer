@@ -218,6 +218,168 @@ def paypal_capture_cuota(request, pk):
     return JsonResponse({'error': 'El pago no fue aprobado por PayPal.'}, status=400)
 
 
+# ── Pago múltiple de cuotas (cliente elige una o varias en orden) ─────────────
+
+def pagar_cuotas_multi_paypal(request, factura_pk):
+    """Página para pagar una o más cuotas pendientes de una factura en un solo
+    pago PayPal. El cliente elige cuáles con checkboxes; el orden se fuerza en
+    JS (marcar la N marca automáticamente la 1..N-1)."""
+    factura = get_object_or_404(Invoice.objects.select_related('customer'), pk=factura_pk)
+    _, is_owner = _es_dueno_o_staff(request, factura)
+    if not is_owner:
+        request.session['next_after_login'] = reverse(
+            'creditos_ventas:pagar_cuotas_multi_paypal', args=[factura_pk]
+        )
+        messages.info(request, 'Inicia sesión para pagar tus cuotas.')
+        return redirect('storefront:customer_login')
+
+    cuotas = list(CuotaVenta.objects.filter(factura=factura, estado='pendiente').order_by('numero'))
+    if not cuotas:
+        messages.info(request, 'No hay cuotas pendientes para esta factura.')
+        return redirect('storefront:my_cuotas')
+
+    return render(request, 'creditos_ventas/pagar_cuotas_multi_paypal.html', {
+        'factura': factura,
+        'cuotas': cuotas,
+        'total_saldo': sum(c.saldo for c in cuotas),
+        'today': timezone.localdate(),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'paypal_sdk_base': settings.PAYPAL_SDK_BASE,
+    })
+
+
+@require_POST
+def paypal_create_order_cuotas(request, factura_pk):
+    """Crea una orden PayPal para el total de las cuotas seleccionadas."""
+    factura = get_object_or_404(Invoice, pk=factura_pk)
+    _, is_owner = _es_dueno_o_staff(request, factura)
+    if not is_owner:
+        return JsonResponse({'error': 'No autorizado.'}, status=403)
+
+    try:
+        body = json.loads(request.body)
+        cuota_ids = [int(x) for x in body.get('cuota_ids', [])]
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
+
+    if not cuota_ids:
+        return JsonResponse({'error': 'Selecciona al menos una cuota.'}, status=400)
+
+    cuotas = list(CuotaVenta.objects.filter(
+        pk__in=cuota_ids, factura=factura, estado='pendiente',
+    ).order_by('numero'))
+
+    if not cuotas:
+        return JsonResponse({'error': 'No hay cuotas válidas seleccionadas.'}, status=400)
+
+    # La primera cuota seleccionada debe ser la primera pendiente de la factura
+    primera_pendiente = CuotaVenta.objects.filter(
+        factura=factura, estado='pendiente',
+    ).order_by('numero').first()
+    if cuotas[0].pk != primera_pendiente.pk:
+        return JsonResponse({'error': 'Debes incluir la primera cuota pendiente.'}, status=400)
+
+    # Deben ser cuotas consecutivas (sin saltar ninguna)
+    numeros = [c.numero for c in cuotas]
+    if numeros != list(range(numeros[0], numeros[0] + len(numeros))):
+        return JsonResponse({'error': 'Las cuotas deben ser consecutivas.'}, status=400)
+
+    total = '{:.2f}'.format(sum(c.saldo for c in cuotas))
+    try:
+        token = paypal_access_token()
+        order = paypal_request(
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders',
+            data=json.dumps({
+                'intent': 'CAPTURE',
+                'purchase_units': [{
+                    'amount': {'currency_code': 'USD', 'value': total},
+                    'description': f'{len(cuotas)} cuota(s) - Factura #{factura_pk}',
+                }],
+            }).encode(),
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+        return JsonResponse({'id': order['id']})
+    except Exception as e:
+        logger.exception('PayPal error (multi cuotas factura %s): %s', factura_pk, e)
+        return JsonResponse({'error': 'No se pudo iniciar el pago. Intenta de nuevo.'}, status=502)
+
+
+def paypal_capture_cuotas(request, factura_pk):
+    """Captura el pago y distribuye el monto entre las cuotas seleccionadas."""
+    if request.method != 'POST':
+        return redirect('creditos_ventas:pagar_cuotas_multi_paypal', factura_pk=factura_pk)
+
+    factura = get_object_or_404(Invoice.objects.select_related('customer'), pk=factura_pk)
+    _, is_owner = _es_dueno_o_staff(request, factura)
+    if not is_owner:
+        return JsonResponse({'error': 'No autorizado.'}, status=403)
+
+    try:
+        body = json.loads(request.body)
+        order_id = body.get('orderID')
+        cuota_ids = [int(x) for x in body.get('cuota_ids', [])]
+        if not order_id:
+            return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
+
+    cuotas = list(CuotaVenta.objects.filter(
+        pk__in=cuota_ids, factura=factura, estado='pendiente',
+    ).order_by('numero'))
+
+    if not cuotas:
+        return JsonResponse({'error': 'No hay cuotas válidas para registrar.'}, status=400)
+
+    try:
+        token = paypal_access_token()
+        capture_data = paypal_request(
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
+            data=b'{}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+    except Exception as e:
+        logger.exception('PayPal error (captura multi cuotas factura %s): %s', factura_pk, e)
+        return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
+
+    if capture_data.get('status') != 'COMPLETED':
+        return JsonResponse({'error': 'El pago no fue aprobado por PayPal.'}, status=400)
+
+    try:
+        captured_value = capture_data['purchase_units'][0]['payments']['captures'][0]['amount']['value']
+        restante = Decimal(captured_value).quantize(Decimal('0.01'))
+    except (KeyError, IndexError, InvalidOperation):
+        logger.exception('No se pudo leer el monto capturado para multi cuotas factura %s', factura_pk)
+        return JsonResponse({'error': 'Error procesando la respuesta de PayPal.'}, status=502)
+
+    ultimo_pago = None
+    fecha = timezone.localdate()
+    try:
+        for cuota in cuotas:
+            if restante <= 0:
+                break
+            monto_cuota = min(cuota.saldo, restante)
+            ultimo_pago = registrar_pago_cuota(
+                cuota, monto_cuota, fecha,
+                observacion=f'Pago vía PayPal (orden {order_id})',
+            )
+            restante -= monto_cuota
+    except ValueError as e:
+        logger.exception('Error registrando pagos multi cuotas factura %s: %s', factura_pk, e)
+        return JsonResponse({'error': str(e)}, status=400)
+
+    redirect_url = request.build_absolute_uri(
+        reverse('creditos_ventas:recibo_pago', args=[ultimo_pago.pk]) if ultimo_pago
+        else reverse('storefront:my_cuotas')
+    )
+    return JsonResponse({'status': 'ok', 'redirect': redirect_url})
+
+
 @permission_required_any('creditos_ventas.add_cuotaventa')
 def generar_cuotas_view(request, factura_id):
     """Genera el cronograma de cuotas de una factura a crédito (una sola vez)."""

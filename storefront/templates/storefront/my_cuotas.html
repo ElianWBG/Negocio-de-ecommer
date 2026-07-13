@@ -83,11 +83,21 @@
     {% if cuotas_por_factura %}
       {% for grupo in cuotas_por_factura %}
       <div class="cuotas-panel mb-3">
-        <div class="cuota-group-title">
-          <i class="bi bi-receipt"></i>
-          Factura #{{ grupo.grouper.id }} &nbsp;·&nbsp;
-          Total ${{ grupo.grouper.total|floatformat:2 }} &nbsp;·&nbsp;
-          {{ grupo.list|length }} cuota{{ grupo.list|length|pluralize }}
+        <div class="cuota-group-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>
+            <i class="bi bi-receipt"></i>
+            Factura #{{ grupo.grouper.id }} &nbsp;·&nbsp;
+            Total ${{ grupo.grouper.total|floatformat:2 }} &nbsp;·&nbsp;
+            {{ grupo.list|length }} cuota{{ grupo.list|length|pluralize }}
+          </span>
+          {% with pendientes=grupo.list %}
+          {% for c in pendientes %}{% if c.estado == 'pendiente' %}{% if forloop.first %}
+          <a href="{% url 'creditos_ventas:pagar_cuotas_multi_paypal' grupo.grouper.id %}"
+             style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:#fff;background:var(--rust);padding:4px 12px;border-radius:6px;text-decoration:none;text-transform:none;letter-spacing:0;">
+            <i class="bi bi-paypal"></i> Pagar cuotas
+          </a>
+          {% endif %}{% endif %}{% endfor %}
+          {% endwith %}
         </div>
         <table class="cuotas-table">
           <thead>

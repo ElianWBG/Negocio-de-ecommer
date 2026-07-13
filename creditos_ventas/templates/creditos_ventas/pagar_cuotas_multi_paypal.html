@@ -1,0 +1,254 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Pagar cuotas — Factura #{{ factura.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .multi-wrap { max-width: 620px; margin: 0 auto; }
+  .back-link { display:inline-flex; align-items:center; gap:.4rem; color:var(--muted); font-size:.875rem; text-decoration:none; margin-bottom:1.5rem; }
+  .back-link:hover { color:var(--rust); }
+
+  .cuotas-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
+  .cuotas-card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .cuotas-card-head h3 { font-family:var(--font-head); font-size:1.1rem; margin:0; }
+  .btn-select-all { font-size:.78rem; color:var(--rust); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline; }
+
+  table.multi-table { width:100%; border-collapse:collapse; }
+  .multi-table th { font-size:.65rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700; padding:.65rem 1rem; border-bottom:2px solid var(--border); text-align:left; }
+  .multi-table td { padding:.7rem 1rem; border-bottom:1px solid var(--sand-dark); font-size:.875rem; vertical-align:middle; }
+  .multi-table tr:last-child td { border-bottom:none; }
+  .multi-table tr.row-checked td { background:rgba(181,68,27,.05); }
+
+  .cuota-cb { width:18px; height:18px; accent-color:var(--rust); cursor:pointer; }
+
+  .summary-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
+  .summary-row { display:flex; justify-content:space-between; font-size:.875rem; padding:.3rem 0; color:var(--muted); }
+  .summary-total { display:flex; justify-content:space-between; font-weight:700; font-size:1.15rem; color:var(--rust); padding-top:.75rem; margin-top:.5rem; border-top:2px solid var(--border); }
+
+  #paypal-button-container { margin-top:.5rem; }
+  #paypal-msg { display:none; text-align:center; padding:1rem; color:var(--muted); font-size:.9rem; }
+  #no-selection-msg { display:none; text-align:center; padding:.75rem; color:#c0392b; font-size:.875rem; border:1px solid #fcd; border-radius:6px; background:#fff5f5; margin-bottom:.75rem; }
+
+  .paypal-processing { display:flex; flex-direction:column; align-items:center; gap:1rem; padding:2rem 1rem; }
+  .paypal-spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--rust); border-radius:50%; animation:pp-spin .7s linear infinite; }
+  @keyframes pp-spin { to { transform:rotate(360deg); } }
+  .paypal-processing p { color:var(--muted); font-size:.9rem; margin:0; text-align:center; }
+
+  .badge-vencida { background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:12px; font-size:.7rem; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="multi-wrap">
+  <a href="{% url 'storefront:my_cuotas' %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver a mis cuotas
+  </a>
+
+  <div class="page-header">
+    <h1>Pagar cuotas</h1>
+    <p>Factura #{{ factura.id }} · Selecciona las cuotas que quieres pagar.</p>
+  </div>
+
+  <!-- Tabla de cuotas con checkboxes -->
+  <div class="cuotas-card">
+    <div class="cuotas-card-head">
+      <h3>Cuotas pendientes</h3>
+      <button type="button" class="btn-select-all" id="btn-select-all">Seleccionar todas</button>
+    </div>
+    <table class="multi-table">
+      <thead>
+        <tr>
+          <th style="width:44px;"></th>
+          <th>N° cuota</th>
+          <th>Vencimiento</th>
+          <th>Saldo</th>
+        </tr>
+      </thead>
+      <tbody id="cuotas-tbody">
+        {% for cuota in cuotas %}
+        <tr id="row-{{ cuota.pk }}" data-pk="{{ cuota.pk }}" data-saldo="{{ cuota.saldo|stringformat:'.2f' }}" data-idx="{{ forloop.counter0 }}">
+          <td><input type="checkbox" class="cuota-cb" id="cb-{{ cuota.pk }}" data-idx="{{ forloop.counter0 }}"></td>
+          <td><strong>{{ cuota.numero }}</strong></td>
+          <td>
+            {{ cuota.fecha_vencimiento|date:"d/m/Y" }}
+            {% if cuota.fecha_vencimiento < today %}<span class="badge-vencida ms-1">Vencida</span>{% endif %}
+          </td>
+          <td style="color:var(--rust);font-weight:600;">${{ cuota.saldo|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Resumen del total seleccionado -->
+  <div class="summary-box">
+    <div class="summary-row">
+      <span>Cuotas seleccionadas</span>
+      <span id="count-selected">0</span>
+    </div>
+    <div class="summary-total">
+      <span>Total a pagar</span>
+      <span id="total-display">$0.00</span>
+    </div>
+  </div>
+
+  <div id="no-selection-msg"><i class="bi bi-exclamation-triangle"></i> Selecciona al menos una cuota para continuar.</div>
+  <div id="paypal-button-container"></div>
+  <div id="paypal-msg"></div>
+</div>
+
+<script>
+const createOrderUrl = "{% url 'creditos_ventas:paypal_create_order_cuotas' factura.pk %}";
+const captureUrl     = "{% url 'creditos_ventas:paypal_capture_cuotas' factura.pk %}";
+const csrfToken      = "{{ csrf_token }}";
+const paypalSdkSrc   = "{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card";
+
+// ── Datos de cuotas ──────────────────────────────────────────────────────────
+const rows = Array.from(document.querySelectorAll('#cuotas-tbody tr'));
+const checkboxes = rows.map(r => r.querySelector('.cuota-cb'));
+const saldos = rows.map(r => parseFloat(r.dataset.saldo));
+const pks    = rows.map(r => parseInt(r.dataset.pk));
+
+function updateSummary() {
+  var count = 0;
+  var total = 0;
+  checkboxes.forEach(function(cb, i) {
+    if (cb.checked) { count++; total += saldos[i]; }
+  });
+  document.getElementById('count-selected').textContent = count;
+  document.getElementById('total-display').textContent  = '$' + total.toFixed(2);
+  document.getElementById('btn-select-all').textContent =
+    count === checkboxes.length ? 'Deseleccionar todas' : 'Seleccionar todas';
+}
+
+// Orden forzado: marcar N → marca 0..N; desmarcar N → desmarca N..último
+checkboxes.forEach(function(cb, idx) {
+  cb.addEventListener('change', function() {
+    if (this.checked) {
+      // Marcar todas desde 0 hasta idx
+      for (var i = 0; i <= idx; i++) {
+        checkboxes[i].checked = true;
+        rows[i].classList.add('row-checked');
+      }
+    } else {
+      // Desmarcar todas desde idx hasta el final
+      for (var i = idx; i < checkboxes.length; i++) {
+        checkboxes[i].checked = false;
+        rows[i].classList.remove('row-checked');
+      }
+    }
+    updateSummary();
+  });
+});
+
+document.getElementById('btn-select-all').addEventListener('click', function() {
+  var allChecked = checkboxes.every(function(cb) { return cb.checked; });
+  checkboxes.forEach(function(cb, i) {
+    cb.checked = !allChecked;
+    rows[i].classList.toggle('row-checked', !allChecked);
+  });
+  updateSummary();
+});
+
+function getSelectedPks() {
+  return pks.filter(function(_, i) { return checkboxes[i].checked; });
+}
+
+function showMsg(html) {
+  var el = document.getElementById('paypal-msg');
+  el.style.display = 'block';
+  el.innerHTML = html;
+}
+
+// ── PayPal ───────────────────────────────────────────────────────────────────
+var paypalOrderInFlight = false;
+
+function renderPaypalButtons() {
+  paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+
+    createOrder: function() {
+      var selected = getSelectedPks();
+      if (selected.length === 0) {
+        document.getElementById('no-selection-msg').style.display = 'block';
+        return Promise.reject(new Error('Sin selección'));
+      }
+      document.getElementById('no-selection-msg').style.display = 'none';
+
+      if (paypalOrderInFlight) {
+        return Promise.reject(new Error('Pago en proceso'));
+      }
+      paypalOrderInFlight = true;
+      var btn = document.getElementById('paypal-button-container');
+      btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none';
+
+      return fetch(createOrderUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ cuota_ids: selected }),
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) throw new Error(d.error);
+        return d.id;
+      })
+      .catch(function(err) {
+        paypalOrderInFlight = false;
+        var btn = document.getElementById('paypal-button-container');
+        btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+        throw err;
+      });
+    },
+
+    onApprove: function(data) {
+      var btn = document.getElementById('paypal-button-container');
+      btn.style.display = 'none';
+      showMsg('<div class="paypal-processing"><div class="paypal-spinner"></div><p>Procesando pago, no cierres esta ventana&hellip;</p></div>');
+
+      return fetch(captureUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ orderID: data.orderID, cuota_ids: getSelectedPks() }),
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        if (result.status === 'ok') {
+          window.location.href = result.redirect;
+        } else {
+          btn.style.display = 'block';
+          showMsg('<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> ' + (result.error || 'El pago no fue completado.') + '</div>');
+        }
+      })
+      .catch(function() {
+        btn.style.display = 'block';
+        showMsg('<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Error de conexión. Intenta de nuevo.</div>');
+      });
+    },
+
+    onError: function(err) {
+      paypalOrderInFlight = false;
+      var btn = document.getElementById('paypal-button-container');
+      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+      console.error('PayPal onError:', err);
+      showMsg('<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Ocurrió un error con PayPal. Intenta de nuevo.</div>');
+    },
+
+    onCancel: function() {
+      paypalOrderInFlight = false;
+      var btn = document.getElementById('paypal-button-container');
+      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+      showMsg('<div style="color:var(--muted);text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo cuando quieras.</div>');
+    },
+  }).render('#paypal-button-container');
+}
+
+// Carga dinámica del SDK
+var sdkLoaded = false;
+(function() {
+  if (!"{{ paypal_client_id }}") return;
+  var s = document.createElement('script');
+  s.src = paypalSdkSrc;
+  s.onload = function() { if (!sdkLoaded) { sdkLoaded = true; renderPaypalButtons(); } };
+  document.head.appendChild(s);
+})();
+</script>
+{% endblock %}
