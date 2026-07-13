@@ -1,5 +1,3 @@
-from itertools import groupby
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, Permission
 from django.urls import reverse_lazy
@@ -7,7 +5,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from shared.mixins import GroupRequiredMixin, SuperuserRequiredMixin
 from .forms import GroupForm, PermissionForm
-from .permission_labels import app_section_label, permission_label_es
+from .permission_labels import model_section_label, permission_label_es, SECTION_SORT_ORDER
 
 # === MIXIN BASE: SOLO ADMINISTRADOR ===
 class AdminOnlyMixin(LoginRequiredMixin, GroupRequiredMixin):
@@ -35,16 +33,26 @@ class PermissionGroupsContextMixin:
         qs = Permission.objects.select_related('content_type').order_by(
             'content_type__app_label', 'content_type__model', 'codename'
         )
-        permission_groups = []
-        for app_label, perms in groupby(qs, key=lambda p: p.content_type.app_label):
-            permission_groups.append({
-                'section': app_section_label(app_label),
-                'items': [
-                    {'permission': p, 'label': permission_label_es(p), 'checked': p.id in current_ids}
-                    for p in perms
-                ],
+
+        sections: dict[str, list] = {}
+        for perm in qs:
+            section = model_section_label(perm.content_type.app_label, perm.content_type.model)
+            sections.setdefault(section, []).append({
+                'permission': perm,
+                'label': permission_label_es(perm),
+                'checked': perm.id in current_ids,
             })
-        permission_groups.sort(key=lambda g: g['section'])
+
+        def _sort_key(name):
+            try:
+                return SECTION_SORT_ORDER.index(name)
+            except ValueError:
+                return len(SECTION_SORT_ORDER)
+
+        permission_groups = [
+            {'section': s, 'items': items}
+            for s, items in sorted(sections.items(), key=lambda x: _sort_key(x[0]))
+        ]
         context['permission_groups'] = permission_groups
         return context
 
