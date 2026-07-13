@@ -22,6 +22,8 @@ ROLES = {
         'view_purchaserequest', 'change_purchaserequest',
         # Generar el cronograma de cuotas de una factura a crédito
         'view_cuotaventa', 'add_cuotaventa',
+        # Exportar/descargar (Excel, PDF, factura individual)
+        'export_customer', 'export_invoice',
     ],
 
     # El Analista de Compras gestiona el catálogo completo y las compras a proveedores
@@ -34,6 +36,8 @@ ROLES = {
         'view_purchase', 'add_purchase', 'delete_purchase',
         # Generar el cronograma de cuotas de una compra a crédito
         'view_cuotacompra', 'add_cuotacompra',
+        # Exportar/descargar (Excel, PDF)
+        'export_brand', 'export_productgroup', 'export_supplier', 'export_product', 'export_purchase',
     ],
 
     # Contador / Finanzas: cuentas por cobrar/pagar y reportes financieros
@@ -45,6 +49,8 @@ ROLES = {
         'view_cuotaventa', 'change_cuotaventa',
         'view_pagocuotaventa', 'add_pagocuotaventa',
         'view_invoice', 'view_purchase', 'view_invoicedetail', 'view_product', 'view_customer', 'view_supplier',
+        # Exportar/descargar reportes financieros y listados de facturas/compras
+        'export_invoice', 'export_purchase', 'descargar_reportes_financieros',
     ],
 
     # Atención al Cliente: solo revisa y aprueba/rechaza pedidos de la tienda

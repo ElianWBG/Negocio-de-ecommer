@@ -17,7 +17,7 @@ from .forms import (
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
 from shared.mixins import PermissionRequiredAnyMixin
-from shared.decorators import audit_action, permission_required_any
+from shared.decorators import audit_action, permission_required_any, user_can_export
 from billing.audit import log_action
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
@@ -247,6 +247,9 @@ def brand_list(request):
 
     # Export (respeta las columnas visibles seleccionadas)
     export = request.GET.get('export')
+    if export in ('excel', 'pdf') and not user_can_export(request, 'billing.export_brand'):
+        messages.error(request, 'No tienes permiso para exportar esta información.')
+        export = None
     if export in ('excel', 'pdf'):
         all_columns = get_all_brand_columns()
         if export == 'excel':
@@ -363,6 +366,9 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_productgroup'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt in ('excel', 'pdf'):
             visible_columns = self.get_visible_cols()
             all_columns = get_all_productgroup_columns()
@@ -486,6 +492,9 @@ class SupplierListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_supplier'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt in ('excel', 'pdf'):
             visible_columns = self.get_visible_cols()
             all_columns = get_all_supplier_columns()
@@ -621,6 +630,9 @@ class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_product'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -977,6 +989,9 @@ class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_customer'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -1281,6 +1296,9 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_invoice'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -1630,7 +1648,7 @@ class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
         return response
 
 
-@permission_required_any('billing.view_invoice')
+@permission_required_any('billing.export_invoice')
 def invoice_pdf(request, pk):
     """Server-generated PDF for a single invoice (opens inline in browser)."""
     from billing.services import build_invoice_pdf
@@ -2200,7 +2218,7 @@ def report_sales(request):
     })
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -2280,7 +2298,7 @@ def report_sales_excel(request):
     return response
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_sales_pdf(request):
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
@@ -2398,7 +2416,7 @@ def report_stock(request):
     })
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_stock_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment

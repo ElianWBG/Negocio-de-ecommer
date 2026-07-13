@@ -25,6 +25,14 @@ def group_required(*groups):
     return decorator
 
 
+def user_can_export(request, *perms):
+    """Chequeo puntual (no decorador) para la acción de exportar/descargar
+    dentro de una vista de listado que ya está protegida por su propio
+    permiso de 'ver'. Exportar es una acción aparte: alguien puede tener
+    permiso para VER un listado sin tener permiso para DESCARGARLO."""
+    return request.user.is_superuser or any(request.user.has_perm(p) for p in perms)
+
+
 def permission_required_any(*perms):
     """
     Decorador para FBVs. Exige al menos uno de los permisos indicados

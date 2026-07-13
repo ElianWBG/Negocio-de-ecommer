@@ -7,6 +7,7 @@ ACTION_LABELS_ES = {
     'change': 'Editar',
     'delete': 'Eliminar',
     'view': 'Ver',
+    'export': 'Exportar/descargar',
 }
 
 APP_SECTION_LABELS_ES = {
