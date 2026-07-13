@@ -80,6 +80,10 @@ PAYPAL_API_BASE = 'https://api-m.paypal.com' if _PAYPAL_LIVE else 'https://api-m
 PAYPAL_SDK_BASE = 'https://www.paypal.com' if _PAYPAL_LIVE else 'https://www.sandbox.paypal.com'
 SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
+# Microservicio SRI — dejar SRI_MICRO_URL vacío para desactivar la integración
+SRI_MICRO_URL = env('SRI_MICRO_URL', default='')
+SRI_MICRO_API_KEY = env('SRI_MICRO_API_KEY', default='')
+
 # Application definition
 
 INSTALLED_APPS = [
