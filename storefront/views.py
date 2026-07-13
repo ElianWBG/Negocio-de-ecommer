@@ -22,9 +22,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from billing.models import Product, ProductGroup, Customer, Brand
+from billing.models import Product, ProductGroup, Customer, Brand, Review
 from . import payphone
-from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm
+from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, ReviewForm
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
 from .services import confirm_purchase_request, confirm_purchase_request_credito, InsufficientStockError
 CART_SESSION_KEY = 'storefront_cart'
@@ -381,8 +381,18 @@ def product_detail(request, pk):
         Product.objects.prefetch_related('images'), pk=pk, is_active=True
     )
     cart_count = sum(_get_cart(request).values())
+    reviews = product.reviews.select_related('customer').all()
+    user_review = None
+    can_review = False
+    if _is_customer(request.user):
+        customer = request.user.customer_profile
+        user_review = reviews.filter(customer=customer).first()
+        can_review = PurchaseRequest.objects.filter(
+            customer=customer, status='confirmada', details__product=product
+        ).exists()
     return render(request, 'storefront/product_detail.html', {
         'product': product, 'cart_count': cart_count,
+        'reviews': reviews, 'user_review': user_review, 'can_review': can_review,
     })
 
 
@@ -667,6 +677,10 @@ def my_orders(request):
     else:
         requests_qs = all_requests.order_by('-created_at')
 
+    reviewed_product_ids = set(
+        Review.objects.filter(customer=customer).values_list('product_id', flat=True)
+    )
+
     return render(request, 'storefront/my_orders.html', {
         'requests':      requests_qs,
         'status':        status_filter,
@@ -674,6 +688,41 @@ def my_orders(request):
         'counts':        counts,
         'total_count':   all_requests.count(),
         'cart_count':    sum(_get_cart(request).values()),
+        'reviewed_product_ids': reviewed_product_ids,
+    })
+
+
+def leave_review(request, pk):
+    """Deja o edita la reseña del cliente autenticado sobre un producto que
+    ya compró (pedido con status='confirmada'). Una reseña por cliente y
+    producto — si ya existe, esta misma vista la edita en vez de duplicarla."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:leave_review', args=[pk])
+        return redirect('storefront:customer_login')
+    customer = request.user.customer_profile
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+
+    has_purchased = PurchaseRequest.objects.filter(
+        customer=customer, status='confirmada', details__product=product
+    ).exists()
+    if not has_purchased:
+        messages.error(request, 'Solo puedes reseñar productos que hayas comprado y que estén confirmados.')
+        return redirect('storefront:product_detail', pk=product.pk)
+
+    review = Review.objects.filter(customer=customer, product=product).first()
+    form = ReviewForm(request.POST or None, instance=review)
+    if request.method == 'POST' and form.is_valid():
+        obj = form.save(commit=False)
+        obj.customer, obj.product = customer, product
+        obj.save()
+        messages.success(request, 'Reseña actualizada.' if review else 'Gracias por tu reseña.')
+        return redirect('storefront:product_detail', pk=product.pk)
+
+    return render(request, 'storefront/leave_review.html', {
+        'product': product,
+        'form': form,
+        'existing_review': review,
+        'cart_count': sum(_get_cart(request).values()),
     })
 
 

@@ -35,6 +35,7 @@
   .order-item-name { flex:1; font-size:.875rem; font-weight:500; }
   .order-item-qty { font-size:.8rem; color:var(--muted); }
   .order-item-price { font-weight:600; font-size:.9rem; }
+  .order-item-review { font-size:.78rem; padding:3px 10px; white-space:nowrap; }
 
   .order-status-bar { padding:.75rem 1.25rem; background:var(--sand); display:flex; align-items:center; gap:.6rem; font-size:.85rem; border-top:1px solid var(--sand-dark); }
   .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -109,6 +110,15 @@
                 <span class="order-item-qty">×{{ d.quantity }}</span>
               </div>
               <span class="order-item-price">${{ d.subtotal }}</span>
+              {% if r.status == 'confirmada' %}
+              <a href="{% url 'storefront:leave_review' d.product.pk %}" class="btn btn-sm btn-outline-primary order-item-review">
+                {% if d.product.pk in reviewed_product_ids %}
+                  <i class="bi bi-pencil"></i> Editar reseña
+                {% else %}
+                  <i class="bi bi-star"></i> Dejar reseña
+                {% endif %}
+              </a>
+              {% endif %}
             </div>
             {% endfor %}
           </div>

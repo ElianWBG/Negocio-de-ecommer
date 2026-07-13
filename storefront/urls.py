@@ -20,6 +20,7 @@ urlpatterns = [
     # Catálogo público
     path('', views.catalog_list, name='catalog_list'),
     path('producto/<int:pk>/', views.product_detail, name='product_detail'),
+    path('producto/<int:pk>/resena/', views.leave_review, name='leave_review'),
 
     # Carrito (sin login)
     path('carrito/', views.cart_view, name='cart_view'),

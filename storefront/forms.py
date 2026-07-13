@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from billing.models import Customer
+from billing.models import Customer, Review
 
 
 class CustomerRegistrationForm(forms.Form):
@@ -77,3 +77,28 @@ class CustomerRequestForm(forms.ModelForm):
 
     def validate_unique(self):
         pass
+
+
+class ReviewForm(forms.ModelForm):
+    """Reseña de un producto ya comprado. Una por (cliente, producto),
+    reutilizable para crear o editar (se pasa instance=review existente)."""
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.Select(
+                choices=[(i, f'{i} estrella{"s" if i != 1 else ""}') for i in range(5, 0, -1)],
+                attrs={'class': 'form-control'},
+            ),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 4,
+                'placeholder': 'Cuéntanos qué te pareció el producto...',
+            }),
+        }
+        labels = {'rating': 'Calificación', 'comment': 'Comentario'}
+
+    def clean_comment(self):
+        comment = self.cleaned_data['comment'].strip()
+        if len(comment) < 5:
+            raise forms.ValidationError('El comentario es demasiado corto.')
+        return comment

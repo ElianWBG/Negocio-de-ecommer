@@ -1,0 +1,62 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Reseñar {{ product.name }}{% endblock %}
+{% block extra_css %}
+<style>
+  .auth-wrap { min-height:60vh; display:flex; align-items:center; justify-content:center; padding:2rem 0; }
+  .auth-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:2.5rem; width:100%; max-width:480px; box-shadow:var(--shadow-lg); }
+  .review-product { display:flex; align-items:center; gap:.9rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border); }
+  .review-product-thumb { width:56px; height:56px; border-radius:8px; background:var(--sand-dark); overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .review-product-thumb img { width:100%; height:100%; object-fit:cover; }
+  .review-product-thumb i { font-size:1.1rem; color:var(--border); }
+  .review-product-name { font-family:var(--font-head); font-size:1.15rem; font-weight:600; }
+  .review-edit-note { background:var(--sand); border:1px solid var(--sand-dark); border-radius:8px; padding:.65rem .9rem; font-size:.85rem; color:var(--muted); margin-bottom:1.25rem; }
+  .form-control { width:100%; }
+  select.form-control { appearance:auto; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="review-product">
+      <div class="review-product-thumb">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="">
+        {% else %}
+          <i class="bi bi-image"></i>
+        {% endif %}
+      </div>
+      <div>
+        <div class="review-product-name">{{ product.name }}</div>
+      </div>
+    </div>
+
+    {% if existing_review %}
+    <div class="review-edit-note">
+      Ya reseñaste este producto — puedes editar tu reseña abajo.
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="{{ form.rating.id_for_label }}">{{ form.rating.label }}</label>
+        {{ form.rating }}
+        {% for error in form.rating.errors %}<p style="color:var(--rust);font-size:.8rem;margin-top:.3rem;">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.comment.id_for_label }}">{{ form.comment.label }}</label>
+        {{ form.comment }}
+        {% for error in form.comment.errors %}<p style="color:var(--rust);font-size:.8rem;margin-top:.3rem;">{{ error }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">
+        {% if existing_review %}Actualizar reseña{% else %}Guardar reseña{% endif %}
+      </button>
+    </form>
+    <div style="text-align:center;margin-top:1.25rem;">
+      <a href="{% url 'storefront:product_detail' product.pk %}" style="color:var(--muted);font-size:.875rem;text-decoration:none;">
+        ← Volver al producto
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from shared.validators import validate_cedula_ec
 
@@ -89,6 +90,16 @@ class Product(models.Model):
                 urls.append(extra.image.url)
         return urls
 
+    @property
+    def average_rating(self):
+        from django.db.models import Avg
+        result = self.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(result, 1) if result is not None else None
+
+    @property
+    def review_count(self):
+        return self.reviews.count()
+
 
 class ProductImage(models.Model):
     """Imágenes adicionales de un producto (galería / carrusel)."""
@@ -105,6 +116,30 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f'Imagen de {self.product.name} (#{self.order})'
+
+
+class Review(models.Model):
+    """Reseña de un cliente sobre un producto que ya compró (confirmado)."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Producto')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='reviews', verbose_name='Cliente')
+    rating = models.PositiveSmallIntegerField(
+        verbose_name='Calificación',
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    comment = models.TextField(verbose_name='Comentario')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['customer', 'product'], name='unique_review_per_customer_product'),
+        ]
+        ordering = ['-created_at']
+        verbose_name = 'Reseña'
+        verbose_name_plural = 'Reseñas'
+
+    def __str__(self):
+        return f'{self.customer.full_name} → {self.product.name} ({self.rating}★)'
 
 
 class Customer(models.Model):
