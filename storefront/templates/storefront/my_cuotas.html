@@ -1,0 +1,160 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Mis cuotas{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cuotas-layout { display:grid; grid-template-columns:280px 1fr; gap:2rem; align-items:start; }
+
+  /* Sidebar igual al perfil */
+  .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem; text-align:center; position:sticky; top:80px; }
+  .profile-avatar { width:80px; height:80px; border-radius:50%; background:var(--espresso); color:#fff; font-family:var(--font-head); font-size:2.2rem; font-weight:600; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; }
+  .profile-name { font-family:var(--font-head); font-size:1.4rem; font-weight:600; margin-bottom:.2rem; }
+  .profile-email { color:var(--muted); font-size:.875rem; margin-bottom:1.25rem; }
+  .profile-nav { border-top:1px solid var(--border); padding-top:1rem; text-align:left; }
+  .profile-nav a { display:flex; align-items:center; gap:.5rem; padding:.5rem .6rem; border-radius:7px; color:var(--muted); text-decoration:none; font-size:.875rem; transition:all var(--transition); }
+  .profile-nav a:hover { background:var(--sand); color:var(--text); }
+  .profile-nav a.active { background:var(--sand-dark); color:var(--text); font-weight:500; }
+
+  /* Cuotas */
+  .cuotas-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .cuotas-panel-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .cuotas-panel-head h2 { font-family:var(--font-head); font-size:1.3rem; margin:0; }
+
+  .cuota-group-title { padding:.6rem 1.5rem; background:var(--sand); font-size:.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); }
+
+  table.cuotas-table { width:100%; border-collapse:collapse; }
+  .cuotas-table th { font-size:.65rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700; padding:.65rem 1rem; border-bottom:2px solid var(--border); text-align:left; white-space:nowrap; }
+  .cuotas-table td { padding:.7rem 1rem; border-bottom:1px solid var(--sand-dark); font-size:.875rem; vertical-align:middle; }
+  .cuotas-table tr:last-child td { border-bottom:none; }
+
+  .badge-pendiente { background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; }
+  .badge-vencida   { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; }
+  .badge-pagada    { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; }
+
+  .btn-pagar { display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:6px; font-size:.75rem; font-weight:600; text-decoration:none; color:#fff; background:var(--rust); border:none; cursor:pointer; transition:opacity .15s; }
+  .btn-pagar:hover { opacity:.85; color:#fff; }
+  .btn-comprobante { display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:6px; font-size:.75rem; font-weight:600; text-decoration:none; color:var(--rust); border:1.5px solid var(--rust); background:transparent; transition:background .15s,color .15s; }
+  .btn-comprobante:hover { background:var(--rust); color:#fff; }
+
+  .total-pendiente { display:flex; align-items:center; gap:.5rem; font-size:.9rem; color:var(--muted); }
+  .total-pendiente strong { color:var(--rust); font-size:1.1rem; }
+
+  .empty-cuotas { text-align:center; padding:3rem 1rem; color:var(--muted); }
+  .empty-cuotas i { font-size:2.5rem; opacity:.25; display:block; margin-bottom:.75rem; }
+
+  @media(max-width:768px) {
+    .cuotas-layout { grid-template-columns:1fr; }
+    .profile-card { position:static; }
+    .cuotas-table th:nth-child(3),
+    .cuotas-table td:nth-child(3) { display:none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cuotas-layout">
+
+  <!-- Sidebar -->
+  <div class="profile-card">
+    <div class="profile-avatar">{{ request.user.first_name|first|upper }}</div>
+    <p class="profile-name">{{ request.user.get_full_name }}</p>
+    <p class="profile-email">{{ request.user.email }}</p>
+    <div class="profile-nav">
+      <a href="{% url 'storefront:profile' %}">
+        <i class="bi bi-person"></i> Mis datos
+      </a>
+      <a href="{% url 'storefront:my_orders' %}">
+        <i class="bi bi-bag-check"></i> Mis pedidos
+      </a>
+      <a href="{% url 'storefront:my_cuotas' %}" class="active" style="justify-content:space-between;">
+        <span><i class="bi bi-calendar2-check"></i> Mis cuotas</span>
+        {% if pendientes_count %}<span style="background:var(--rust);color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">{{ pendientes_count }}</span>{% endif %}
+      </a>
+      <a href="{% url 'storefront:change_password' %}">
+        <i class="bi bi-key"></i> Cambiar contraseña
+      </a>
+    </div>
+  </div>
+
+  <!-- Panel de cuotas -->
+  <div>
+    {% regroup cuotas by factura as cuotas_por_factura %}
+
+    {% if cuotas_por_factura %}
+      {% for grupo in cuotas_por_factura %}
+      <div class="cuotas-panel mb-3">
+        <div class="cuota-group-title">
+          <i class="bi bi-receipt"></i>
+          Factura #{{ grupo.grouper.id }} &nbsp;·&nbsp;
+          Total ${{ grupo.grouper.total|floatformat:2 }} &nbsp;·&nbsp;
+          {{ grupo.list|length }} cuota{{ grupo.list|length|pluralize }}
+        </div>
+        <table class="cuotas-table">
+          <thead>
+            <tr>
+              <th>Cuota</th>
+              <th>Vencimiento</th>
+              <th>Valor</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cuota in grupo.list %}
+            <tr>
+              <td><strong>{{ cuota.numero }}</strong></td>
+              <td>
+                {{ cuota.fecha_vencimiento|date:"d/m/Y" }}
+                {% if cuota.estado == 'pendiente' and cuota.fecha_vencimiento < today %}
+                  <span style="color:#c0392b;font-size:.7rem;display:block;">Vencida</span>
+                {% endif %}
+              </td>
+              <td>${{ cuota.valor|floatformat:2 }}</td>
+              <td>
+                {% if cuota.saldo > 0 %}
+                  <span style="color:var(--rust);font-weight:600;">${{ cuota.saldo|floatformat:2 }}</span>
+                {% else %}
+                  <span style="color:#10b981;">$0.00</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if cuota.estado == 'pagada' %}
+                  <span class="badge-pagada"><i class="bi bi-check-circle"></i> Pagada</span>
+                {% elif cuota.fecha_vencimiento < today %}
+                  <span class="badge-vencida"><i class="bi bi-exclamation-circle"></i> Vencida</span>
+                {% else %}
+                  <span class="badge-pendiente"><i class="bi bi-clock"></i> Pendiente</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if cuota.estado == 'pendiente' %}
+                  <a href="{% url 'creditos_ventas:pagar_cuota_paypal' cuota.pk %}" class="btn-pagar">
+                    <i class="bi bi-paypal"></i> Pagar
+                  </a>
+                {% else %}
+                  <a href="{% url 'creditos_ventas:comprobante_cuota' cuota.pk %}" class="btn-comprobante" target="_blank">
+                    <i class="bi bi-file-earmark-check"></i> Comprobante
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+
+    {% else %}
+      <div class="cuotas-panel">
+        <div class="empty-cuotas">
+          <i class="bi bi-calendar2-x"></i>
+          <p class="mb-0">No tienes cuotas de crédito activas.</p>
+          <a href="{% url 'storefront:catalog_list' %}" class="btn btn-dark mt-3" style="font-size:.85rem;">Explorar catálogo</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

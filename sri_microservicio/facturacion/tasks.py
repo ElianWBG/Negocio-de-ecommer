@@ -119,11 +119,19 @@ def emitir_factura(self, factura_id: int):
         factura.save(update_fields=["pdf_path"])
 
         # 6) Correo al cliente ------------------------------------------------
-        enviar_comprobante(
-            factura=factura,
-            xml_path=factura.xml_autorizado_path or factura.xml_path,
-            pdf_path=factura.pdf_path,
-        )
+        # Aislado en su propio try/except: si falla el correo no se reintenta
+        # todo el flujo (firma, recepción, autorización SRI ya completados).
+        try:
+            enviar_comprobante(
+                factura=factura,
+                xml_path=factura.xml_autorizado_path or factura.xml_path,
+                pdf_path=factura.pdf_path,
+            )
+        except Exception as mail_exc:
+            logger.exception(
+                "Error enviando comprobante por correo para factura %s: %s",
+                factura_id, mail_exc,
+            )
 
         return {"factura": factura_id, "estado": factura.estado}
 

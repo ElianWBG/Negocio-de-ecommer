@@ -15,6 +15,7 @@ urlpatterns = [
     path('factura/<int:pk>/pdf/', views.customer_invoice_pdf, name='customer_invoice_pdf'),
     path('cambiar-contrasena/', views.change_password, name='change_password'),
     path('perfil/', views.profile, name='profile'),
+    path('mis-cuotas/', views.my_cuotas, name='my_cuotas'),
 
     # Catálogo público
     path('', views.catalog_list, name='catalog_list'),
