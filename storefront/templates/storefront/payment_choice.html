@@ -62,10 +62,11 @@
         {% csrf_token %}
         <label class="form-label" for="numero_cuotas" style="font-size:.85rem; font-weight:600; display:block; margin-bottom:.35rem;">Número de cuotas</label>
         <select name="numero_cuotas" id="numero_cuotas" class="form-select" style="width:100%; height:42px; border:1.5px solid var(--border); border-radius:8px; padding:0 .6rem; margin-bottom:.25rem;">
-          <option value="3">3 cuotas</option>
-          <option value="6" selected>6 cuotas</option>
-          <option value="9">9 cuotas</option>
-          <option value="12">12 cuotas</option>
+          <option value="3" {% if numero_cuotas_sugerido == 3 %}selected{% endif %}>3 cuotas</option>
+          <option value="6" {% if numero_cuotas_sugerido == 6 %}selected{% endif %}>6 cuotas</option>
+          <option value="9" {% if numero_cuotas_sugerido == 9 %}selected{% endif %}>9 cuotas</option>
+          <option value="12" {% if numero_cuotas_sugerido == 12 %}selected{% endif %}>12 cuotas</option>
+          <option value="18" {% if numero_cuotas_sugerido == 18 %}selected{% endif %}>18 cuotas</option>
         </select>
         <p class="credit-cuota-estimate">Cuota estimada: <strong id="credit-cuota-monto">$0.00</strong>/mes</p>
         <button type="submit" class="btn btn-primary btn-full">Confirmar compra a crédito</button>

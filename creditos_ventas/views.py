@@ -1,15 +1,38 @@
+import json
+import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from billing.models import Invoice, Customer
 from shared.decorators import permission_required_any
+from shared.paypal_client import paypal_access_token, paypal_request
 
 from .forms import GenerarCuotasForm, PagoCuotaVentaForm
-from .models import CuotaVenta
+from .models import CuotaVenta, PagoCuotaVenta
 from .services import generar_cuotas, registrar_pago_cuota
+
+logger = logging.getLogger(__name__)
+
+
+def _es_dueno_o_staff(request, factura):
+    """Devuelve (autorizado, es_dueno) para una factura: dueño (cliente
+    autenticado con customer_profile == factura.customer) o staff con
+    permiso de ver cuotas/pagos."""
+    user = request.user
+    is_owner = hasattr(user, 'customer_profile') and user.customer_profile.pk == factura.customer_id
+    is_staff_viewer = user.is_authenticated and (
+        user.is_superuser
+        or user.has_perm('creditos_ventas.view_cuotaventa')
+        or user.has_perm('creditos_ventas.view_pagocuotaventa')
+    )
+    return (is_owner or is_staff_viewer), is_owner
 
 
 def comprobante_cuota(request, pk):
@@ -18,12 +41,8 @@ def comprobante_cuota(request, pk):
     cuota = get_object_or_404(
         CuotaVenta.objects.select_related('factura', 'factura__customer'), pk=pk
     )
-    user = request.user
-    is_owner = hasattr(user, 'customer_profile') and user.customer_profile.pk == cuota.factura.customer_id
-    is_staff_viewer = user.is_authenticated and (user.is_superuser or user.has_perm('creditos_ventas.view_cuotaventa'))
-
-    if not (is_owner or is_staff_viewer):
-        from django.urls import reverse
+    autorizado, is_owner = _es_dueno_o_staff(request, cuota.factura)
+    if not autorizado:
         request.session['next_after_login'] = reverse('creditos_ventas:comprobante_cuota', args=[cuota.pk])
         messages.info(request, 'Inicia sesión para ver tu comprobante.')
         return redirect('storefront:customer_login')
@@ -33,7 +52,134 @@ def comprobante_cuota(request, pk):
 
     return render(request, 'creditos_ventas/comprobante_cuota.html', {
         'cuota': cuota, 'codigo': codigo, 'total_cuotas': total_cuotas,
+        'puede_pagar_paypal': is_owner and cuota.estado == 'pendiente',
     })
+
+
+def recibo_pago(request, pk):
+    """Recibo único e imprimible de UN pago (cuota o total) registrado
+    sobre una cuota. Se genera automáticamente después de cada pago,
+    sea registrado por el staff o pagado por el cliente vía PayPal."""
+    pago = get_object_or_404(
+        PagoCuotaVenta.objects.select_related('cuota', 'cuota__factura', 'cuota__factura__customer'), pk=pk
+    )
+    autorizado, _ = _es_dueno_o_staff(request, pago.cuota.factura)
+    if not autorizado:
+        request.session['next_after_login'] = reverse('creditos_ventas:recibo_pago', args=[pago.pk])
+        messages.info(request, 'Inicia sesión para ver tu recibo.')
+        return redirect('storefront:customer_login')
+
+    codigo = f'RP-{pago.cuota.factura_id:05d}-{pago.cuota.numero:02d}-{pago.pk:04d}'
+
+    return render(request, 'creditos_ventas/recibo_pago.html', {
+        'pago': pago, 'cuota': pago.cuota, 'codigo': codigo,
+    })
+
+
+def pagar_cuota_paypal(request, pk):
+    """Página con el botón de PayPal para pagar el saldo completo de una
+    cuota específica. Solo el cliente dueño de la factura puede entrar."""
+    cuota = get_object_or_404(CuotaVenta.objects.select_related('factura', 'factura__customer'), pk=pk)
+    _, is_owner = _es_dueno_o_staff(request, cuota.factura)
+
+    if not is_owner:
+        request.session['next_after_login'] = reverse('creditos_ventas:pagar_cuota_paypal', args=[cuota.pk])
+        messages.info(request, 'Inicia sesión para pagar tu cuota.')
+        return redirect('storefront:customer_login')
+
+    if cuota.estado == 'pagada':
+        messages.info(request, 'Esta cuota ya está pagada.')
+        return redirect('creditos_ventas:comprobante_cuota', pk=cuota.pk)
+
+    return render(request, 'creditos_ventas/pagar_cuota_paypal.html', {
+        'cuota': cuota,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'paypal_sdk_base': settings.PAYPAL_SDK_BASE,
+    })
+
+
+@require_POST
+def paypal_create_order_cuota(request, pk):
+    """Crea una orden en PayPal server-side por el saldo de la cuota."""
+    cuota = get_object_or_404(CuotaVenta, pk=pk)
+    _, is_owner = _es_dueno_o_staff(request, cuota.factura)
+    if not is_owner:
+        return JsonResponse({'error': 'No autorizado.'}, status=403)
+    if cuota.estado == 'pagada':
+        return JsonResponse({'error': 'Esta cuota ya está pagada.'}, status=400)
+
+    total = '{:.2f}'.format(cuota.saldo)
+    try:
+        token = paypal_access_token()
+        order = paypal_request(
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders',
+            data=json.dumps({
+                'intent': 'CAPTURE',
+                'purchase_units': [{
+                    'amount': {'currency_code': 'USD', 'value': total},
+                    'description': f'Cuota {cuota.numero} - Factura #{cuota.factura_id}',
+                }],
+            }).encode(),
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+        return JsonResponse({'id': order['id']})
+    except Exception as e:
+        logger.exception('PayPal error (cuota %s): %s', cuota.pk, e)
+        return JsonResponse({'error': 'No se pudo iniciar el pago. Intenta de nuevo.'}, status=502)
+
+
+def paypal_capture_cuota(request, pk):
+    """Captura el pago después de que PayPal lo aprueba y registra el
+    abono sobre la cuota (por el saldo completo en el momento de crear
+    la orden)."""
+    cuota = get_object_or_404(CuotaVenta.objects.select_related('factura'), pk=pk)
+    _, is_owner = _es_dueno_o_staff(request, cuota.factura)
+
+    if request.method != 'POST':
+        return redirect('creditos_ventas:pagar_cuota_paypal', pk=pk)
+    if not is_owner:
+        return JsonResponse({'error': 'No autorizado.'}, status=403)
+    if cuota.estado == 'pagada':
+        return JsonResponse({'error': 'Esta cuota ya está pagada.'}, status=400)
+
+    try:
+        order_id = json.loads(request.body).get('orderID')
+        if not order_id:
+            return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
+        token = paypal_access_token()
+        capture_data = paypal_request(
+            f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
+            data=b'{}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json',
+            },
+        )
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
+    except Exception as e:
+        logger.exception('PayPal error (captura cuota %s): %s', cuota.pk, e)
+        return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
+
+    if capture_data.get('status') == 'COMPLETED':
+        try:
+            pago = registrar_pago_cuota(
+                cuota, cuota.saldo, timezone.localdate(),
+                observacion=f'Pago vía PayPal (orden {order_id})',
+            )
+        except ValueError as e:
+            # No debería pasar (saldo ya validado arriba), pero por si dos
+            # pestañas pagan la misma cuota casi al mismo tiempo.
+            logger.exception('Error al registrar pago de cuota %s tras captura PayPal: %s', cuota.pk, e)
+            return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
+            reverse('creditos_ventas:recibo_pago', args=[pago.pk])
+        )})
+
+    return JsonResponse({'error': 'El pago no fue aprobado por PayPal.'}, status=400)
 
 
 @permission_required_any('creditos_ventas.add_cuotaventa')
@@ -105,7 +251,7 @@ def pago_cuota_create(request, pk):
     if request.method == 'POST':
         form = PagoCuotaVentaForm(request.POST, initial={'cuota': cuota})
         if form.is_valid():
-            registrar_pago_cuota(
+            pago = registrar_pago_cuota(
                 cuota,
                 form.cleaned_data['valor'],
                 form.cleaned_data['fecha'],
@@ -115,7 +261,7 @@ def pago_cuota_create(request, pk):
                 request,
                 f'Pago registrado. Saldo restante de la cuota: ${cuota.saldo}'
             )
-            return redirect('creditos_ventas:cuota_payment_history', pk=cuota.pk)
+            return redirect('creditos_ventas:recibo_pago', pk=pago.pk)
     else:
         form = PagoCuotaVentaForm(initial={
             'cuota': cuota, 'valor': cuota.saldo, 'fecha': timezone.localdate(),

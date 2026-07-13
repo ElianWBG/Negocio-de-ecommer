@@ -173,14 +173,15 @@
         <p class="cuota-estimate">Cuota estimada: <strong id="cuotaMonto">$0.00</strong>/mes</p>
         <p class="cuota-note">
           <i class="bi bi-info-circle"></i>
-          Simulación referencial, sin compromiso. Agrega el producto al carrito y coordina
-          el crédito directo con nosotros al finalizar tu pedido.
+          Simulación referencial. El número de cuotas se propone al finalizar tu pedido —
+          podrás confirmarlo o cambiarlo antes de pagar.
         </p>
       </div>
 
       <form method="post" action="{% url 'storefront:cart_add' product.pk %}" id="add-cart-form">
         {% csrf_token %}
         <input type="hidden" name="next" id="cart-next" value="">
+        <input type="hidden" name="numero_cuotas" id="cart-numero-cuotas" value="">
         <div class="qty-section">
           <p class="qty-label">Cantidad</p>
           <div class="qty-controls">
@@ -257,6 +258,7 @@ function changeQty(delta) {
   var cartNext = document.getElementById('cart-next');
   var cuotasSelect = document.getElementById('cuotasSelect');
   var cuotaMonto = document.getElementById('cuotaMonto');
+  var cartNumeroCuotas = document.getElementById('cart-numero-cuotas');
   var unitPrice = parseFloat('{{ product.unit_price|stringformat:"f" }}') || 0;
 
   if (!tabs.length) return;
@@ -266,6 +268,7 @@ function changeQty(delta) {
     var qty = parseInt(document.getElementById('qty').value, 10) || 1;
     var n = parseInt(cuotasSelect.value, 10) || 1;
     cuotaMonto.textContent = '$' + ((unitPrice * qty) / n).toFixed(2);
+    if (cartNumeroCuotas) cartNumeroCuotas.value = n;
   }
   window.recalcCuotaEstimate = recalcCuota;
 
@@ -274,6 +277,7 @@ function changeQty(delta) {
     if (creditoPanel) creditoPanel.hidden = name !== 'credito';
     if (paypalBtn) paypalBtn.style.display = name === 'paypal' ? '' : 'none';
     if (cartNext) cartNext.value = name === 'paypal' ? 'checkout' : '';
+    if (cartNumeroCuotas) cartNumeroCuotas.value = name === 'credito' ? (cuotasSelect ? cuotasSelect.value : '') : '';
     if (name === 'credito') recalcCuota();
   }
 

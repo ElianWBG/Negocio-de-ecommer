@@ -1,0 +1,89 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Recibo {{ codigo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .voucher-wrap { max-width: 560px; margin: 0 auto; }
+  .voucher-doc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 2rem 2.25rem; position: relative; overflow: hidden;
+  }
+  .voucher-doc::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, #1a7f4b 0%, color-mix(in srgb, #1a7f4b 15%, var(--surface)) 100%);
+  }
+  .voucher-tag { font-size: .65rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #1a7f4b; margin-bottom: .35rem; }
+  .voucher-code { font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: 1.25rem; }
+  .voucher-row { display: flex; justify-content: space-between; padding: .55rem 0; border-bottom: 1px solid var(--sand-dark); font-size: .9rem; }
+  .voucher-row:last-of-type { border-bottom: none; }
+  .voucher-row span:first-child { color: var(--muted); }
+  .voucher-row span:last-child { font-weight: 600; text-align: right; }
+  .voucher-amount { text-align: center; padding: 1.25rem; margin: 1.25rem 0; background: #ecf9f1; border-radius: 10px; }
+  .voucher-amount .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .3rem; }
+  .voucher-amount .value { font-family: var(--font-head); font-size: 2rem; font-weight: 700; color: #1a7f4b; }
+  .voucher-footer { text-align: center; margin-top: 1.5rem; font-size: .78rem; color: var(--muted); }
+  .voucher-actions { display: flex; justify-content: center; gap: .75rem; margin-top: 1.5rem; }
+  .voucher-check { text-align: center; font-size: 2.5rem; color: #1a7f4b; margin-bottom: .5rem; }
+
+  @media print {
+    .sidebar, .topbar, .no-print, header, footer { display: none !important; }
+    .voucher-doc { border: none; box-shadow: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="voucher-wrap">
+  <div class="voucher-actions no-print">
+    <a href="{% url 'creditos_ventas:comprobante_cuota' cuota.pk %}" class="btn btn-outline">
+      <i class="bi bi-arrow-left"></i> Volver a la cuota
+    </a>
+    <button onclick="window.print()" class="btn btn-dark">
+      <i class="bi bi-printer"></i> Imprimir / Guardar PDF
+    </button>
+  </div>
+
+  <div class="voucher-doc">
+    <div class="voucher-check"><i class="bi bi-check-circle-fill"></i></div>
+    <div class="voucher-tag" style="text-align:center;">Recibo de pago</div>
+    <div class="voucher-code" style="text-align:center;">{{ codigo }}</div>
+
+    <div class="voucher-row">
+      <span>Cliente</span>
+      <span>{{ cuota.factura.customer.full_name }}</span>
+    </div>
+    <div class="voucher-row">
+      <span>Factura</span>
+      <span>#{{ cuota.factura_id }}</span>
+    </div>
+    <div class="voucher-row">
+      <span>Cuota pagada</span>
+      <span>N.° {{ cuota.numero }}</span>
+    </div>
+    <div class="voucher-row">
+      <span>Fecha de pago</span>
+      <span>{{ pago.fecha|date:"d/m/Y" }}</span>
+    </div>
+    {% if pago.observacion %}
+    <div class="voucher-row">
+      <span>Observación</span>
+      <span>{{ pago.observacion }}</span>
+    </div>
+    {% endif %}
+    <div class="voucher-row">
+      <span>Saldo restante de la cuota</span>
+      <span>${{ cuota.saldo }}</span>
+    </div>
+
+    <div class="voucher-amount">
+      <div class="label">Valor pagado</div>
+      <div class="value">${{ pago.valor }}</div>
+    </div>
+
+    <div class="voucher-footer">
+      Este recibo confirma el pago registrado sobre la Cuota N.° {{ cuota.numero }} de la
+      Factura #{{ cuota.factura_id }}. Guárdalo como comprobante.
+    </div>
+  </div>
+</div>
+{% endblock %}

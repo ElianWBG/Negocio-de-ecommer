@@ -1,0 +1,128 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Pagar cuota con PayPal{% endblock %}
+{% block extra_css %}
+<style>
+  .paypal-wrap { max-width: 560px; margin: 0 auto; }
+  .order-recap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; }
+  .order-recap h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: 1rem; }
+  .recap-row { display: flex; justify-content: space-between; padding: .45rem 0; font-size: .9rem; border-bottom: 1px solid var(--sand-dark); }
+  .recap-row:last-of-type { border-bottom: none; }
+  .recap-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; color: var(--rust); margin-top: .75rem; padding-top: .75rem; border-top: 2px solid var(--border); }
+  #paypal-button-container { margin-top: 1rem; }
+  .back-link { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .875rem; text-decoration: none; margin-bottom: 1.5rem; }
+  .back-link:hover { color: var(--rust); }
+  .paypal-processing { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem 1rem; }
+  .paypal-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--rust); border-radius: 50%; animation: pp-spin .7s linear infinite; }
+  @keyframes pp-spin { to { transform: rotate(360deg); } }
+  .paypal-processing p { color: var(--muted); font-size: .9rem; margin: 0; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="paypal-wrap">
+  <a href="{% url 'creditos_ventas:comprobante_cuota' cuota.pk %}" class="back-link">
+    <i class="bi bi-arrow-left"></i> Volver al comprobante
+  </a>
+
+  <div class="page-header">
+    <h1>Pagar con PayPal</h1>
+    <p>Cuota {{ cuota.numero }} de la Factura #{{ cuota.factura_id }}.</p>
+  </div>
+
+  <div class="order-recap">
+    <h3>Resumen</h3>
+    <div class="recap-row">
+      <span>Cuota {{ cuota.numero }} — vence {{ cuota.fecha_vencimiento|date:"d/m/Y" }}</span>
+      <span>${{ cuota.saldo }}</span>
+    </div>
+    <div class="recap-total">
+      <span>Total a pagar</span>
+      <span>${{ cuota.saldo }}</span>
+    </div>
+  </div>
+
+  <div id="paypal-button-container"></div>
+  <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
+</div>
+
+<script src="{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card"></script>
+<script>
+const createOrderUrl = "{% url 'creditos_ventas:paypal_create_order_cuota' cuota.pk %}";
+const captureUrl = "{% url 'creditos_ventas:paypal_capture_cuota' cuota.pk %}";
+const csrfToken = "{{ csrf_token }}";
+
+let paypalOrderInFlight = false;
+
+paypal.Buttons({
+  style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+  createOrder: function() {
+    if (paypalOrderInFlight) {
+      return Promise.reject(new Error('Ya hay un pago en proceso.'));
+    }
+    paypalOrderInFlight = true;
+    var btnContainer = document.getElementById('paypal-button-container');
+    btnContainer.style.opacity = '0.5';
+    btnContainer.style.pointerEvents = 'none';
+    return fetch(createOrderUrl, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.error) throw new Error(data.error);
+      return data.id;
+    })
+    .catch(function(err) {
+      paypalOrderInFlight = false;
+      btnContainer.style.opacity = '1';
+      btnContainer.style.pointerEvents = 'auto';
+      throw err;
+    });
+  },
+  onApprove: function(data, actions) {
+    var btnContainer = document.getElementById('paypal-button-container');
+    var msgEl = document.getElementById('paypal-msg');
+
+    btnContainer.style.display = 'none';
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div class="paypal-processing"><div class="paypal-spinner"></div><p>Procesando pago, no cierres esta ventana&hellip;</p></div>';
+
+    return fetch(captureUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ orderID: data.orderID })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
+      if (result.status === 'ok') {
+        window.location.href = result.redirect;
+      } else {
+        btnContainer.style.display = 'block';
+        msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> ' + (result.error || 'El pago no fue completado. Intenta de nuevo.') + '</div>';
+      }
+    })
+    .catch(function() {
+      btnContainer.style.display = 'block';
+      msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Error de conexión. Verifica tu internet e intenta de nuevo.</div>';
+    });
+  },
+  onError: function(err) {
+    var msgEl = document.getElementById('paypal-msg');
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div style="color:#c0392b;text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-exclamation-triangle"></i> Ocurrió un error con PayPal. Intenta de nuevo.</div>';
+  },
+  onCancel: function() {
+    paypalOrderInFlight = false;
+    var btnContainer = document.getElementById('paypal-button-container');
+    btnContainer.style.opacity = '1';
+    btnContainer.style.pointerEvents = 'auto';
+    var msgEl = document.getElementById('paypal-msg');
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo cuando quieras.</div>';
+  }
+}).render('#paypal-button-container');
+</script>
+{% endblock %}
