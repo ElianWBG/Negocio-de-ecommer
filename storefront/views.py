@@ -784,11 +784,46 @@ def profile(request):
             messages.success(request, 'Datos actualizados correctamente.')
             return redirect('storefront:profile')
 
+    from creditos_ventas.models import CuotaVenta
+    cuotas_pendientes_count = CuotaVenta.objects.filter(
+        factura__customer=customer, estado='pendiente'
+    ).count()
+
     return render(request, 'storefront/profile.html', {
-        'customer':     customer,
-        'cart_count':   sum(_get_cart(request).values()),
-        'total_orders': PurchaseRequest.objects.filter(customer=customer).count(),
-        'confirmed':    PurchaseRequest.objects.filter(customer=customer, status='confirmada').count(),
+        'customer':              customer,
+        'cart_count':            sum(_get_cart(request).values()),
+        'total_orders':          PurchaseRequest.objects.filter(customer=customer).count(),
+        'confirmed':             PurchaseRequest.objects.filter(customer=customer, status='confirmada').count(),
+        'cuotas_pendientes_count': cuotas_pendientes_count,
+    })
+
+
+def my_cuotas(request):
+    """Listado de cuotas de crédito del cliente."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:my_cuotas')
+        return redirect('storefront:customer_login')
+
+    from creditos_ventas.models import CuotaVenta
+    from django.utils import timezone as tz
+
+    customer = request.user.customer_profile
+    today = tz.localdate()
+
+    cuotas = (
+        CuotaVenta.objects
+        .filter(factura__customer=customer)
+        .select_related('factura')
+        .order_by('factura__id', 'numero')
+    )
+
+    pendientes_count = sum(1 for c in cuotas if c.estado == 'pendiente')
+
+    return render(request, 'storefront/my_cuotas.html', {
+        'cuotas':          cuotas,
+        'pendientes_count': pendientes_count,
+        'cart_count':      sum(_get_cart(request).values()),
+        'today':           today,
     })
 
 

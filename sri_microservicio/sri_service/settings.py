@@ -110,6 +110,7 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "facturacion@localhost")
+EMAIL_TIMEOUT = 10
 
 # Carpeta donde se guardan XML/PDF generados
 COMPROBANTES_DIR = BASE_DIR / env("COMPROBANTES_DIR", "comprobantes")

@@ -55,6 +55,12 @@
       <a href="{% url 'storefront:my_orders' %}">
         <i class="bi bi-bag-check"></i> Mis pedidos
       </a>
+      <a href="{% url 'storefront:my_cuotas' %}" style="justify-content:space-between;">
+        <span><i class="bi bi-calendar2-check"></i> Mis cuotas</span>
+        {% if cuotas_pendientes_count %}
+        <span style="background:var(--rust);color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">{{ cuotas_pendientes_count }}</span>
+        {% endif %}
+      </a>
       <a href="{% url 'storefront:change_password' %}">
         <i class="bi bi-key"></i> Cambiar contraseña
       </a>
