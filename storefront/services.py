@@ -143,42 +143,122 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
     config = ConfigNegocio.objects.first()
     store_name = (config.nombre_tienda if config else None) or 'nuestra tienda'
 
+    from django.utils import timezone as tz
+    date_str = invoice.invoice_date.strftime('%d/%m/%Y') if invoice.invoice_date else tz.localdate().strftime('%d/%m/%Y')
+
+    tipo_pago_label = {
+        'contado': 'EFECTIVO / TRANSFERENCIA',
+        'credito': 'CRÉDITO (CUOTAS)',
+        'paypal': 'PAYPAL',
+    }.get(invoice.tipo_pago, (invoice.tipo_pago or '').upper())
+
+    customer_name = f'{customer.first_name} {customer.last_name}'.strip().upper()
+
     rows = ''.join(
-        f'<tr><td style="padding:4px 8px;">{d.product.name}</td>'
-        f'<td style="padding:4px 8px;text-align:center;">{d.quantity}</td>'
-        f'<td style="padding:4px 8px;text-align:right;">${d.subtotal}</td></tr>'
+        f'<tr style="border-bottom:1px solid #F1EEE9;">'
+        f'<td style="padding:9px 12px;color:#231A10;">{d.product.name}</td>'
+        f'<td style="padding:9px 12px;text-align:center;color:#231A10;">{d.quantity}</td>'
+        f'<td style="padding:9px 12px;text-align:right;color:#231A10;">${d.subtotal:.2f}</td>'
+        f'</tr>'
         for d in invoice.details.all()
     )
-    # Logo de la tienda (ConfigNegocio.logo). En producción con Cloudinary,
-    # .url es una URL absoluta https que los clientes de correo cargan bien.
+
     logo_html = ''
     if config and getattr(config, 'logo', None):
         try:
             logo_html = (
                 f'<img src="{config.logo.url}" alt="{store_name}" '
-                f'style="max-height:56px;max-width:220px;margin-bottom:14px;">'
+                f'style="max-height:52px;max-width:200px;display:block;margin:0 auto 10px;">'
             )
         except Exception:
             logo_html = ''
-    html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width:560px; margin:0 auto;">
-      {logo_html}
-      <h2 style="color:#1D2B4A;">¡Gracias por tu compra, {customer.first_name}!</h2>
-      <p>Tu pedido #{purchase_request.id} fue confirmado. Aquí el resumen:</p>
-      <table style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr style="background:#F1EEE9;">
-            <th style="padding:4px 8px;text-align:left;">Producto</th>
-            <th style="padding:4px 8px;">Cant.</th>
-            <th style="padding:4px 8px;text-align:right;">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
-      <p style="margin-top:1rem;"><strong>Total: ${invoice.total}</strong></p>
-      <p style="margin-top:2rem; color:#888; font-size:.85rem;">Este es un correo automático de {store_name}.</p>
-    </div>
-    """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:20px 0;background:#F8F4F0;font-family:Arial,Helvetica,sans-serif;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #DDD5CC;border-radius:4px;overflow:hidden;">
+
+  <!-- HEADER -->
+  <div style="background:#B5441B;padding:28px 32px;text-align:center;">
+    {logo_html}
+    <h1 style="color:#ffffff;font-size:22px;margin:0;letter-spacing:2px;text-transform:uppercase;">{store_name}</h1>
+    <p style="color:rgba(255,255,255,0.8);font-size:11px;margin:5px 0 0;letter-spacing:2px;text-transform:uppercase;">FACTURA ELECTRÓNICA</p>
+  </div>
+
+  <!-- DATE BAND -->
+  <div style="background:#231A10;padding:9px 32px;text-align:center;">
+    <p style="color:#F8F4F0;font-size:11px;letter-spacing:2px;margin:0;text-transform:uppercase;">PERIODO {date_str}</p>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div style="padding:24px 32px 20px;border-bottom:1px solid #EDE7E0;">
+    <h2 style="font-size:19px;color:#231A10;margin:0 0 4px;text-transform:uppercase;letter-spacing:1px;">{customer_name}</h2>
+    <p style="color:#7A6358;font-size:13px;margin:2px 0;">Cédula / RUC: {customer.dni}</p>
+    <p style="color:#7A6358;font-size:13px;margin:2px 0;">{customer.email}</p>
+  </div>
+
+  <!-- INVOICE DETAILS BOX -->
+  <div style="margin:20px 32px;border:1px solid #DDD5CC;border-radius:4px;overflow:hidden;font-size:13px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="border-bottom:1px solid #EDE7E0;">
+        <td style="padding:10px 16px;color:#7A6358;width:48%;">No. de Factura</td>
+        <td style="padding:10px 16px;color:#231A10;font-weight:bold;">#{invoice.pk:05d}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #EDE7E0;">
+        <td style="padding:10px 16px;color:#7A6358;">Pedido</td>
+        <td style="padding:10px 16px;color:#231A10;font-weight:bold;">#{purchase_request.id}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #EDE7E0;">
+        <td style="padding:10px 16px;color:#7A6358;">Fecha de emisión</td>
+        <td style="padding:10px 16px;color:#231A10;">{date_str}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;color:#7A6358;">Forma de pago</td>
+        <td style="padding:10px 16px;color:#231A10;">{tipo_pago_label}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- PRODUCTS TABLE -->
+  <div style="margin:0 32px 8px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:#F1EEE9;">
+          <th style="padding:9px 12px;text-align:left;color:#7A6358;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Producto</th>
+          <th style="padding:9px 12px;text-align:center;color:#7A6358;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Cant.</th>
+          <th style="padding:9px 12px;text-align:right;color:#7A6358;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:2px;">
+      <tr>
+        <td style="padding:6px 12px;text-align:right;color:#7A6358;">Subtotal sin IVA</td>
+        <td style="padding:6px 12px;text-align:right;color:#231A10;width:110px;">${invoice.subtotal:.2f}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 12px;text-align:right;color:#7A6358;">IVA</td>
+        <td style="padding:6px 12px;text-align:right;color:#231A10;">${invoice.tax:.2f}</td>
+      </tr>
+      <tr style="border-top:2px solid #B5441B;">
+        <td style="padding:12px 12px;text-align:right;font-weight:bold;font-size:17px;color:#B5441B;">TOTAL</td>
+        <td style="padding:12px 12px;text-align:right;font-weight:bold;font-size:17px;color:#B5441B;">${invoice.total:.2f}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="background:#231A10;padding:20px 32px;text-align:center;margin-top:12px;">
+    <p style="color:#F8F4F0;font-size:12px;margin:0 0 4px;">Gracias por confiar en <strong>{store_name}</strong>.</p>
+    <p style="color:rgba(255,255,255,0.5);font-size:11px;margin:0;">Los archivos adjuntos incluyen tu factura en PDF y XML.</p>
+  </div>
+
+</div>
+</body>
+</html>"""
     try:
         message = EmailMultiAlternatives(
             subject=f'Pedido #{purchase_request.id} confirmado',

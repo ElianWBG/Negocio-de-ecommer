@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.contrib import messages
@@ -91,6 +92,19 @@ def pagar_cuota_paypal(request, pk):
         messages.info(request, 'Esta cuota ya está pagada.')
         return redirect('creditos_ventas:comprobante_cuota', pk=cuota.pk)
 
+    # Orden de pago: no se puede pagar esta cuota si hay cuotas anteriores pendientes
+    prev_pending = CuotaVenta.objects.filter(
+        factura=cuota.factura,
+        numero__lt=cuota.numero,
+        estado='pendiente',
+    ).order_by('numero').first()
+    if prev_pending:
+        messages.error(
+            request,
+            f'Debes pagar la cuota {prev_pending.numero} antes de pagar la cuota {cuota.numero}.',
+        )
+        return redirect('storefront:my_cuotas')
+
     return render(request, 'creditos_ventas/pagar_cuota_paypal.html', {
         'cuota': cuota,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
@@ -108,7 +122,21 @@ def paypal_create_order_cuota(request, pk):
     if cuota.estado == 'pagada':
         return JsonResponse({'error': 'Esta cuota ya está pagada.'}, status=400)
 
-    total = '{:.2f}'.format(cuota.saldo)
+    # Orden de pago: verificar que no haya cuotas anteriores pendientes
+    if CuotaVenta.objects.filter(factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente').exists():
+        return JsonResponse({'error': 'Debes pagar las cuotas anteriores primero.'}, status=400)
+
+    # Leer el monto del cuerpo de la petición; si no viene, usar el saldo completo
+    try:
+        body = json.loads(request.body)
+        amount = Decimal(str(body.get('amount', cuota.saldo))).quantize(Decimal('0.01'))
+    except (json.JSONDecodeError, InvalidOperation, TypeError):
+        return JsonResponse({'error': 'Monto inválido.'}, status=400)
+
+    if amount <= 0 or amount > cuota.saldo:
+        return JsonResponse({'error': f'El monto debe estar entre $0.01 y ${cuota.saldo}.'}, status=400)
+
+    total = '{:.2f}'.format(amount)
     try:
         token = paypal_access_token()
         order = paypal_request(
@@ -166,13 +194,21 @@ def paypal_capture_cuota(request, pk):
 
     if capture_data.get('status') == 'COMPLETED':
         try:
+            # Usar el monto real que PayPal capturó (puede ser parcial)
+            captured_value = (
+                capture_data['purchase_units'][0]['payments']['captures'][0]['amount']['value']
+            )
+            monto_capturado = Decimal(captured_value).quantize(Decimal('0.01'))
+        except (KeyError, IndexError, InvalidOperation):
+            logger.exception('No se pudo leer el monto capturado de PayPal para cuota %s', cuota.pk)
+            return JsonResponse({'error': 'Error procesando la respuesta de PayPal.'}, status=502)
+
+        try:
             pago = registrar_pago_cuota(
-                cuota, cuota.saldo, timezone.localdate(),
+                cuota, monto_capturado, timezone.localdate(),
                 observacion=f'Pago vía PayPal (orden {order_id})',
             )
         except ValueError as e:
-            # No debería pasar (saldo ya validado arriba), pero por si dos
-            # pestañas pagan la misma cuota casi al mismo tiempo.
             logger.exception('Error al registrar pago de cuota %s tras captura PayPal: %s', cuota.pk, e)
             return JsonResponse({'error': str(e)}, status=400)
         return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
