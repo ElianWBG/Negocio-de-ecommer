@@ -6,6 +6,7 @@ from decimal import Decimal
 logger = logging.getLogger(__name__)
 from billing.audit import log_action
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -22,9 +23,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from billing.models import Product, ProductGroup, Customer, Brand, Review
+from billing.models import Product, ProductGroup, Customer, Brand, Review, ReviewImage
 from . import payphone
-from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, ReviewForm
+from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, ReviewForm, clean_review_images
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
 from .services import confirm_purchase_request, confirm_purchase_request_credito, InsufficientStockError
 CART_SESSION_KEY = 'storefront_cart'
@@ -381,7 +382,7 @@ def product_detail(request, pk):
         Product.objects.prefetch_related('images'), pk=pk, is_active=True
     )
     cart_count = sum(_get_cart(request).values())
-    reviews = product.reviews.select_related('customer').all()
+    reviews = product.reviews.select_related('customer').prefetch_related('images').all()
     user_review = None
     can_review = False
     if _is_customer(request.user):
@@ -711,17 +712,34 @@ def leave_review(request, pk):
 
     review = Review.objects.filter(customer=customer, product=product).first()
     form = ReviewForm(request.POST or None, instance=review)
-    if request.method == 'POST' and form.is_valid():
-        obj = form.save(commit=False)
-        obj.customer, obj.product = customer, product
-        obj.save()
-        messages.success(request, 'Reseña actualizada.' if review else 'Gracias por tu reseña.')
-        return redirect('storefront:product_detail', pk=product.pk)
+    image_error = None
+    if request.method == 'POST':
+        new_images = request.FILES.getlist('images')
+        try:
+            clean_review_images(new_images)
+        except forms.ValidationError as e:
+            image_error = e.messages[0]
+        if form.is_valid() and image_error is None:
+            obj = form.save(commit=False)
+            obj.customer, obj.product = customer, product
+            obj.save()
+
+            remove_ids = request.POST.getlist('remove_images')
+            if remove_ids:
+                ReviewImage.objects.filter(review=obj, pk__in=remove_ids).delete()
+
+            for f in new_images:
+                ReviewImage.objects.create(review=obj, image=f)
+
+            messages.success(request, 'Reseña actualizada.' if review else 'Gracias por tu reseña.')
+            return redirect('storefront:product_detail', pk=product.pk)
 
     return render(request, 'storefront/leave_review.html', {
         'product': product,
         'form': form,
         'existing_review': review,
+        'existing_images': review.images.all() if review else [],
+        'image_error': image_error,
         'cart_count': sum(_get_cart(request).values()),
     })
 

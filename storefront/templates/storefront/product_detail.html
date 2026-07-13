@@ -102,6 +102,8 @@
   .review-date { font-size:.78rem; color:var(--muted); margin-left:auto; }
   .review-comment { font-size:.88rem; color:var(--muted); line-height:1.6; margin:0; }
   .no-reviews { font-size:.9rem; color:var(--muted); }
+  .review-images { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.6rem; }
+  .review-images img { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; }
 
   @media(max-width:700px) {
     .product-layout { grid-template-columns:1fr; gap:1.5rem; }
@@ -287,6 +289,13 @@
         <span class="review-date">{{ r.created_at|date:"d/m/Y" }}</span>
       </div>
       <p class="review-comment">{{ r.comment }}</p>
+      {% if r.images.all %}
+      <div class="review-images">
+        {% for img in r.images.all %}
+        <a href="{{ img.image.url }}" target="_blank" rel="noopener"><img src="{{ img.image.url }}" alt=""></a>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
     {% endfor %}
   </div>

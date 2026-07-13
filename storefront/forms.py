@@ -79,17 +79,21 @@ class CustomerRequestForm(forms.ModelForm):
         pass
 
 
+REVIEW_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024
+REVIEW_IMAGE_MAX_COUNT = 5
+
+
 class ReviewForm(forms.ModelForm):
     """Reseña de un producto ya comprado. Una por (cliente, producto),
-    reutilizable para crear o editar (se pasa instance=review existente)."""
+    reutilizable para crear o editar (se pasa instance=review existente).
+    La calificación se elige con estrellas clicables en el template; este
+    campo queda como input oculto que esa UI actualiza vía JS."""
     class Meta:
         model = Review
         fields = ['rating', 'comment']
         widgets = {
-            'rating': forms.Select(
-                choices=[(i, f'{i} estrella{"s" if i != 1 else ""}') for i in range(5, 0, -1)],
-                attrs={'class': 'form-control'},
-            ),
+            'rating': forms.HiddenInput(),
             'comment': forms.Textarea(attrs={
                 'class': 'form-control', 'rows': 4,
                 'placeholder': 'Cuéntanos qué te pareció el producto...',
@@ -102,3 +106,17 @@ class ReviewForm(forms.ModelForm):
         if len(comment) < 5:
             raise forms.ValidationError('El comentario es demasiado corto.')
         return comment
+
+
+def clean_review_images(files):
+    """Valida la lista de imágenes subidas para una reseña (tamaño, tipo y
+    cantidad). Se usa en la vista porque las imágenes viven en un modelo
+    aparte (ReviewImage), no como campo del ReviewForm."""
+    if len(files) > REVIEW_IMAGE_MAX_COUNT:
+        raise forms.ValidationError(f'Puedes subir un máximo de {REVIEW_IMAGE_MAX_COUNT} imágenes.')
+    for f in files:
+        if f.size > REVIEW_IMAGE_MAX_SIZE:
+            raise forms.ValidationError(f'"{f.name}" supera el máximo de 5MB.')
+        if hasattr(f, 'content_type') and f.content_type not in REVIEW_IMAGE_ALLOWED_TYPES:
+            raise forms.ValidationError(f'"{f.name}" no es un formato permitido. Use JPG, PNG, GIF o WebP.')
+    return files

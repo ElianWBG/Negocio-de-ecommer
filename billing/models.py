@@ -142,6 +142,19 @@ class Review(models.Model):
         return f'{self.customer.full_name} → {self.product.name} ({self.rating}★)'
 
 
+class ReviewImage(models.Model):
+    """Foto adjunta por el cliente en una reseña (varias por reseña)."""
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='images', verbose_name='Reseña')
+    image = models.ImageField(upload_to='reviews/', verbose_name='Imagen', max_length=500)
+
+    class Meta:
+        verbose_name = 'Imagen de reseña'
+        verbose_name_plural = 'Imágenes de reseña'
+
+    def __str__(self):
+        return f'Imagen de reseña #{self.review_id}'
+
+
 class Customer(models.Model):
     """Clientes. OneToOne con CustomerProfile."""
     dni = models.CharField(
