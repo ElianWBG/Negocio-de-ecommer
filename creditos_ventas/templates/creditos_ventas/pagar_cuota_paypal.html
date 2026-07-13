@@ -43,16 +43,30 @@
 
   <div id="paypal-button-container"></div>
   <div id="paypal-msg" style="display:none;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;"></div>
+  <div id="paypal-unavailable" style="display:none;text-align:center;padding:1.5rem 1rem;">
+    <p style="color:#c0392b;font-size:.95rem;margin-bottom:.75rem;">
+      <i class="bi bi-exclamation-triangle"></i>
+      No se pudo conectar con PayPal en este momento. El servicio puede estar temporalmente no disponible.
+    </p>
+    <button type="button" id="retry-sdk" class="btn btn-primary">Reintentar</button>
+  </div>
 </div>
 
-<script src="{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card"></script>
 <script>
 const createOrderUrl = "{% url 'creditos_ventas:paypal_create_order_cuota' cuota.pk %}";
 const captureUrl = "{% url 'creditos_ventas:paypal_capture_cuota' cuota.pk %}";
 const csrfToken = "{{ csrf_token }}";
+const paypalSdkSrc = "{{ paypal_sdk_base }}/sdk/js?client-id={{ paypal_client_id }}&currency=USD&intent=capture&disable-funding=credit,card";
 
 let paypalOrderInFlight = false;
+let sdkAttempts = 0;
+let buttonsRendered = false;
+let sdkScriptPending = false;
+const MAX_SDK_ATTEMPTS = 3;
 
+function renderPaypalButtons() {
+if (buttonsRendered) return;  // un solo set de botones -> un solo popup
+buttonsRendered = true;
 paypal.Buttons({
   style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
   createOrder: function() {
@@ -124,5 +138,63 @@ paypal.Buttons({
     msgEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:.75rem 0;font-size:.9rem;"><i class="bi bi-x-circle"></i> Pago cancelado. Puedes intentar de nuevo cuando quieras.</div>';
   }
 }).render('#paypal-button-container');
+}
+
+function showPaypalUnavailable() {
+  document.getElementById('paypal-button-container').style.display = 'none';
+  document.getElementById('paypal-msg').style.display = 'none';
+  document.getElementById('paypal-unavailable').style.display = 'block';
+}
+
+// Carga el SDK de PayPal con reintentos: si el sandbox/servicio no responde
+// (connection refused, script no carga), reintenta y, si agota, muestra un
+// aviso con botón "Reintentar" en vez de dejar la página rota.
+function loadPaypalSdk() {
+  // Nunca cargar dos scripts a la vez ni si ya se renderizaron los botones:
+  // eso abría varios popups de PayPal.
+  if (buttonsRendered || sdkScriptPending) return;
+  if (typeof paypal !== 'undefined' && paypal.Buttons) {
+    renderPaypalButtons();
+    return;
+  }
+  sdkAttempts++;
+  sdkScriptPending = true;
+  var s = document.createElement('script');
+  s.src = paypalSdkSrc;
+  s.onload = function() {
+    sdkScriptPending = false;
+    if (typeof paypal !== 'undefined' && paypal.Buttons) {
+      renderPaypalButtons();
+    } else if (sdkAttempts < MAX_SDK_ATTEMPTS) {
+      setTimeout(loadPaypalSdk, 1500);
+    } else {
+      showPaypalUnavailable();
+    }
+  };
+  s.onerror = function() {
+    sdkScriptPending = false;
+    s.remove();  // descarta el <script> fallido para no dejarlos apilados
+    if (sdkAttempts < MAX_SDK_ATTEMPTS) {
+      setTimeout(loadPaypalSdk, 1500);
+    } else {
+      showPaypalUnavailable();
+    }
+  };
+  document.head.appendChild(s);
+}
+
+document.getElementById('retry-sdk').addEventListener('click', function() {
+  sdkAttempts = 0;
+  document.getElementById('paypal-unavailable').style.display = 'none';
+  document.getElementById('paypal-button-container').style.display = 'block';
+  loadPaypalSdk();
+});
+
+if (!"{{ paypal_client_id }}") {
+  // Sin client-id configurado el SDK siempre falla; avisa de una vez.
+  showPaypalUnavailable();
+} else {
+  loadPaypalSdk();
+}
 </script>
 {% endblock %}
