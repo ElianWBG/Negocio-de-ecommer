@@ -2223,6 +2223,7 @@ def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.styles.numbers import FORMAT_TEXT
+    from openpyxl.utils import get_column_letter
     from django.http import HttpResponse
 
     date_from, date_to = _get_report_dates(request)
@@ -2286,7 +2287,7 @@ def report_sales_excel(request):
 
     # Anchos
     for col, width in enumerate([8, 18, 28, 14, 12, 12, 12], 1):
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+        ws.column_dimensions[get_column_letter(col)].width = width
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2420,6 +2421,7 @@ def report_stock(request):
 def report_stock_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
     from django.http import HttpResponse
     from datetime import date
 
@@ -2467,7 +2469,7 @@ def report_stock_excel(request):
                 cell.fill = row_fill
 
     for col, width in enumerate([30, 18, 18, 12, 10, 14], 1):
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+        ws.column_dimensions[get_column_letter(col)].width = width
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
