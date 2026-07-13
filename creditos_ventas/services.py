@@ -2,6 +2,9 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
+from django.db.models import Sum
+
+from billing.models import Invoice
 
 from .models import CuotaVenta, PagoCuotaVenta
 
@@ -11,9 +14,10 @@ def generar_cuotas(factura, numero_cuotas):
     crédito.
 
     La primera cuota vence 30 días después de la fecha de la factura y las
-    siguientes cada 30 días. El total se reparte equitativamente entre las
-    cuotas; la última cuota absorbe el céntimo de redondeo para que la suma
-    de las cuotas cuadre exactamente con el total de la factura.
+    siguientes cada 30 días. El total se reparte en centavos enteros: cada
+    cuota lleva la parte base y las primeras `resto` cuotas cargan un centavo
+    extra. Así la suma cuadra exacta con el total y ninguna cuota queda en
+    cero (cada una vale al menos $0.01).
     """
     if numero_cuotas <= 0:
         raise ValueError('El número de cuotas debe ser mayor a cero.')
@@ -31,17 +35,21 @@ def generar_cuotas(factura, numero_cuotas):
         )
 
     fecha_factura = factura.invoice_date.date()
-    valor_cuota = (factura.total / numero_cuotas).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_centavos = int((factura.total * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    if total_centavos < numero_cuotas:
+        raise ValueError(
+            'El total de la factura es muy bajo para repartirlo en esa cantidad de '
+            'cuotas (cada cuota debe ser de al menos $0.01).'
+        )
+
+    base = total_centavos // numero_cuotas
+    resto = total_centavos % numero_cuotas
 
     with transaction.atomic():
-        acumulado = Decimal('0.00')
         cuotas = []
         for numero in range(1, numero_cuotas + 1):
-            if numero < numero_cuotas:
-                valor = valor_cuota
-                acumulado += valor
-            else:
-                valor = factura.total - acumulado  # última cuota: absorbe el redondeo
+            centavos = base + (1 if numero <= resto else 0)
+            valor = Decimal(centavos) / Decimal('100')
             cuotas.append(CuotaVenta(
                 factura=factura,
                 numero=numero,
@@ -57,32 +65,65 @@ def generar_cuotas(factura, numero_cuotas):
 
 def registrar_pago_cuota(cuota, monto, fecha, observacion=''):
     """Registra un abono sobre una cuota, actualiza su saldo/estado y
-    propaga el cambio al saldo de la factura."""
+    propaga el cambio al saldo de la factura.
+
+    Bloquea la fila de la cuota (y luego la de la factura) dentro de la
+    transacción para que dos abonos concurrentes no puedan sobrepasar el
+    saldo ni pisarse el saldo de la factura (lost update).
+    """
     if monto <= 0:
         raise ValueError('El monto del pago debe ser mayor a cero.')
-    if monto > cuota.saldo:
-        raise ValueError('El monto del pago no puede ser mayor al saldo de la cuota.')
 
     with transaction.atomic():
+        # Re-leer con lock: los checks se hacen sobre el saldo ya bloqueado.
+        cuota_locked = CuotaVenta.objects.select_for_update().get(pk=cuota.pk)
+        if cuota_locked.estado == 'pagada':
+            raise ValueError('Esta cuota ya está pagada.')
+        if monto > cuota_locked.saldo:
+            raise ValueError('El monto del pago no puede ser mayor al saldo de la cuota.')
+
         pago = PagoCuotaVenta.objects.create(
-            cuota=cuota, fecha=fecha, valor=monto, observacion=observacion,
+            cuota=cuota_locked, fecha=fecha, valor=monto, observacion=observacion,
         )
 
-        cuota.saldo = cuota.saldo - monto
-        cuota.estado = 'pagada' if cuota.saldo <= 0 else 'pendiente'
-        cuota.save()
+        cuota_locked.saldo = cuota_locked.saldo - monto
+        cuota_locked.estado = 'pagada' if cuota_locked.saldo <= 0 else 'pendiente'
+        cuota_locked.save()
 
-        factura = cuota.factura
-        factura.saldo = factura.saldo - monto
+        factura = Invoice.objects.select_for_update().get(pk=cuota_locked.factura_id)
         verificar_factura_pagada(factura)
 
+    # Reflejar el nuevo estado en el objeto recibido (la vista lo usa para el
+    # mensaje de "saldo restante").
+    cuota.saldo = cuota_locked.saldo
+    cuota.estado = cuota_locked.estado
     return pago
 
 
 def verificar_factura_pagada(factura):
-    """Revisa si todas las cuotas de la factura están pagadas y, de ser
-    así, marca la factura como pagada. Siempre persiste la factura."""
-    if not factura.cuotas.exclude(estado='pagada').exists():
+    """Recalcula saldo y estado de la factura desde el saldo de sus cuotas.
+
+    Fuente de verdad = suma de saldos de las cuotas (no un decremento
+    incremental que puede driftear). Marca 'pagada' cuando todas las cuotas
+    lo están, 'parcial' cuando ya hubo algún abono y 'pendiente' si no. Siempre
+    persiste la factura.
+    """
+    cuotas = factura.cuotas.all()
+    total_cuotas = cuotas.count()
+    if not total_cuotas:
+        factura.save()
+        return
+
+    pagadas = cuotas.filter(estado='pagada').count()
+    saldo = cuotas.aggregate(s=Sum('saldo'))['s'] or Decimal('0.00')
+
+    if pagadas == total_cuotas:
         factura.estado = 'pagada'
         factura.saldo = Decimal('0.00')
+    elif saldo < factura.total:
+        factura.estado = 'parcial'
+        factura.saldo = saldo
+    else:
+        factura.estado = 'pendiente'
+        factura.saldo = saldo
     factura.save()
