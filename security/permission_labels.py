@@ -14,8 +14,13 @@ APP_SECTION_LABELS_ES = {
     'purchasing': 'Compras a proveedores',
     'cobros': 'Cuentas por cobrar',
     'pagos': 'Cuentas por pagar',
+    'creditos_compras': 'Cuotas de compras a crédito',
+    'creditos_ventas': 'Cuotas de ventas a crédito',
     'storefront': 'Tienda y pedidos de clientes',
     'auth': 'Usuarios y roles del sistema',
+    'admin': 'Registros de administración (sistema)',
+    'contenttypes': 'Tipos de contenido (sistema)',
+    'sessions': 'Sesiones (sistema)',
 }
 
 
