@@ -28,7 +28,7 @@
   .voucher-actions { display: flex; justify-content: center; gap: .75rem; margin-top: 1.5rem; }
 
   @media print {
-    .sidebar, .topbar, .no-print, header, footer { display: none !important; }
+    .site-nav, .promo-ribbon, .site-footer, .no-print { display: none !important; }
     .voucher-doc { border: none; box-shadow: none; }
   }
 </style>
@@ -86,5 +86,13 @@
       Factura #{{ cuota.factura_id }}. Emitido el {{ cuota.factura.invoice_date|date:"d/m/Y" }}.
     </div>
   </div>
+
+  {% if puede_pagar_paypal %}
+  <div class="voucher-actions no-print" style="margin-top:1rem;">
+    <a href="{% url 'creditos_ventas:pagar_cuota_paypal' cuota.pk %}" class="btn btn-primary" style="width:100%; justify-content:center;">
+      <i class="bi bi-paypal"></i> Pagar esta cuota con PayPal
+    </a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

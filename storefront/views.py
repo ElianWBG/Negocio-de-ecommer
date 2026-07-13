@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from shared.decorators import permission_required_any
+from shared.paypal_client import paypal_access_token, paypal_request
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.conf import settings
@@ -397,6 +398,14 @@ def cart_add(request, pk):
         except ValueError:
             quantity = 1
         quantity = max(1, quantity)
+
+        # Si el cliente eligió cuotas en la pestaña "Crédito directo" de la
+        # ficha de producto, se recuerda como sugerencia para el checkout
+        # (payment_choice la usa como valor inicial del selector).
+        numero_cuotas = request.POST.get('numero_cuotas', '').strip()
+        if numero_cuotas.isdigit() and int(numero_cuotas) > 0:
+            request.session['numero_cuotas_sugerido'] = int(numero_cuotas)
+
         cart = _get_cart(request)
         current = cart.get(str(product.pk), 0)
         new_quantity = current + quantity
@@ -789,7 +798,10 @@ def profile(request):
 
 def payment_choice(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
-    return render(request, 'storefront/payment_choice.html', {'purchase_request': purchase_request})
+    return render(request, 'storefront/payment_choice.html', {
+        'purchase_request': purchase_request,
+        'numero_cuotas_sugerido': request.session.get('numero_cuotas_sugerido', 6),
+    })
 
 
 def pay_manual(request, pk):
@@ -968,53 +980,6 @@ def purchase_request_reject(request, pk):
 # PayPal
 # ---------------------------------------------------------------------
 
-def _paypal_request(url, data, headers, timeout=None, attempts=None):
-    """Hace un POST a PayPal y devuelve el JSON. Reintenta ante fallos
-    transitorios (timeout, 5xx, red caída), causa típica del error
-    intermitente. Timeout y nº de intentos configurables por env
-    (PAYPAL_TIMEOUT, PAYPAL_MAX_ATTEMPTS). Lanza Exception si falla todo."""
-    import json, time, urllib.request, urllib.error, socket
-    if timeout is None:
-        timeout = getattr(settings, 'PAYPAL_TIMEOUT', 20)
-    if attempts is None:
-        attempts = max(1, getattr(settings, 'PAYPAL_MAX_ATTEMPTS', 3))
-    last_error = None
-    for attempt in range(attempts):
-        try:
-            req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return json.loads(resp.read())
-        except urllib.error.HTTPError as e:
-            body = e.read().decode(errors='replace')
-            # 4xx (ej. pago rechazado) no se reintenta; 5xx sí.
-            if e.code < 500:
-                raise Exception(f'PayPal {e.code}: {body}')
-            last_error = Exception(f'PayPal {e.code}: {body}')
-        except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
-            last_error = e
-        if attempt < attempts - 1:
-            # Backoff exponencial: 0.5s, 1s, 2s...
-            time.sleep(0.5 * (2 ** attempt))
-    raise last_error
-
-
-def _paypal_access_token():
-    """Obtiene un access token de la API de PayPal sandbox."""
-    import base64
-    credentials = base64.b64encode(
-        f'{settings.PAYPAL_CLIENT_ID}:{settings.PAYPAL_SECRET}'.encode()
-    ).decode()
-    data = _paypal_request(
-        f'{settings.PAYPAL_API_BASE}/v1/oauth2/token',
-        data=b'grant_type=client_credentials',
-        headers={
-            'Authorization': f'Basic {credentials}',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-    )
-    return data['access_token']
-
-
 def pay_with_paypal(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     return render(request, 'storefront/payment_paypal.html', {
@@ -1031,8 +996,8 @@ def paypal_create_order(request, pk):
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
     total = '{:.2f}'.format(purchase_request.total_estimado)
     try:
-        token = _paypal_access_token()
-        order = _paypal_request(
+        token = paypal_access_token()
+        order = paypal_request(
             f'{settings.PAYPAL_API_BASE}/v2/checkout/orders',
             data=json.dumps({
                 'intent': 'CAPTURE',
@@ -1064,8 +1029,8 @@ def paypal_capture(request, pk):
         order_id = json.loads(request.body).get('orderID')
         if not order_id:
             return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
-        token = _paypal_access_token()
-        capture_data = _paypal_request(
+        token = paypal_access_token()
+        capture_data = paypal_request(
             f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
             data=b'{}',
             headers={
