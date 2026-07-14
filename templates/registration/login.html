@@ -8,6 +8,11 @@
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2" role="alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+          {% endif %}
           {% for field in form %}
           <div class="mb-3">
             <label class="form-label">{{ field.label }}</label>
