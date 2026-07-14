@@ -40,7 +40,12 @@ class PurchaseRequest(models.Model):
         return f'Solicitud #{self.id} - {self.customer} ({self.get_status_display()})'
 
     def can_be_cancelled(self):
-        return self.status == 'pendiente'
+        if self.status != 'pendiente':
+            return False
+        # No permitir cancelar si ya se procesó un pago con tarjeta (PayPhone)
+        if self.payment_method == 'tarjeta' and self.payphone_transaction_id is not None:
+            return False
+        return True
 
     @property
     def subtotal_estimado(self):

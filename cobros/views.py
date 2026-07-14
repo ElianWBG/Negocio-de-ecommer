@@ -21,7 +21,7 @@ def invoice_pending_list(request):
     cuota, no como abono libre contra el saldo total.
     """
     invoices = Invoice.objects.filter(
-        tipo_pago='credito', estado='pendiente'
+        tipo_pago='credito', estado__in=('pendiente', 'parcial')
     ).exclude(cuotas__isnull=False).select_related('customer').order_by('-invoice_date')
 
     g = request.GET
@@ -54,6 +54,7 @@ def cobro_create(request, factura_id):
         if form.is_valid():
             with transaction.atomic():
                 cobro = form.save()
+                factura = Invoice.objects.select_for_update().get(pk=factura_id)
                 factura.saldo = factura.saldo - cobro.valor
                 factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
                 factura.save()
@@ -96,7 +97,7 @@ def cobro_update(request, pk):
         if form.is_valid():
             with transaction.atomic():
                 cobro_actualizado = form.save(commit=False)
-                # Revertimos el valor viejo y aplicamos el nuevo
+                factura = Invoice.objects.select_for_update().get(pk=factura.pk)
                 factura.saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
                 factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
                 factura.save()
@@ -124,8 +125,9 @@ def cobro_delete(request, pk):
 
     if request.method == 'POST':
         with transaction.atomic():
+            factura = Invoice.objects.select_for_update().get(pk=factura.pk)
             factura.saldo = factura.saldo + cobro.valor
-            factura.estado = 'pendiente'  # al reponer saldo, siempre queda > 0
+            factura.estado = 'pendiente'
             factura.save()
             cobro.delete()
         messages.success(request, 'Pago eliminado y saldo repuesto.')

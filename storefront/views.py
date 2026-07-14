@@ -326,12 +326,14 @@ def catalog_list(request):
             .select_related('brand', 'group')
             .order_by('-id')[:4]
         )
-        # "Recomendados para ti": muestra aleatoria de productos activos
+        # "Recomendados para ti": muestra aleatoria sin ORDER BY RANDOM()
+        import random as _random
+        _ids = list(Product.objects.filter(is_active=True).values_list('id', flat=True))
+        _sample = _random.sample(_ids, min(8, len(_ids)))
         recommended = list(
-            Product.objects.filter(is_active=True)
+            Product.objects.filter(pk__in=_sample)
             .select_related('brand', 'group')
             .prefetch_related('images')
-            .order_by('?')[:8]
         )
 
     # Carrito (para el panel lateral derecho del shell)
@@ -345,17 +347,15 @@ def catalog_list(request):
     for _i, _b in enumerate(sidebar_brands):
         _b.logo_color = _brand_palette[_i % len(_brand_palette)]
 
-    # Rotación destacada del hero: 1 producto por marca, en bucle (solo portada)
+    # Rotación destacada del hero: 1 producto por marca usando DISTINCT ON (PostgreSQL)
     featured_rotation = []
     if not has_filter:
-        seen_brands = set()
-        for p in (Product.objects.filter(is_active=True, stock__gt=0)
-                  .select_related('brand', 'group')
-                  .order_by('brand__name', '-id')):
-            if p.brand_id in seen_brands:
-                continue
-            seen_brands.add(p.brand_id)
-            featured_rotation.append(p)
+        featured_rotation = list(
+            Product.objects.filter(is_active=True, stock__gt=0)
+            .select_related('brand', 'group')
+            .order_by('brand_id', '-id')
+            .distinct('brand_id')
+        )
 
     return render(request, 'storefront/catalog.html', {
         'products': products,
@@ -757,7 +757,10 @@ def cancel_purchase_request(request, pk):
         PurchaseRequest, pk=pk, customer=request.user.customer_profile
     )
     if not purchase_request.can_be_cancelled():
-        messages.error(request, 'Este pedido ya no puede cancelarse porque ya fue revisado.')
+        if purchase_request.payment_method == 'tarjeta' and purchase_request.payphone_transaction_id:
+            messages.error(request, 'Este pedido ya fue cobrado con tarjeta. Contáctanos para gestionarlo.')
+        else:
+            messages.error(request, 'Este pedido ya no puede cancelarse porque ya fue revisado.')
         return redirect('storefront:my_orders')
     purchase_request.status = 'cancelada'
     purchase_request.reviewed_at = timezone.now()
@@ -882,7 +885,7 @@ def my_cuotas(request):
     customer = request.user.customer_profile
     today = tz.localdate()
 
-    cuotas = (
+    cuotas = list(
         CuotaVenta.objects
         .filter(factura__customer=customer)
         .select_related('factura')
@@ -1047,7 +1050,7 @@ def purchase_request_list(request):
     )
 
     # Main queryset
-    requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details')
+    requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details__product')
     if status in dict(PurchaseRequest.STATUS_CHOICES):
         requests_qs = requests_qs.filter(status=status)
     if q:
