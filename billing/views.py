@@ -218,7 +218,7 @@ class SignUpView(CreateView):
 @permission_required_any('billing.view_brand')
 @audit_action('LIST_BRANDS')
 def brand_list(request):
-    qs = Brand.objects.all()
+    qs = Brand.objects.annotate(product_count=Count('products'))
     name = request.GET.get('name', '').strip()
     is_active = request.GET.get('is_active', '')
     if name:
@@ -236,7 +236,7 @@ def brand_list(request):
         elif col_key == 'description':
             return obj.description or '-'
         elif col_key == 'product_count':
-            return obj.products.count()
+            return obj.product_count
         elif col_key == 'is_active':
             return 'Activo' if obj.is_active else 'Inactivo'
         elif col_key == 'created_at':
@@ -379,7 +379,7 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = ProductGroup.objects.all()
+        qs = ProductGroup.objects.annotate(product_count=Count('products'))
         g = self.request.GET
         if name := g.get('name', '').strip():
             qs = qs.filter(name__icontains=name)
@@ -397,7 +397,7 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
         if col_key == 'name':
             return obj.name
         elif col_key == 'product_count':
-            return obj.products.count()
+            return obj.product_count
         elif col_key == 'is_active':
             return 'Activo' if obj.is_active else 'Inactivo'
         elif col_key == 'created_at':
@@ -1781,10 +1781,10 @@ def product_import(request):
             errors.append('Categoría requerida')
 
         try:
-            precio = round(float(str(precio_raw).replace(',', '.')), 2)
+            precio = Decimal(str(precio_raw).replace(',', '.')).quantize(Decimal('0.01'))
             if precio < 0:
                 errors.append('Precio no puede ser negativo')
-        except (ValueError, TypeError):
+        except Exception:
             precio = None
             errors.append('Precio inválido (usa número, ej: 12.50)')
 

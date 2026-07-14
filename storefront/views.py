@@ -378,8 +378,13 @@ def catalog_list(request):
 
 
 def product_detail(request, pk):
+    from django.db.models import Avg, Count
     product = get_object_or_404(
-        Product.objects.prefetch_related('images'), pk=pk, is_active=True
+        Product.objects.prefetch_related('images').annotate(
+            average_rating=Avg('reviews__rating'),
+            review_count=Count('reviews', distinct=True),
+        ),
+        pk=pk, is_active=True,
     )
     cart_count = sum(_get_cart(request).values())
     reviews = product.reviews.select_related('customer').prefetch_related('images').all()
@@ -898,8 +903,21 @@ def my_cuotas(request):
 # Pago con tarjeta (PayPhone)
 # ---------------------------------------------------------------------
 
+def _owned_pending_pr(request, pk):
+    """Devuelve la PurchaseRequest pendiente que pertenece al cliente logueado.
+    Redirige si no está autenticado o si el pedido no es suyo."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = request.path
+        return None, redirect('storefront:customer_login')
+    customer = request.user.customer_profile
+    pr = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
+    return pr, None
+
+
 def payment_choice(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     return render(request, 'storefront/payment_choice.html', {
         'purchase_request': purchase_request,
         'numero_cuotas_sugerido': request.session.get('numero_cuotas_sugerido', 6),
@@ -907,7 +925,9 @@ def payment_choice(request, pk):
 
 
 def pay_manual(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method == 'POST':
         purchase_request.payment_method = 'manual'
         purchase_request.save()
@@ -917,7 +937,9 @@ def pay_manual(request, pk):
 def pay_with_credit(request, pk):
     """Confirma el pedido a crédito directo: genera la Factura real y su
     cronograma de cuotas de una sola vez."""
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
 
@@ -936,7 +958,9 @@ def pay_with_credit(request, pk):
 
 
 def pay_with_card(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
 
@@ -967,6 +991,9 @@ def pay_with_card(request, pk):
 def payphone_response(request):
     transaction_id = request.GET.get('id')
     client_tx_id = request.GET.get('clientTransactionId')
+    if not transaction_id or not client_tx_id:
+        messages.error(request, 'Enlace de pago inválido o caducado.')
+        return redirect('storefront:catalog_list')
     purchase_request = get_object_or_404(PurchaseRequest, payphone_client_transaction_id=client_tx_id)
 
     if purchase_request.status == 'confirmada':
@@ -1083,7 +1110,9 @@ def purchase_request_reject(request, pk):
 # ---------------------------------------------------------------------
 
 def pay_with_paypal(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     return render(request, 'storefront/payment_paypal.html', {
         'purchase_request': purchase_request,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
@@ -1095,7 +1124,10 @@ def pay_with_paypal(request, pk):
 def paypal_create_order(request, pk):
     """Crea una orden en PayPal server-side y devuelve el order ID."""
     import json
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if not _is_customer(request.user):
+        return JsonResponse({'error': 'Autenticación requerida.'}, status=403)
+    customer = request.user.customer_profile
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
     total = '{:.2f}'.format(purchase_request.total_estimado)
     try:
         token = paypal_access_token()
@@ -1122,7 +1154,10 @@ def paypal_create_order(request, pk):
 def paypal_capture(request, pk):
     """Captura el pago después de que PayPal lo aprueba."""
     import json
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if not _is_customer(request.user):
+        return JsonResponse({'error': 'Autenticación requerida.'}, status=403)
+    customer = request.user.customer_profile
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
 
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=pk)

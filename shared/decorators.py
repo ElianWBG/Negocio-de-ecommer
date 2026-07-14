@@ -106,19 +106,11 @@ def audit_action(action_name):
                 f'Path: {path} | IP: {ip}'
             )
 
-            # También imprimir en consola para desarrollo
-            print(
-                f'\n[AUDIT] {timestamp} | User: {user} | '
-                f'Action: {action_name} | Method: {method} | '
-                f'Path: {path} | IP: {ip}'
-            )
-
             # Ejecutar la vista original normalmente
             response = view_func(request, *args, **kwargs)
 
-            # Si fue POST, registrar que la acción se completó
             if method == 'POST':
-                print(f'[AUDIT] {timestamp} | COMPLETED: {action_name} by {user}')
+                logger.info('[AUDIT] COMPLETED: %s by %s', action_name, user)
 
             return response
 

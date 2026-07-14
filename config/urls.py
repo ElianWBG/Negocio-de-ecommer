@@ -4,10 +4,6 @@ from django.shortcuts import redirect
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.decorators.csrf import csrf_exempt
-
-
-@csrf_exempt
 def logout_view(request):
     auth_logout(request)
     return redirect(settings.LOGOUT_REDIRECT_URL)
