@@ -1,3 +1,4 @@
+import calendar
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -7,6 +8,15 @@ from django.db.models import Sum
 from billing.models import Invoice
 
 from .models import CuotaVenta, PagoCuotaVenta
+
+
+def _add_months(base_date, months):
+    """Suma `months` meses a base_date respetando el último día del mes destino."""
+    m = base_date.month - 1 + months
+    year = base_date.year + m // 12
+    month = m % 12 + 1
+    day = min(base_date.day, calendar.monthrange(year, month)[1])
+    return base_date.replace(year=year, month=month, day=day)
 
 
 def generar_cuotas(factura, numero_cuotas):
@@ -53,7 +63,7 @@ def generar_cuotas(factura, numero_cuotas):
             cuotas.append(CuotaVenta(
                 factura=factura,
                 numero=numero,
-                fecha_vencimiento=fecha_factura + timedelta(days=30 * numero),
+                fecha_vencimiento=_add_months(fecha_factura, numero),
                 valor=valor,
                 saldo=valor,
                 estado='pendiente',

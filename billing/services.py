@@ -14,9 +14,12 @@ def _clave_acceso_demo(invoice, config):
     verificador Módulo 11. DEMO: no corresponde a una autorización real."""
     fecha = invoice.invoice_date.strftime('%d%m%Y')
     ruc = ''.join(ch for ch in (getattr(config, 'ruc', '') or '') if ch.isdigit()).ljust(13, '0')[:13]
+    ambiente = getattr(config, 'ambiente_sri', '1') or '1'
+    estab = ''.join(ch for ch in (getattr(config, 'codigo_establecimiento', '001') or '001') if ch.isdigit()).ljust(3, '0')[:3]
+    pto = ''.join(ch for ch in (getattr(config, 'punto_emision', '001') or '001') if ch.isdigit()).ljust(3, '0')[:3]
     secuencial = f'{invoice.id:09d}'
     cuerpo = (
-        f'{fecha}01{ruc}2001001{secuencial}12345678' '1'
+        f'{fecha}01{ruc}{ambiente}{estab}{pto}{secuencial}12345678' '1'
     )  # fecha(8)+tipo(2)+ruc(13)+amb(1)+serie(6)+sec(9)+cod(8)+tipoEmision(1) = 48
     cuerpo = cuerpo[:48].ljust(48, '0')
     pesos = [2, 3, 4, 5, 6, 7]
@@ -73,7 +76,9 @@ def build_invoice_pdf(invoice):
     s_center = ps('c', alignment=TA_CENTER, fontSize=7)
 
     clave = _clave_acceso_demo(invoice, config)
-    numero = f'001-001-{invoice.id:09d}'
+    estab = getattr(config, 'codigo_establecimiento', '001') or '001'
+    pto   = getattr(config, 'punto_emision', '001') or '001'
+    numero = f'{estab}-{pto}-{invoice.id:09d}'
 
     # ── EMISOR (izq) ──────────────────────────────────────────────
     emisor_cell = []
@@ -104,7 +109,7 @@ def build_invoice_pdf(invoice):
         [Paragraph(clave, s_sm)],
         [Paragraph('FECHA Y HORA DE AUTORIZACIÓN', s_lbl)],
         [Paragraph(invoice.invoice_date.strftime('%d/%m/%Y %H:%M:%S'), s_sm)],
-        [Paragraph('AMBIENTE: PRUEBAS &nbsp;&nbsp; EMISIÓN: NORMAL', s_sm)],
+        [Paragraph(f'AMBIENTE: {"PRODUCCIÓN" if getattr(config, "ambiente_sri", "1") == "2" else "PRUEBAS"} &nbsp;&nbsp; EMISIÓN: NORMAL', s_sm)],
         [Paragraph('CLAVE DE ACCESO', s_lbl)],
         [bc],
         [Paragraph(clave, s_center)],

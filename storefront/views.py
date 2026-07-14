@@ -11,6 +11,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 from shared.decorators import permission_required_any
 from shared.paypal_client import paypal_access_token, paypal_request
 from django.core.mail import send_mail
@@ -85,26 +86,30 @@ def customer_register(request):
             if User.objects.filter(email=d['email']).exists():
                 messages.error(request, 'Ya existe una cuenta con ese correo.')
                 return render(request, 'storefront/register.html', {'form': form})
-            user = User.objects.create_user(
-                username=d['email'],
-                email=d['email'],
-                password=d['password1'],
-                first_name=d['first_name'],
-                last_name=d['last_name'],
-                is_active=True,
-            )
-            Customer.objects.update_or_create(
-                dni=d['dni'],
-                defaults={
-                    'first_name': d['first_name'],
-                    'last_name': d['last_name'],
-                    'email': d['email'],
-                    'phone': d.get('phone', ''),
-                    'address': d.get('address', ''),
-                    'accepts_promotions': d.get('accepts_promotions', True),
-                    'user': user,
-                }
-            )
+            try:
+                user = User.objects.create_user(
+                    username=d['email'],
+                    email=d['email'],
+                    password=d['password1'],
+                    first_name=d['first_name'],
+                    last_name=d['last_name'],
+                    is_active=True,
+                )
+                Customer.objects.update_or_create(
+                    dni=d['dni'],
+                    defaults={
+                        'first_name': d['first_name'],
+                        'last_name': d['last_name'],
+                        'email': d['email'],
+                        'phone': d.get('phone', ''),
+                        'address': d.get('address', ''),
+                        'accepts_promotions': d.get('accepts_promotions', True),
+                        'user': user,
+                    }
+                )
+            except IntegrityError:
+                messages.error(request, 'Ya existe una cuenta con ese correo. Por favor inicia sesión.')
+                return render(request, 'storefront/register.html', {'form': form})
             _send_welcome_email(user)
             cart_snapshot = request.session.get(CART_SESSION_KEY)
             login(request, user)
@@ -742,16 +747,18 @@ def leave_review(request, pk):
         except forms.ValidationError as e:
             image_error = e.messages[0]
         if form.is_valid() and image_error is None:
-            obj = form.save(commit=False)
-            obj.customer, obj.product = customer, product
-            obj.save()
+            from django.db import transaction as _tx
+            with _tx.atomic():
+                obj = form.save(commit=False)
+                obj.customer, obj.product = customer, product
+                obj.save()
 
-            remove_ids = request.POST.getlist('remove_images')
-            if remove_ids:
-                ReviewImage.objects.filter(review=obj, pk__in=remove_ids).delete()
+                remove_ids = request.POST.getlist('remove_images')
+                if remove_ids:
+                    ReviewImage.objects.filter(review=obj, pk__in=remove_ids).delete()
 
-            for f in new_images:
-                ReviewImage.objects.create(review=obj, image=f)
+                for f in new_images:
+                    ReviewImage.objects.create(review=obj, image=f)
 
             messages.success(request, 'Reseña actualizada.' if review else 'Gracias por tu reseña.')
             return redirect('storefront:product_detail', pk=product.pk)

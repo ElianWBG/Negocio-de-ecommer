@@ -1903,8 +1903,8 @@ def product_import(request):
                     group, _ = ProductGroup.objects.get_or_create(name=row['categoria'], defaults={'is_active': True})
                 Product.objects.update_or_create(
                     name=row['nombre'],
+                    brand=brand,
                     defaults={
-                        'brand': brand,
                         'group': group,
                         'unit_price': row['precio'],
                         'stock': row['stock'],
@@ -2813,10 +2813,6 @@ def verify_panel_code(request):
             messages.error(request, 'Código incorrecto o expirado. Verifica los datos e intenta de nuevo.')
             return render(request, 'billing/verify_code.html')
 
-        if vc.is_used:
-            messages.info(request, 'Este código ya fue usado. Tu cuenta ya debería estar activa. Intenta iniciar sesión.')
-            return redirect('login')
-
         if vc.is_expired:
             messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
             return render(request, 'billing/verify_code.html')
@@ -2848,8 +2844,7 @@ def verify_panel_code(request):
             user.set_password(password)
             user.is_active = True
             user.save()
-            vc.is_used = True
-            vc.save()
+            vc.delete()
 
         request.session.pop('verify_attempts', None)
         request.session.pop('verify_lockout_until', None)
@@ -2931,6 +2926,17 @@ def send_promotion(request):
     if request.method == 'POST':
         subject = request.POST.get('subject', '').strip()
         html_content = request.POST.get('html_content', '').strip()
+
+        # Rate limiting: máximo 1 envío cada 30 minutos
+        from billing.models import AuditLog
+        import datetime
+        from django.utils import timezone as _tz
+        COOLDOWN = datetime.timedelta(minutes=30)
+        last_promo = AuditLog.objects.filter(action='promotion_sent').order_by('-timestamp').first()
+        if last_promo and (_tz.now() - last_promo.timestamp) < COOLDOWN:
+            remaining = int((COOLDOWN - (_tz.now() - last_promo.timestamp)).total_seconds() // 60) + 1
+            messages.error(request, f'Ya se envió una promoción recientemente. Espera {remaining} minuto(s) antes de volver a enviar.')
+            return redirect('billing:send_promotion')
 
         if not subject or not html_content:
             messages.error(request, 'Completa el asunto y el contenido HTML antes de enviar.')
