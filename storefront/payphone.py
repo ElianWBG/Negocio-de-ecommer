@@ -34,14 +34,15 @@ def _headers():
     }
 
 
-def prepare_payment(*, amount_cents, client_transaction_id, reference, response_url, cancellation_url):
-    """Inicia una transacción. `amount_cents` es el monto TOTAL a cobrar
-    (con IVA incluido) en centavos, como entero — así lo exige PayPhone
-    (ej: $10.50 -> 1050). Devuelve el dict de PayPhone con, entre otros,
-    'payWithCard' (URL a la que redirigir al cliente)."""
+def prepare_payment(*, amount_cents, subtotal_cents, client_transaction_id, reference, response_url, cancellation_url):
+    """Inicia una transacción. `amount_cents` es el total con IVA; `subtotal_cents` es el
+    subtotal sin IVA — ambos en centavos enteros (ej: $10.50 → 1050).
+    Devuelve el dict de PayPhone con, entre otros, 'payWithCard' (URL de pago)."""
+    tax_cents = amount_cents - subtotal_cents
     payload = {
         'amount': amount_cents,
-        'amountWithoutTax': amount_cents,
+        'amountWithoutTax': subtotal_cents,
+        'tax': tax_cents,
         'clientTransactionId': client_transaction_id,
         'currency': 'USD',
         'storeId': settings.PAYPHONE_STORE_ID,

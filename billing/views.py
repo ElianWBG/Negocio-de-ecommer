@@ -1605,7 +1605,7 @@ def invoice_create(request):
     })
 
 
-@login_required
+@permission_required_any('billing.view_product')
 def api_product_info(request, pk):
     """API para obtener precio y stock de un producto (usado en el formulario de factura)."""
     from django.http import JsonResponse
@@ -1661,6 +1661,33 @@ def invoice_update_visible_columns(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@permission_required_any('billing.delete_invoice')
+def invoice_void(request, pk):
+    """Anula una factura (soft-delete): estado='anulada', is_active=False, restaura stock.
+    No elimina el registro — mantiene el historial y la auditoría intactos."""
+    invoice = get_object_or_404(Invoice, pk=pk)
+
+    if invoice.estado == 'anulada':
+        messages.warning(request, 'Esta factura ya está anulada.')
+        return redirect('billing:invoice_detail', pk=pk)
+
+    if request.method == 'POST':
+        with transaction.atomic():
+            for detail in invoice.details.select_related('product').all():
+                Product.objects.filter(pk=detail.product_id).update(
+                    stock=F('stock') + detail.quantity
+                )
+            invoice.estado = 'anulada'
+            invoice.is_active = False
+            invoice.saldo = 0
+            invoice.save(update_fields=['estado', 'is_active', 'saldo'])
+        log_action(request, 'deleted', 'Invoice', pk, f'Factura #{pk} anulada (soft-delete) y stock restaurado')
+        messages.success(request, f'Factura #{pk} anulada correctamente. El stock fue restaurado.')
+        return redirect('billing:invoice_list')
+
+    return render(request, 'billing/invoice_confirm_void.html', {'invoice': invoice})
 
 
 class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
@@ -2777,15 +2804,13 @@ def verify_panel_code(request):
             messages.error(request, 'Completa todos los campos.')
             return render(request, 'billing/verify_code.html')
 
+        import secrets as _secrets
         user = User.objects.filter(email=email).first()
-        if not user:
-            messages.error(request, 'No existe un usuario con ese correo.')
-            return render(request, 'billing/verify_code.html')
+        vc = PanelVerificationCode.objects.filter(user=user).order_by('-created_at').first() if user else None
 
-        vc = PanelVerificationCode.objects.filter(user=user).order_by('-created_at').first()
-
-        if not vc:
-            messages.error(request, 'No hay un código de verificación. Solicita uno nuevo.')
+        # Respuesta genérica para no revelar si el email existe (user enumeration)
+        if not user or not vc:
+            messages.error(request, 'Código incorrecto o expirado. Verifica los datos e intenta de nuevo.')
             return render(request, 'billing/verify_code.html')
 
         if vc.is_used:
@@ -2796,7 +2821,8 @@ def verify_panel_code(request):
             messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
             return render(request, 'billing/verify_code.html')
 
-        if vc.code != code:
+        # Comparación en tiempo constante para evitar timing attacks
+        if not _secrets.compare_digest(vc.code, code):
             attempts += 1
             request.session['verify_attempts'] = attempts
             if attempts >= MAX_ATTEMPTS:

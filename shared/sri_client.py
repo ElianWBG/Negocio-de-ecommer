@@ -60,7 +60,7 @@ def emitir_factura_sri(invoice, purchase_request=None) -> dict | None:
     customer = invoice.customer
     payload = {
         'cliente_identificacion': customer.dni or '9999999999',
-        'cliente_tipo_identificacion': '05',
+        'cliente_tipo_identificacion': '04' if len(customer.dni or '') == 13 else ('06' if (customer.dni and not customer.dni.isdigit()) else '05'),
         'cliente_razon_social': customer.full_name,
         'cliente_email': customer.email or '',
         'cliente_direccion': getattr(customer, 'address', '') or '',

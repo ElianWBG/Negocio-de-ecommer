@@ -109,7 +109,11 @@ def cobro_update(request, pk):
             with transaction.atomic():
                 cobro_actualizado = form.save(commit=False)
                 factura = Invoice.objects.select_for_update().get(pk=factura.pk)
-                factura.saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
+                nuevo_saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
+                if nuevo_saldo < 0:
+                    messages.error(request, f'El nuevo monto (${cobro_actualizado.valor}) excede el saldo disponible. Otro pago pudo haber sido registrado simultáneamente.')
+                    return redirect('cobros:cobro_update', pk=cobro_actualizado.pk)
+                factura.saldo = nuevo_saldo
                 if factura.saldo <= 0:
                     factura.estado = 'pagada'
                 elif factura.saldo < factura.total:

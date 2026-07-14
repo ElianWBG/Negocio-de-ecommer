@@ -166,10 +166,10 @@ def _send_purchase_confirmation_email(purchase_request, invoice):
     date_str = invoice.invoice_date.strftime('%d/%m/%Y') if invoice.invoice_date else tz.localdate().strftime('%d/%m/%Y')
 
     tipo_pago_label = {
-        'contado': 'EFECTIVO / TRANSFERENCIA',
+        'tarjeta': 'TARJETA / PAYPHONE / PAYPAL',
         'credito': 'CRÉDITO (CUOTAS)',
-        'paypal': 'PAYPAL',
-    }.get(invoice.tipo_pago, (invoice.tipo_pago or '').upper())
+        'manual':  'EFECTIVO / TRANSFERENCIA',
+    }.get(purchase_request.payment_method, (invoice.tipo_pago or '').upper())
 
     customer_name = f'{customer.first_name} {customer.last_name}'.strip().upper()
 

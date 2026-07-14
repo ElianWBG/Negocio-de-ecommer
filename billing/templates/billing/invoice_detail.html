@@ -34,9 +34,9 @@
     </a>
     {% endif %}
   {% endif %}
-  {% if invoice.is_active %}
-  <a href="{% url 'billing:invoice_delete' invoice.pk %}" class="btn btn-sm btn-outline-danger ms-auto">
-    <i class="bi bi-trash"></i> Anular factura
+  {% if invoice.is_active and invoice.estado != 'anulada' %}
+  <a href="{% url 'billing:invoice_void' invoice.pk %}" class="btn btn-sm btn-outline-warning ms-auto">
+    <i class="bi bi-slash-circle"></i> Anular factura
   </a>
   {% endif %}
 </div>

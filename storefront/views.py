@@ -999,12 +999,14 @@ def pay_with_card(request, pk):
     purchase_request.save()
 
     amount_cents = int(round(purchase_request.total_estimado * 100))
+    subtotal_cents = int(round(purchase_request.subtotal_estimado * 100))
     response_url = request.build_absolute_uri(reverse('storefront:payphone_response'))
     cancellation_url = request.build_absolute_uri(reverse('storefront:payment_choice', args=[purchase_request.pk]))
 
     try:
         result = payphone.prepare_payment(
             amount_cents=amount_cents,
+            subtotal_cents=subtotal_cents,
             client_transaction_id=client_tx_id,
             reference=f'Solicitud #{purchase_request.id}',
             response_url=response_url,
