@@ -85,6 +85,11 @@ SRI_MICRO_URL = env('SRI_MICRO_URL', default='')
 SRI_MICRO_API_KEY = env('SRI_MICRO_API_KEY', default='')
 SRI_MICRO_TIMEOUT = env.int('SRI_MICRO_TIMEOUT', default=30)
 
+# Microservicio de Notificaciones — dejar vacío para desactivar
+NOTIF_MICRO_URL = env('NOTIF_MICRO_URL', default='')
+NOTIF_MICRO_API_KEY = env('NOTIF_MICRO_API_KEY', default='')
+NOTIF_MICRO_TIMEOUT = env.int('NOTIF_MICRO_TIMEOUT', default=10)
+
 # Application definition
 
 INSTALLED_APPS = [
