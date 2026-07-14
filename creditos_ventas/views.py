@@ -443,6 +443,16 @@ def pago_cuota_create(request, pk):
         messages.error(request, 'Esta cuota ya está pagada.')
         return redirect('creditos_ventas:cuota_payment_history', pk=cuota.pk)
 
+    prev_pending = CuotaVenta.objects.filter(
+        factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente'
+    ).order_by('numero').first()
+    if prev_pending:
+        messages.error(
+            request,
+            f'Debes pagar la cuota {prev_pending.numero} antes de pagar la cuota {cuota.numero}.',
+        )
+        return redirect('creditos_ventas:cuota_list', factura_id=cuota.factura_id)
+
     if request.method == 'POST':
         form = PagoCuotaVentaForm(request.POST, initial={'cuota': cuota})
         if form.is_valid():
@@ -537,7 +547,8 @@ def cuota_payment_history(request, pk):
     """Historial de pagos de una cuota."""
     cuota = get_object_or_404(CuotaVenta.objects.select_related('factura', 'factura__customer'), pk=pk)
     pagos = cuota.pagos.all()
-    total_pagado = sum(p.valor for p in pagos)
+    from django.db.models import Sum as _Sum
+    total_pagado = pagos.aggregate(t=_Sum('valor'))['t'] or Decimal('0')
 
     return render(request, 'creditos_ventas/payment_history.html', {
         'cuota': cuota, 'pagos': pagos, 'total_pagado': total_pagado,
@@ -563,7 +574,8 @@ def cuotas_pendientes_list(request):
 
     cuotas = cuotas.order_by('fecha_vencimiento')
     hoy = timezone.localdate()
-    total_pendiente = sum(c.saldo for c in cuotas.filter(estado='pendiente'))
+    from django.db.models import Sum as _Sum
+    total_pendiente = CuotaVenta.objects.filter(estado='pendiente').aggregate(s=_Sum('saldo'))['s'] or Decimal('0')
 
     return render(request, 'creditos_ventas/cuotas_pendientes_list.html', {
         'cuotas': cuotas,

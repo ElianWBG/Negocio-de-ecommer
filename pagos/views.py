@@ -57,6 +57,7 @@ def pago_create(request, compra_id):
         if form.is_valid():
             with transaction.atomic():
                 pago = form.save()
+                compra = Purchase.objects.select_for_update().get(pk=compra_id)
                 compra.saldo = compra.saldo - pago.valor
                 compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
                 compra.save()
@@ -97,6 +98,7 @@ def pago_update(request, pk):
         if form.is_valid():
             with transaction.atomic():
                 pago_actualizado = form.save(commit=False)
+                compra = Purchase.objects.select_for_update().get(pk=compra.pk)
                 compra.saldo = compra.saldo + valor_anterior - pago_actualizado.valor
                 compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
                 compra.save()
@@ -123,6 +125,7 @@ def pago_delete(request, pk):
 
     if request.method == 'POST':
         with transaction.atomic():
+            compra = Purchase.objects.select_for_update().get(pk=compra.pk)
             compra.saldo = compra.saldo + pago.valor
             compra.estado = 'pendiente'
             compra.save()

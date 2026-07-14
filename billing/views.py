@@ -62,7 +62,7 @@ def home(request):
     total_customers = Customer.objects.count()
     total_users = User.objects.count()
     total_sales = Invoice.objects.count()
-    total_income = Invoice.objects.filter(is_active=True).aggregate(s=Sum('total'))['s'] or 0
+    total_income = Invoice.objects.filter(is_active=True).exclude(estado='anulada').aggregate(s=Sum('total'))['s'] or 0
 
     from purchasing.models import Purchase
     total_purchases = Purchase.objects.count()
@@ -71,8 +71,8 @@ def home(request):
     out_of_stock_qs = Product.objects.filter(is_active=True, stock=0)
     low_stock_count = low_stock_qs.count()
     out_of_stock_count = out_of_stock_qs.count()
-    pending_credit_total = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).aggregate(s=Sum('saldo'))['s'] or 0
-    pending_credit_count = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).count()
+    pending_credit_total = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).exclude(estado='anulada').aggregate(s=Sum('saldo'))['s'] or 0
+    pending_credit_count = Invoice.objects.filter(tipo_pago='credito', saldo__gt=0).exclude(estado='anulada').count()
 
     # --- Gráfico: ventas por mes (últimos 6 meses) ---
     months = []
@@ -87,6 +87,7 @@ def home(request):
     sales_by_month = (
         Invoice.objects
         .filter(invoice_date__date__gte=months[0])
+        .exclude(estado='anulada')
         .annotate(month=TruncMonth('invoice_date'))
         .values('month')
         .annotate(total=Sum('total'), count=Count('id'))
@@ -130,7 +131,7 @@ def home(request):
     stock_health_pct = _pct(healthy_stock_count, total_products)
     active_catalog_pct = _pct(active_products, total_products)
     collected = (total_income or 0) - (pending_credit_total or 0)
-    collection_pct = _pct(collected, total_income) if total_income else 100
+    collection_pct = max(0, min(100, _pct(collected, total_income))) if total_income else 100
 
     # --- Podium: top 3 productos más vendidos (para tarjetas de ranking) ---
     top_products_podium = [
@@ -194,7 +195,8 @@ def home(request):
 
 
 # === REGISTRO ===
-class SignUpView(CreateView):
+class SignUpView(PermissionRequiredAnyMixin, CreateView):
+    permissions_required = ['auth.add_user']
     form_class = SignUpForm
     template_name = 'registration/signup.html'
     success_url = reverse_lazy('billing:verify_panel_code')
@@ -205,15 +207,17 @@ class SignUpView(CreateView):
         self.object.set_unusable_password()
         self.object.save()
         from billing.services import _send_panel_verification_code
-        code_obj = _send_panel_verification_code(self.object, request=self.request)
+        _send_panel_verification_code(self.object, request=self.request)
         verify_url = reverse_lazy('billing:verify_panel_code')
-        messages.success(self.request, f'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{self.object.username}</strong>')
-        # El código NO va en la URL (quedaría en logs/Referer/barra). El usuario
-        # lo copia desde el correo. Solo prellenamos el email.
-        from django.http import QueryDict
-        qs = QueryDict(mutable=True)
-        qs['email'] = self.object.email
-        return redirect(f'{verify_url}?{qs.urlencode()}')
+        from django.utils.html import format_html
+        messages.success(
+            self.request,
+            format_html(
+                'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{}</strong>',
+                self.object.username,
+            )
+        )
+        return redirect(verify_url)
 
 # === BRAND (FBV) ===
 @permission_required_any('billing.view_brand')
@@ -341,10 +345,14 @@ def brand_update(request, pk):
 @permission_required_any('billing.delete_brand')
 @audit_action('DELETE_BRAND')
 def brand_delete(request, pk):
+    from django.db.models.deletion import ProtectedError
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
-        brand.delete()
-        messages.success(request, 'Marca eliminada exitosamente!')
+        try:
+            brand.delete()
+            messages.success(request, 'Marca eliminada exitosamente!')
+        except ProtectedError:
+            messages.error(request, 'No se puede eliminar esta marca porque tiene productos asociados.')
         return redirect('billing:brand_list')
     return render(request, 'billing/brand_confirm_delete.html', {'object': brand})
 
@@ -449,6 +457,14 @@ class ProductGroupDeleteView(PermissionRequiredAnyMixin, DeleteView):
     template_name = 'billing/product_group_confirm_delete.html'
     success_url = reverse_lazy('billing:productgroup_list')
 
+    def form_valid(self, form):
+        from django.db.models.deletion import ProtectedError
+        try:
+            return super().form_valid(form)
+        except ProtectedError:
+            messages.error(self.request, 'No se puede eliminar esta categoría porque tiene productos asociados.')
+            return redirect('billing:productgroup_list')
+
 @login_required
 def productgroup_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de categorías"""
@@ -506,7 +522,7 @@ class SupplierListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = Supplier.objects.all()
+        qs = Supplier.objects.annotate(product_count=Count('products'))
         g = self.request.GET
         if name := g.get('name', '').strip():
             qs = qs.filter(name__icontains=name)
@@ -534,7 +550,7 @@ class SupplierListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         elif col_key == 'address':
             return obj.address or '-'
         elif col_key == 'product_count':
-            return obj.products.count()
+            return getattr(obj, 'product_count', obj.products.count())
         elif col_key == 'is_active':
             return 'Activo' if obj.is_active else 'Inactivo'
         elif col_key == 'created_at':
@@ -585,6 +601,14 @@ class SupplierDeleteView(PermissionRequiredAnyMixin, DeleteView):
     template_name = 'billing/supplier_confirm_delete.html'
     success_url = reverse_lazy('billing:supplier_list')
 
+    def form_valid(self, form):
+        from django.db.models.deletion import ProtectedError
+        try:
+            return super().form_valid(form)
+        except ProtectedError:
+            messages.error(self.request, 'No se puede eliminar este proveedor porque tiene productos asociados.')
+            return redirect('billing:supplier_list')
+
 @login_required
 def supplier_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de proveedores"""
@@ -615,7 +639,7 @@ class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     model = Product
     template_name = 'billing/product_list.html'
     context_object_name = 'items'
-    paginate_by = 3
+    paginate_by = 10
 
     export_title = 'Productos'
     export_fields = [
@@ -1000,7 +1024,7 @@ class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = Customer.objects.all()
+        qs = Customer.objects.select_related('profile')
         g = self.request.GET
         if name := g.get('name', '').strip():
             qs = qs.filter(first_name__icontains=name) | qs.filter(last_name__icontains=name)
@@ -1321,6 +1345,9 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
             qs = qs.filter(total__gte=total_min)
         if total_max := g.get('total_max', '').strip():
             qs = qs.filter(total__lte=total_max)
+        if estado := g.get('estado', '').strip():
+            if estado in ('pendiente', 'parcial', 'pagada', 'anulada'):
+                qs = qs.filter(estado=estado)
         return qs
 
     def get_invoice_visible_cols(self):
@@ -1568,7 +1595,7 @@ def invoice_create(request):
                     if invoice.tipo_pago == 'credito' and form.cleaned_data.get('numero_cuotas'):
                         mensaje += f'. Se generaron {form.cleaned_data["numero_cuotas"]} cuotas.'
                     messages.success(request, mensaje)
-                    return redirect('billing:invoice_list')
+                    return redirect('billing:invoice_detail', pk=invoice.id)
     else:
         form = InvoiceForm()
         formset = InvoiceDetailFormSet()
@@ -1643,9 +1670,24 @@ class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
     success_url = reverse_lazy('billing:invoice_list')
 
     def form_valid(self, form):
+        from django.db.models.deletion import ProtectedError
         pk = self.object.pk
-        response = super().form_valid(form)
-        log_action(self.request, 'deleted', 'Invoice', pk, f'Factura #{pk} eliminada')
+        try:
+            with transaction.atomic():
+                # Restaurar stock de cada línea antes de eliminar
+                for detail in self.object.details.select_related('product').all():
+                    Product.objects.filter(pk=detail.product_id).update(
+                        stock=F('stock') + detail.quantity
+                    )
+                response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                'No se puede eliminar esta factura porque tiene pagos, cobros o cuotas registradas. '
+                'Elimínalos primero.'
+            )
+            return redirect('billing:invoice_detail', pk=pk)
+        log_action(self.request, 'deleted', 'Invoice', pk, f'Factura #{pk} eliminada y stock restaurado')
         return response
 
 
@@ -1705,6 +1747,10 @@ def register_payment(request, pk):
                 )
             except ValueError as e:
                 messages.error(request, str(e))
+                return render(request, 'billing/invoice_payment_form.html', {
+                    'form': form,
+                    'invoice': invoice,
+                })
             return redirect('billing:invoice_detail', pk=pk)
     else:
         form = InvoicePaymentForm(initial={'amount': invoice.saldo})
@@ -1822,14 +1868,12 @@ def product_import(request):
                 if not row['valido']:
                     skipped += 1
                     continue
-                brand, _ = Brand.objects.get_or_create(
-                    name__iexact=row['marca'],
-                    defaults={'name': row['marca'], 'is_active': True}
-                )
-                group, _ = ProductGroup.objects.get_or_create(
-                    name__iexact=row['categoria'],
-                    defaults={'name': row['categoria'], 'is_active': True}
-                )
+                brand = Brand.objects.filter(name__iexact=row['marca']).first()
+                if not brand:
+                    brand = Brand.objects.create(name=row['marca'], is_active=True)
+                group = ProductGroup.objects.filter(name__iexact=row['categoria']).first()
+                if not group:
+                    group = ProductGroup.objects.create(name=row['categoria'], is_active=True)
                 Product.objects.update_or_create(
                     name=row['nombre'],
                     defaults={
@@ -2162,7 +2206,6 @@ def _get_report_dates(request):
 
 
 def _sales_queryset(date_from, date_to):
-    from datetime import timedelta
     return (
         Invoice.objects
         .filter(
@@ -2170,6 +2213,7 @@ def _sales_queryset(date_from, date_to):
             invoice_date__date__lte=date_to,
             is_active=True,
         )
+        .exclude(estado='anulada')
         .select_related('customer')
         .prefetch_related('details__product')
         .order_by('-invoice_date')
@@ -2206,7 +2250,7 @@ def _sales_summary(invoices):
     }
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.view_invoice', 'billing.descargar_reportes_financieros')
 def report_sales(request):
     date_from, date_to = _get_report_dates(request)
     invoices = list(_sales_queryset(date_from, date_to))
@@ -2397,7 +2441,7 @@ def report_sales_pdf(request):
     return response
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.view_product', 'billing.descargar_reportes_financieros')
 def report_stock(request):
     query = request.GET.get('q', '').strip()
     low_only = request.GET.get('low', '') == '1'
@@ -2496,14 +2540,14 @@ def config_negocio_edit(request):
         return redirect("billing:home")
 
     if request.method == 'POST':
-        config.nombre_tienda    = request.POST.get('nombre_tienda', '').strip() or config.nombre_tienda
-        config.slogan           = request.POST.get('slogan', '').strip()
-        config.color_primario   = request.POST.get('color_primario', '#B5441B').strip()
-        config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()
-        config.color_fondo      = request.POST.get('color_fondo', '#F8F3EE').strip()
-        config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()
-        config.color_texto      = request.POST.get('color_texto', '#231A10').strip()
-        config.hero_titulo      = request.POST.get('hero_titulo', '').strip()
+        config.nombre_tienda    = (request.POST.get('nombre_tienda', '').strip() or config.nombre_tienda)[:80]
+        config.slogan           = request.POST.get('slogan', '').strip()[:160]
+        config.color_primario   = request.POST.get('color_primario', '#B5441B').strip()[:7]
+        config.color_oscuro     = request.POST.get('color_oscuro', '#231A10').strip()[:7]
+        config.color_fondo      = request.POST.get('color_fondo', '#F8F3EE').strip()[:7]
+        config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()[:7]
+        config.color_texto      = request.POST.get('color_texto', '#231A10').strip()[:7]
+        config.hero_titulo      = request.POST.get('hero_titulo', '').strip()[:100]
         if 'hero_imagen' in request.FILES:
             config.hero_imagen  = request.FILES['hero_imagen']
         config.sobre_activo     = 'sobre_activo' in request.POST
@@ -2638,9 +2682,15 @@ def user_management(request):
 
         return redirect('billing:user_management')
 
-    users = User.objects.prefetch_related('groups').order_by('username')
+    from django.core.paginator import Paginator
+    users_qs = User.objects.prefetch_related('groups').order_by('username')
+    paginator = Paginator(users_qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'billing/user_management.html', {
-        'users': users,
+        'users': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
         'groups': groups,
     })
 
@@ -2678,6 +2728,8 @@ def verify_panel_code(request):
     from billing.services import _send_panel_verification_code
 
     User = get_user_model()
+    MAX_ATTEMPTS = 5
+    LOCKOUT_MINUTES = 15
 
     if request.method == 'POST':
         action = request.POST.get('action', 'verify')
@@ -2688,12 +2740,27 @@ def verify_panel_code(request):
                 messages.error(request, 'Ingresa tu correo.')
                 return render(request, 'billing/verify_code.html')
             user = User.objects.filter(email=email).first()
+            # Respuesta genérica para evitar enumeración de correos
             if user:
                 _send_panel_verification_code(user, request=request)
-                messages.success(request, 'Se ha enviado un nuevo código a tu correo.')
-            else:
-                messages.error(request, 'No existe un usuario con ese correo.')
+            messages.success(request, 'Si el correo existe en el sistema, recibirás un nuevo código.')
             return render(request, 'billing/verify_code.html')
+
+        # --- Protección contra fuerza bruta por sesión ---
+        attempts = request.session.get('verify_attempts', 0)
+        lockout_until = request.session.get('verify_lockout_until')
+        if lockout_until:
+            from django.utils import timezone as tz
+            import datetime
+            lockout_dt = tz.datetime.fromisoformat(lockout_until)
+            if tz.now() < lockout_dt:
+                remaining = int((lockout_dt - tz.now()).total_seconds() // 60) + 1
+                messages.error(request, f'Demasiados intentos fallidos. Espera {remaining} minuto(s) antes de intentar de nuevo.')
+                return render(request, 'billing/verify_code.html')
+            else:
+                request.session['verify_attempts'] = 0
+                request.session['verify_lockout_until'] = None
+                attempts = 0
 
         email = request.POST.get('email', '').strip()
         code = request.POST.get('code', '').strip()
@@ -2722,38 +2789,46 @@ def verify_panel_code(request):
             return render(request, 'billing/verify_code.html')
 
         if vc.code != code:
-            messages.error(request, 'Código incorrecto.')
+            attempts += 1
+            request.session['verify_attempts'] = attempts
+            if attempts >= MAX_ATTEMPTS:
+                from django.utils import timezone as tz
+                import datetime
+                lockout_until_dt = tz.now() + datetime.timedelta(minutes=LOCKOUT_MINUTES)
+                request.session['verify_lockout_until'] = lockout_until_dt.isoformat()
+                request.session['verify_attempts'] = 0
+                messages.error(request, f'Demasiados intentos fallidos. Espera {LOCKOUT_MINUTES} minutos.')
+            else:
+                messages.error(request, f'Código incorrecto. Intentos restantes: {MAX_ATTEMPTS - attempts}.')
             return render(request, 'billing/verify_code.html')
 
         password = request.POST.get('password', '')
-        if not password or len(password) < 6:
-            messages.error(request, 'Crea una contraseña de al menos 6 caracteres.')
+        if not password or len(password) < 8:
+            messages.error(request, 'Crea una contraseña de al menos 8 caracteres.')
             return render(request, 'billing/verify_code.html')
         if password != request.POST.get('password_confirm', ''):
             messages.error(request, 'Las contraseñas no coinciden.')
             return render(request, 'billing/verify_code.html')
-        user.set_password(password)
 
-        vc.is_used = True
-        vc.save()
-        user.is_active = True
-        user.save()
+        with transaction.atomic():
+            user.set_password(password)
+            user.is_active = True
+            user.save()
+            vc.is_used = True
+            vc.save()
 
+        request.session.pop('verify_attempts', None)
+        request.session.pop('verify_lockout_until', None)
         messages.success(request, f'Cuenta verificada. Ahora inicia sesión con tu usuario: {user.username} y la contraseña que creaste.')
         return redirect('login')
 
     verify_user = None
-    show_code = None
     email = request.GET.get('email', '')
-    code_param = request.GET.get('code', '')
     if email:
         verify_user = User.objects.filter(email=email).first()
-        if code_param:
-            show_code = code_param
 
     return render(request, 'billing/verify_code.html', {
         'verify_user': verify_user,
-        'show_code': show_code,
     })
 
 
@@ -2764,25 +2839,42 @@ def verify_panel_code(request):
 @permission_required_any('billing.view_auditlog')
 def activity_log(request):
     from billing.models import AuditLog
+    from django.core.paginator import Paginator
 
     qs = AuditLog.objects.select_related('user')
 
     filter_user = request.GET.get('user', '').strip()
     filter_action = request.GET.get('action', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
 
     if filter_user:
         qs = qs.filter(user__username__icontains=filter_user)
     if filter_action:
         qs = qs.filter(action=filter_action)
+    if date_from:
+        qs = qs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(timestamp__date__lte=date_to)
 
-    logs = qs[:200]
     action_choices = AuditLog.ACTION_CHOICES
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    params = request.GET.copy()
+    params.pop('page', None)
 
     return render(request, 'billing/activity_log.html', {
-        'logs': logs,
+        'logs': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
+        'search_params': params.urlencode(),
         'action_choices': action_choices,
         'filter_user': filter_user,
         'filter_action': filter_action,
+        'date_from': date_from,
+        'date_to': date_to,
     })
 
 

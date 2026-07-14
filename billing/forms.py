@@ -35,11 +35,12 @@ class SignUpForm(forms.ModelForm):
 class BrandForm(forms.ModelForm):
     class Meta:
         model = Brand
-        fields = ['name', 'description', 'logo', 'is_active']
+        fields = ['name', 'description', 'logo', 'whatsapp', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 593999999999'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

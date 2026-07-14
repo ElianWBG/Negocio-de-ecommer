@@ -362,13 +362,14 @@ class ConfigNegocio(models.Model):
 
 class AuditLog(models.Model):
     ACTION_CHOICES = [
-        ('created',      'Creado'),
-        ('updated',      'Actualizado'),
-        ('deleted',      'Eliminado'),
-        ('confirmed',    'Confirmado'),
-        ('rejected',     'Rechazado'),
-        ('login',        'Inicio de sesión'),
-        ('config_saved', 'Configuración guardada'),
+        ('created',          'Creado'),
+        ('updated',          'Actualizado'),
+        ('deleted',          'Eliminado'),
+        ('confirmed',        'Confirmado'),
+        ('rejected',         'Rechazado'),
+        ('login',            'Inicio de sesión'),
+        ('config_saved',     'Configuración guardada'),
+        ('promotion_sent',   'Promoción enviada'),
     ]
     user        = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='audit_logs')
     action      = models.CharField(max_length=20, choices=ACTION_CHOICES)

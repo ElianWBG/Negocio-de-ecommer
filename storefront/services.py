@@ -6,6 +6,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from billing.models import Product, Invoice, InvoiceDetail
+from storefront.models import PurchaseRequest
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,14 @@ def confirm_purchase_request(purchase_request):
     caso no se crea ninguna factura ni se descuenta nada (todo o nada).
     """
     with transaction.atomic():
-        invoice = Invoice.objects.create(customer=purchase_request.customer)
+        # Lock the purchase request to prevent double-confirmation from concurrent requests.
+        pr = PurchaseRequest.objects.select_for_update().get(pk=purchase_request.pk)
+        if pr.status != 'pendiente':
+            return pr.invoice
 
-        for detail in purchase_request.details.select_related('product'):
+        invoice = Invoice.objects.create(customer=pr.customer)
+
+        for detail in pr.details.select_related('product'):
             updated = Product.objects.filter(
                 pk=detail.product_id,
                 stock__gte=detail.quantity
@@ -55,10 +61,12 @@ def confirm_purchase_request(purchase_request):
         invoice.total = invoice.subtotal + invoice.tax
         invoice.save()
 
-        purchase_request.status = 'confirmada'
+        pr.status = 'confirmada'
+        pr.invoice = invoice
+        pr.reviewed_at = timezone.now()
+        pr.save()
+        purchase_request.status = pr.status
         purchase_request.invoice = invoice
-        purchase_request.reviewed_at = timezone.now()
-        purchase_request.save()
 
     try:
         from shared.sri_client import emitir_factura_sri
@@ -85,9 +93,14 @@ def confirm_purchase_request_credito(purchase_request, numero_cuotas):
         raise ValueError('El número de cuotas debe ser mayor a cero.')
 
     with transaction.atomic():
-        invoice = Invoice.objects.create(customer=purchase_request.customer, tipo_pago='credito')
+        # Lock the purchase request to prevent double-confirmation from concurrent requests.
+        pr = PurchaseRequest.objects.select_for_update().get(pk=purchase_request.pk)
+        if pr.status != 'pendiente':
+            return pr.invoice
 
-        for detail in purchase_request.details.select_related('product'):
+        invoice = Invoice.objects.create(customer=pr.customer, tipo_pago='credito')
+
+        for detail in pr.details.select_related('product'):
             updated = Product.objects.filter(
                 pk=detail.product_id,
                 stock__gte=detail.quantity
@@ -109,7 +122,7 @@ def confirm_purchase_request_credito(purchase_request, numero_cuotas):
         invoice.tax = subtotal * Decimal('0.15')
         invoice.total = invoice.subtotal + invoice.tax
 
-        check_credit_limit(purchase_request.customer, invoice.total)
+        check_credit_limit(pr.customer, invoice.total)
 
         invoice.saldo = invoice.total
         invoice.estado = 'pendiente'
@@ -117,11 +130,13 @@ def confirm_purchase_request_credito(purchase_request, numero_cuotas):
 
         generar_cuotas(invoice, numero_cuotas)
 
-        purchase_request.status = 'confirmada'
+        pr.status = 'confirmada'
+        pr.invoice = invoice
+        pr.payment_method = 'credito'
+        pr.reviewed_at = timezone.now()
+        pr.save()
+        purchase_request.status = pr.status
         purchase_request.invoice = invoice
-        purchase_request.payment_method = 'credito'
-        purchase_request.reviewed_at = timezone.now()
-        purchase_request.save()
 
     try:
         from shared.sri_client import emitir_factura_sri

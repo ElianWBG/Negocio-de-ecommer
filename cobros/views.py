@@ -58,7 +58,12 @@ def cobro_create(request, factura_id):
                 cobro = form.save()
                 factura = Invoice.objects.select_for_update().get(pk=factura_id)
                 factura.saldo = factura.saldo - cobro.valor
-                factura.estado = 'pagada' if factura.saldo <= 0 else 'parcial'
+                if factura.saldo <= 0:
+                    factura.estado = 'pagada'
+                elif factura.saldo < factura.total:
+                    factura.estado = 'parcial'
+                else:
+                    factura.estado = 'pendiente'
                 factura.save()
             messages.success(request, f'Pago de ${cobro.valor} registrado. Saldo restante: ${factura.saldo}')
             return redirect('cobros:payment_history', factura_id=factura.id)
@@ -101,7 +106,12 @@ def cobro_update(request, pk):
                 cobro_actualizado = form.save(commit=False)
                 factura = Invoice.objects.select_for_update().get(pk=factura.pk)
                 factura.saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
-                factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
+                if factura.saldo <= 0:
+                    factura.estado = 'pagada'
+                elif factura.saldo < factura.total:
+                    factura.estado = 'parcial'
+                else:
+                    factura.estado = 'pendiente'
                 factura.save()
                 cobro_actualizado.save()
             messages.success(request, 'Pago actualizado correctamente.')
@@ -129,7 +139,12 @@ def cobro_delete(request, pk):
         with transaction.atomic():
             factura = Invoice.objects.select_for_update().get(pk=factura.pk)
             factura.saldo = factura.saldo + cobro.valor
-            factura.estado = 'pendiente'
+            if factura.saldo <= 0:
+                factura.estado = 'pagada'
+            elif factura.saldo < factura.total:
+                factura.estado = 'parcial'
+            else:
+                factura.estado = 'pendiente'
             factura.save()
             cobro.delete()
         messages.success(request, 'Pago eliminado y saldo repuesto.')

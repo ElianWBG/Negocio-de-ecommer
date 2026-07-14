@@ -83,7 +83,8 @@ def emitir_factura_sri(invoice, purchase_request=None) -> dict | None:
             },
             method='POST',
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        timeout = getattr(settings, 'SRI_MICRO_TIMEOUT', 30)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             result = json.loads(resp.read())
             logger.info(
                 'Factura %s enviada al micro SRI → id=%s estado=%s',

@@ -83,6 +83,7 @@ SITE_URL = env('SITE_URL', default='http://localhost:8000')
 # Microservicio SRI — dejar SRI_MICRO_URL vacío para desactivar la integración
 SRI_MICRO_URL = env('SRI_MICRO_URL', default='')
 SRI_MICRO_API_KEY = env('SRI_MICRO_API_KEY', default='')
+SRI_MICRO_TIMEOUT = env.int('SRI_MICRO_TIMEOUT', default=30)
 
 # Application definition
 

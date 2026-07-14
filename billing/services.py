@@ -281,11 +281,15 @@ def register_invoice_payment(invoice, amount, method, user, notes=''):
 
 
 def check_credit_limit(customer, new_invoice_total):
-    """Lanza ValueError si el nuevo crédito supera el límite del cliente."""
-    from billing.models import Invoice
+    """Lanza ValueError si el nuevo crédito supera el límite del cliente.
+    Debe llamarse dentro de un transaction.atomic() para que el select_for_update
+    sea efectivo y evite race conditions entre dos compras a crédito simultáneas."""
+    from billing.models import CustomerProfile, Invoice
+    from django.db import transaction as _tx
 
     try:
-        limit = customer.profile.credit_limit
+        profile = CustomerProfile.objects.select_for_update().get(customer=customer)
+        limit = profile.credit_limit
     except Exception:
         return
 
