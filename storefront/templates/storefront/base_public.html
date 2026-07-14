@@ -318,7 +318,10 @@
             <a href="{% url 'storefront:my_orders' %}"><i class="bi bi-bag-check"></i> Mis pedidos</a>
             <a href="{% url 'storefront:change_password' %}"><i class="bi bi-key"></i> Cambiar contraseña</a>
             <div class="divider"></div>
-            <a href="{% url 'storefront:customer_logout' %}" class="logout-item"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+            <form method="post" action="{% url 'storefront:customer_logout' %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="logout-item" style="background:none;border:none;width:100%;text-align:left;padding:inherit;cursor:pointer;font:inherit;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+            </form>
           </div>
         </div>
       {% else %}
@@ -387,7 +390,10 @@
         <a href="{% url 'storefront:my_orders' %}"><i class="bi bi-bag-check"></i> Mis pedidos</a>
         <a href="{% url 'storefront:change_password' %}"><i class="bi bi-key"></i> Cambiar contraseña</a>
         <div class="mobile-divider"></div>
-        <a href="{% url 'storefront:customer_logout' %}" style="color:#f87171;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+        <form method="post" action="{% url 'storefront:customer_logout' %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" style="color:#f87171;background:none;border:none;width:100%;text-align:left;padding:0;cursor:pointer;font:inherit;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+        </form>
       {% else %}
         <div class="mobile-divider"></div>
         <a href="{% url 'storefront:customer_login' %}"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a>

@@ -208,10 +208,11 @@ class SignUpView(CreateView):
         code_obj = _send_panel_verification_code(self.object, request=self.request)
         verify_url = reverse_lazy('billing:verify_panel_code')
         messages.success(self.request, f'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{self.object.username}</strong>')
+        # El código NO va en la URL (quedaría en logs/Referer/barra). El usuario
+        # lo copia desde el correo. Solo prellenamos el email.
         from django.http import QueryDict
         qs = QueryDict(mutable=True)
         qs['email'] = self.object.email
-        qs['code'] = code_obj.code
         return redirect(f'{verify_url}?{qs.urlencode()}')
 
 # === BRAND (FBV) ===
@@ -890,7 +891,7 @@ class ProductDetailView(PermissionRequiredAnyMixin, DetailView):
     context_object_name = 'product'
 
 
-@login_required
+@permission_required_any('billing.change_product')
 def product_update_image(request, pk):
     """Actualizar imagen del producto via AJAX"""
     from django.http import JsonResponse

@@ -126,15 +126,11 @@ def paypal_create_order_cuota(request, pk):
     if CuotaVenta.objects.filter(factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente').exists():
         return JsonResponse({'error': 'Debes pagar las cuotas anteriores primero.'}, status=400)
 
-    # Leer el monto del cuerpo de la petición; si no viene, usar el saldo completo
-    try:
-        body = json.loads(request.body)
-        amount = Decimal(str(body.get('amount', cuota.saldo))).quantize(Decimal('0.01'))
-    except (json.JSONDecodeError, InvalidOperation, TypeError):
-        return JsonResponse({'error': 'Monto inválido.'}, status=400)
-
-    if amount <= 0 or amount > cuota.saldo:
-        return JsonResponse({'error': f'El monto debe estar entre $0.01 y ${cuota.saldo}.'}, status=400)
+    # El monto lo fija el servidor: siempre el saldo completo de la cuota.
+    # Se ignora cualquier 'amount' enviado por el cliente (anti-manipulación).
+    amount = Decimal(str(cuota.saldo)).quantize(Decimal('0.01'))
+    if amount <= 0:
+        return JsonResponse({'error': 'La cuota no tiene saldo pendiente.'}, status=400)
 
     total = '{:.2f}'.format(amount)
     try:

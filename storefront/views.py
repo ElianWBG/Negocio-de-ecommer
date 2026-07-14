@@ -1,4 +1,5 @@
 import logging
+import random
 import secrets
 import uuid
 from decimal import Decimal
@@ -59,6 +60,12 @@ def _cart_items(request):
 def _is_customer(user):
     """True si el usuario autenticado es un cliente (tiene perfil Customer)."""
     return user.is_authenticated and hasattr(user, 'customer_profile')
+
+
+def _owns_request(user, purchase_request):
+    """True si el cliente autenticado es dueño de este pedido. Evita IDOR:
+    sin esto, cualquiera adivina el PK secuencial y ve datos de otro cliente."""
+    return _is_customer(user) and purchase_request.customer_id == user.customer_profile.id
 
 
 # ---------------------------------------------------------------------
@@ -266,6 +273,7 @@ def customer_login(request):
     return render(request, 'storefront/login.html', {'form': form})
 
 
+@require_POST
 def customer_logout(request):
     logout(request)
     return redirect('storefront:catalog_list')
@@ -325,12 +333,17 @@ def catalog_list(request):
             .select_related('brand', 'group')
             .order_by('-id')[:4]
         )
-        # "Recomendados para ti": muestra aleatoria de productos activos
+        # "Recomendados para ti": muestra aleatoria de productos activos.
+        # En vez de ORDER BY RANDOM() (full table scan por request) tomamos los
+        # ids (index-only) y muestreamos en Python; solo se hidratan 8 filas.
+        _active_ids = list(
+            Product.objects.filter(is_active=True).values_list('id', flat=True)
+        )
+        _chosen_ids = random.sample(_active_ids, min(8, len(_active_ids)))
         recommended = list(
-            Product.objects.filter(is_active=True)
+            Product.objects.filter(id__in=_chosen_ids)
             .select_related('brand', 'group')
             .prefetch_related('images')
-            .order_by('?')[:8]
         )
 
     # Carrito (para el panel lateral derecho del shell)
@@ -344,17 +357,17 @@ def catalog_list(request):
     for _i, _b in enumerate(sidebar_brands):
         _b.logo_color = _brand_palette[_i % len(_brand_palette)]
 
-    # Rotación destacada del hero: 1 producto por marca, en bucle (solo portada)
+    # Rotación destacada del hero: 1 producto por marca, en bucle (solo portada).
+    # DISTINCT ON (PostgreSQL) trae el producto más reciente de cada marca en una
+    # sola consulta, sin cargar todo el catálogo en memoria.
     featured_rotation = []
     if not has_filter:
-        seen_brands = set()
-        for p in (Product.objects.filter(is_active=True, stock__gt=0)
-                  .select_related('brand', 'group')
-                  .order_by('brand__name', '-id')):
-            if p.brand_id in seen_brands:
-                continue
-            seen_brands.add(p.brand_id)
-            featured_rotation.append(p)
+        featured_rotation = list(
+            Product.objects.filter(is_active=True, stock__gt=0)
+            .select_related('brand', 'group')
+            .order_by('brand_id', '-id')
+            .distinct('brand_id')
+        )
 
     return render(request, 'storefront/catalog.html', {
         'products': products,
@@ -532,7 +545,10 @@ def checkout(request):
 
 
 def request_success(request, pk):
+    from django.http import Http404
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk)
+    if not _owns_request(request.user, purchase_request):
+        raise Http404
     return render(request, 'storefront/request_success.html', {
         'purchase_request': purchase_request,
         'whatsapp_links': _whatsapp_links(request, purchase_request),
@@ -685,7 +701,17 @@ def cancel_purchase_request(request, pk):
         PurchaseRequest, pk=pk, customer=request.user.customer_profile
     )
     if not purchase_request.can_be_cancelled():
-        messages.error(request, 'Este pedido ya no puede cancelarse porque ya fue revisado.')
+        if purchase_request.status == 'pendiente' and (
+            purchase_request.payphone_client_transaction_id or purchase_request.paypal_order_id
+        ):
+            messages.error(
+                request,
+                'Este pedido tiene un pago con tarjeta en proceso y no puede '
+                'cancelarse desde la web. Contacta a soporte para gestionar el '
+                'reembolso si corresponde.'
+            )
+        else:
+            messages.error(request, 'Este pedido ya no puede cancelarse porque ya fue revisado.')
         return redirect('storefront:my_orders')
     purchase_request.status = 'cancelada'
     purchase_request.reviewed_at = timezone.now()
@@ -810,7 +836,9 @@ def my_cuotas(request):
     customer = request.user.customer_profile
     today = tz.localdate()
 
-    cuotas = (
+    # Se materializa a lista una sola vez: el template reutiliza el mismo
+    # queryset ya evaluado en lugar de golpear la DB otra vez.
+    cuotas = list(
         CuotaVenta.objects
         .filter(factura__customer=customer)
         .select_related('factura')
@@ -953,7 +981,7 @@ def purchase_request_list(request):
     )
 
     # Main queryset
-    requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details')
+    requests_qs = PurchaseRequest.objects.select_related('customer').prefetch_related('details__product')
     if status in dict(PurchaseRequest.STATUS_CHOICES):
         requests_qs = requests_qs.filter(status=status)
     if q:
@@ -1093,6 +1121,9 @@ def paypal_capture(request, pk):
 
 
 def payment_success(request, pk):
+    from django.http import Http404
     purchase_request = get_object_or_404(PurchaseRequest, pk=pk)
+    if not _owns_request(request.user, purchase_request):
+        raise Http404
     return render(request, 'storefront/payment_success.html', {'purchase_request': purchase_request})
 

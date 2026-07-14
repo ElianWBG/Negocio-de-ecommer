@@ -40,7 +40,15 @@ class PurchaseRequest(models.Model):
         return f'Solicitud #{self.id} - {self.customer} ({self.get_status_display()})'
 
     def can_be_cancelled(self):
-        return self.status == 'pendiente'
+        if self.status != 'pendiente':
+            return False
+        # Si ya se inició un pago con tarjeta (PayPhone/PayPal) puede existir un
+        # cargo capturado aunque la orden siga 'pendiente' (p. ej. el retorno de
+        # confirmación falló). Cancelar borraría la orden dejando el cobro sin
+        # reembolso: se bloquea y el cliente debe contactar a soporte.
+        if self.payphone_client_transaction_id or self.paypal_order_id:
+            return False
+        return True
 
     @property
     def subtotal_estimado(self):

@@ -161,9 +161,8 @@
         </div>
 
         <div class="float-field">
-          {% render_field form.dni placeholder=" " class="form-control" %}
+          <input type="text" class="form-control" value="{{ form.instance.dni }}" readonly disabled>
           <label>Cédula / RUC</label>
-          {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors|striptags }}</p>{% endif %}
         </div>
 
         <div class="form-row-2">

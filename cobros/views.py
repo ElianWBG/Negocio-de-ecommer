@@ -20,8 +20,10 @@ def invoice_pending_list(request):
     creditos_ventas) se excluyen de aquí: sus pagos se registran por
     cuota, no como abono libre contra el saldo total.
     """
+    # Incluye 'parcial': facturas con un abono previo siguen teniendo saldo
+    # y deben permitir registrar cobros adicionales.
     invoices = Invoice.objects.filter(
-        tipo_pago='credito', estado='pendiente'
+        tipo_pago='credito', estado__in=['pendiente', 'parcial']
     ).exclude(cuotas__isnull=False).select_related('customer').order_by('-invoice_date')
 
     g = request.GET
@@ -55,7 +57,7 @@ def cobro_create(request, factura_id):
             with transaction.atomic():
                 cobro = form.save()
                 factura.saldo = factura.saldo - cobro.valor
-                factura.estado = 'pagada' if factura.saldo <= 0 else 'pendiente'
+                factura.estado = 'pagada' if factura.saldo <= 0 else 'parcial'
                 factura.save()
             messages.success(request, f'Pago de ${cobro.valor} registrado. Saldo restante: ${factura.saldo}')
             return redirect('cobros:payment_history', factura_id=factura.id)

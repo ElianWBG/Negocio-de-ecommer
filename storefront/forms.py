@@ -63,17 +63,16 @@ class CustomerLoginForm(forms.Form):
 class CustomerRequestForm(forms.ModelForm):
     """Datos de envío/contacto al confirmar la solicitud de compra.
     Pre-rellena con los datos del cliente autenticado."""
+    # El DNI NO se incluye: es inmutable tras el registro. Dejarlo en el form
+    # (aunque sea readonly en HTML) permitiría cambiarlo con cualquier cliente
+    # HTTP (mass assignment). El cliente ve su DNI como texto en el template.
     class Meta:
         model = Customer
-        fields = ['dni', 'first_name', 'last_name', 'email', 'phone', 'address']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'address']
         widgets = {
-            'dni': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
-
-    def validate_unique(self):
-        pass
