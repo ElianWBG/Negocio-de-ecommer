@@ -35,8 +35,8 @@ class CustomerRegistrationForm(forms.Form):
             validate_cedula_ec(dni)
         except DjangoValidationError as e:
             raise forms.ValidationError(e.message)
-        if Customer.objects.filter(dni=dni, user__isnull=False).exists():
-            raise forms.ValidationError('Ya existe una cuenta con esta cédula. Inicia sesión.')
+        if Customer.objects.filter(dni=dni).exists():
+            raise forms.ValidationError('Esta cédula ya está registrada. Si ya tienes pedidos, contacta al negocio para vincular tu cuenta.')
         return dni
 
     def clean_password1(self):

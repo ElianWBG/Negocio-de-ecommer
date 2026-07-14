@@ -1870,10 +1870,10 @@ def product_import(request):
                     continue
                 brand = Brand.objects.filter(name__iexact=row['marca']).first()
                 if not brand:
-                    brand = Brand.objects.create(name=row['marca'], is_active=True)
+                    brand, _ = Brand.objects.get_or_create(name=row['marca'], defaults={'is_active': True})
                 group = ProductGroup.objects.filter(name__iexact=row['categoria']).first()
                 if not group:
-                    group = ProductGroup.objects.create(name=row['categoria'], is_active=True)
+                    group, _ = ProductGroup.objects.get_or_create(name=row['categoria'], defaults={'is_active': True})
                 Product.objects.update_or_create(
                     name=row['nombre'],
                     defaults={
@@ -2066,25 +2066,26 @@ def customer_import(request):
 
     if 'confirmar' in request.POST:
         imported = updated = skipped = 0
-        for row in preview_rows:
-            if not row['valido']:
-                skipped += 1
-                continue
-            obj, created = Customer.objects.update_or_create(
-                dni=row['cedula'],
-                defaults={
-                    'first_name': row['nombre'],
-                    'last_name':  row['apellido'],
-                    'email':      row['email'] or None,
-                    'phone':      row['telefono'] or None,
-                    'address':    row['direccion'] or None,
-                    'is_active':  True,
-                }
-            )
-            if created:
-                imported += 1
-            else:
-                updated += 1
+        with transaction.atomic():
+            for row in preview_rows:
+                if not row['valido']:
+                    skipped += 1
+                    continue
+                obj, created = Customer.objects.update_or_create(
+                    dni=row['cedula'],
+                    defaults={
+                        'first_name': row['nombre'],
+                        'last_name':  row['apellido'],
+                        'email':      row['email'] or None,
+                        'phone':      row['telefono'] or None,
+                        'address':    row['direccion'] or None,
+                        'is_active':  True,
+                    }
+                )
+                if created:
+                    imported += 1
+                else:
+                    updated += 1
 
         messages.success(
             request,

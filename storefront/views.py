@@ -360,12 +360,16 @@ def catalog_list(request):
     # sola consulta, sin cargar todo el catálogo en memoria.
     featured_rotation = []
     if not has_filter:
-        featured_rotation = list(
-            Product.objects.filter(is_active=True, stock__gt=0)
-            .select_related('brand', 'group')
-            .order_by('brand_id', '-id')
-            .distinct('brand_id')
-        )
+        from django.db import connection
+        qs = Product.objects.filter(is_active=True, stock__gt=0).select_related('brand', 'group').order_by('brand_id', '-id')
+        if connection.vendor == 'postgresql':
+            featured_rotation = list(qs.distinct('brand_id'))
+        else:
+            seen = set()
+            for p in qs:
+                if p.brand_id not in seen:
+                    seen.add(p.brand_id)
+                    featured_rotation.append(p)
 
     return render(request, 'storefront/catalog.html', {
         'products': products,
@@ -1209,6 +1213,7 @@ def paypal_capture(request, pk):
     if capture_data.get('status') == 'COMPLETED':
         purchase_request.payment_method = 'tarjeta'
         purchase_request.paypal_order_id = order_id
+        purchase_request.save(update_fields=['payment_method', 'paypal_order_id'])
         try:
             confirm_purchase_request(purchase_request)
         except InsufficientStockError as e:

@@ -55,8 +55,12 @@ def cobro_create(request, factura_id):
         form = CobroFacturaForm(request.POST, initial={'factura': factura})
         if form.is_valid():
             with transaction.atomic():
-                cobro = form.save()
+                cobro = form.save(commit=False)
                 factura = Invoice.objects.select_for_update().get(pk=factura_id)
+                if cobro.valor > factura.saldo:
+                    messages.error(request, f'El monto (${cobro.valor}) supera el saldo actual (${factura.saldo}). Otro pago pudo haberse registrado simultáneamente.')
+                    return redirect('cobros:cobro_create', factura_id=factura_id)
+                cobro.save()
                 factura.saldo = factura.saldo - cobro.valor
                 if factura.saldo <= 0:
                     factura.estado = 'pagada'
