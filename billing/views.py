@@ -2578,6 +2578,13 @@ def config_negocio_edit(request):
         config.facebook_url     = request.POST.get('facebook_url', '').strip()
         config.instagram_url    = request.POST.get('instagram_url', '').strip()
         config.tiktok_url       = request.POST.get('tiktok_url', '').strip()
+        config.razon_social           = request.POST.get('razon_social', '').strip()[:300]
+        config.nombre_comercial       = request.POST.get('nombre_comercial', '').strip()[:300]
+        config.codigo_establecimiento = (request.POST.get('codigo_establecimiento', '001').strip() or '001')[:3].zfill(3)
+        config.punto_emision          = (request.POST.get('punto_emision', '001').strip() or '001')[:3].zfill(3)
+        config.ambiente_sri           = request.POST.get('ambiente_sri', '1').strip() if request.POST.get('ambiente_sri') in ('1', '2') else '1'
+        config.obligado_contabilidad  = 'obligado_contabilidad' in request.POST
+        config.contribuyente_especial = request.POST.get('contribuyente_especial', '').strip()[:10]
 
         if 'logo' in request.FILES:
             config.logo = request.FILES['logo']

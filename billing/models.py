@@ -342,6 +342,20 @@ class ConfigNegocio(models.Model):
     instagram_url   = models.URLField(blank=True, verbose_name='Instagram')
     tiktok_url      = models.URLField(blank=True, verbose_name='TikTok')
 
+    # SRI / Facturación electrónica
+    razon_social            = models.CharField(max_length=300, blank=True, verbose_name='Razón social', help_text='Nombre legal registrado en el SRI. Ej: TECNOLOGÍA AVANZADA S.A.')
+    nombre_comercial        = models.CharField(max_length=300, blank=True, verbose_name='Nombre comercial', help_text='Nombre de fantasía que aparece en el RIDE. Puede coincidir con la razón social.')
+    codigo_establecimiento  = models.CharField(max_length=3, default='001', verbose_name='Código establecimiento', help_text='3 dígitos. Ej: 001')
+    punto_emision           = models.CharField(max_length=3, default='001', verbose_name='Punto de emisión', help_text='3 dígitos. Ej: 001')
+    ambiente_sri            = models.CharField(
+        max_length=1,
+        choices=[('1', 'Pruebas'), ('2', 'Producción')],
+        default='1',
+        verbose_name='Ambiente SRI',
+    )
+    obligado_contabilidad   = models.BooleanField(default=False, verbose_name='Obligado a llevar contabilidad')
+    contribuyente_especial  = models.CharField(max_length=10, blank=True, verbose_name='Número contribuyente especial', help_text='Dejar vacío si no aplica')
+
     class Meta:
         verbose_name = 'Configuración del negocio'
         verbose_name_plural = 'Configuración del negocio'

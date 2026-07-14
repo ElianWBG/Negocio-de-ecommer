@@ -276,6 +276,74 @@
     </div>
   </div>
 
+
+  <!-- Datos SRI / Facturación electrónica -->
+  <div class="card" style="grid-column:1/-1;">
+    <div class="card-body">
+      <h5 class="card-title mb-1"><i class="bi bi-receipt"></i> Datos SRI / Facturación electrónica</h5>
+      <p class="text-muted mb-3" style="font-size:.85rem;">
+        Información tributaria que se incluye en las facturas XML y que usará el servicio de facturación electrónica.
+      </p>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Razón social <span class="text-danger">*</span></label>
+          <input type="text" name="razon_social" value="{{ config.razon_social }}" class="form-control" maxlength="300" placeholder="Ej: TECNOLOGÍA AVANZADA S.A.">
+          <div class="form-text">Nombre legal registrado en el SRI. Aparece en el comprobante.</div>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Nombre comercial</label>
+          <input type="text" name="nombre_comercial" value="{{ config.nombre_comercial }}" class="form-control" maxlength="300" placeholder="Ej: TechStore">
+          <div class="form-text">Nombre de fantasía que aparece en el RIDE. Puede coincidir con la razón social.</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Código establecimiento</label>
+          <input type="text" name="codigo_establecimiento" value="{{ config.codigo_establecimiento }}" class="form-control" maxlength="3" placeholder="001" pattern="[0-9]{3}">
+          <div class="form-text">3 dígitos. Ej: 001</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Punto de emisión</label>
+          <input type="text" name="punto_emision" value="{{ config.punto_emision }}" class="form-control" maxlength="3" placeholder="001" pattern="[0-9]{3}">
+          <div class="form-text">3 dígitos. Ej: 001</div>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold">Ambiente SRI</label>
+          <select name="ambiente_sri" class="form-select">
+            <option value="1" {% if config.ambiente_sri == '1' %}selected{% endif %}>Pruebas</option>
+            <option value="2" {% if config.ambiente_sri == '2' %}selected{% endif %}>Producción</option>
+          </select>
+          <div class="form-text">Cambia a Producción solo cuando el SRI autorice.</div>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold">Contribuyente especial</label>
+          <input type="text" name="contribuyente_especial" value="{{ config.contribuyente_especial }}" class="form-control" maxlength="10" placeholder="Vacío si no aplica">
+          <div class="form-text">Número otorgado por el SRI. Dejar vacío si no es contribuyente especial.</div>
+        </div>
+        <div class="col-12">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="obligado_contabilidad" id="obligado_contabilidad" {% if config.obligado_contabilidad %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="obligado_contabilidad">
+              Obligado a llevar contabilidad
+            </label>
+          </div>
+          <div class="form-text">Se incluye como <code>SI</code> o <code>NO</code> en la factura electrónica.</div>
+        </div>
+      </div>
+
+      {% if config.ambiente_sri == '2' %}
+      <div class="alert alert-warning mt-3 py-2 mb-0" style="font-size:.85rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>Ambiente Producción activo.</strong> Las facturas emitidas serán válidas ante el SRI. Asegúrate de tener la firma electrónica (.p12) configurada en el servicio de facturación.
+      </div>
+      {% else %}
+      <div class="alert alert-info mt-3 py-2 mb-0" style="font-size:.85rem;">
+        <i class="bi bi-info-circle"></i>
+        <strong>Ambiente Pruebas.</strong> Las facturas no tienen validez ante el SRI. Ideal para desarrollo y pruebas del flujo de emisión.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
 </div>
 
 <div style="margin-top:1.5rem;">

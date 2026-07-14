@@ -23,8 +23,14 @@ def generate_invoice_xml(invoice) -> bytes:
     from billing.models import ConfigNegocio
 
     config = ConfigNegocio.objects.first()
-    store_name = (config.nombre_tienda if config else None) or getattr(
-        settings, 'DEFAULT_STORE_NAME', 'Mi Tienda'
+    razon_social = (
+        (config.razon_social if config else None)
+        or (config.nombre_tienda if config else None)
+        or getattr(settings, 'DEFAULT_STORE_NAME', 'Mi Tienda')
+    )
+    nombre_comercial = (
+        (config.nombre_comercial if config else None)
+        or razon_social
     )
 
     customer = invoice.customer
@@ -33,8 +39,14 @@ def generate_invoice_xml(invoice) -> bytes:
 
     # --- infoTributaria: datos del emisor (tienda) ---
     info_tributaria = ET.SubElement(root, 'infoTributaria')
-    ET.SubElement(info_tributaria, 'razonSocial').text = store_name
+    ET.SubElement(info_tributaria, 'ambiente').text = getattr(config, 'ambiente_sri', '1') or '1'
+    ET.SubElement(info_tributaria, 'razonSocial').text = razon_social
+    ET.SubElement(info_tributaria, 'nombreComercial').text = nombre_comercial
     ET.SubElement(info_tributaria, 'ruc').text = getattr(config, 'ruc', '') or 'N/A'
+    ET.SubElement(info_tributaria, 'codEstablecimiento').text = getattr(config, 'codigo_establecimiento', '001') or '001'
+    ET.SubElement(info_tributaria, 'ptoEmi').text = getattr(config, 'punto_emision', '001') or '001'
+    ET.SubElement(info_tributaria, 'obligadoContabilidad').text = 'SI' if getattr(config, 'obligado_contabilidad', False) else 'NO'
+    ET.SubElement(info_tributaria, 'contribuyenteEspecial').text = getattr(config, 'contribuyente_especial', '') or ''
     ET.SubElement(info_tributaria, 'direccion').text = (config.direccion if config else '') or ''
     ET.SubElement(info_tributaria, 'telefono').text = (config.telefono if config else '') or ''
     ET.SubElement(info_tributaria, 'email').text = (config.email_contacto if config else '') or ''
