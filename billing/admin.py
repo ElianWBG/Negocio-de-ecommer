@@ -44,3 +44,15 @@ class InvoiceAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer', 'invoice_date', 'total']
     inlines = [InvoiceDetailInline]
 
+class ReviewImageInline(admin.TabularInline):
+    model = ReviewImage
+    extra = 0
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['product', 'customer', 'rating', 'created_at']
+    list_filter = ['rating', 'created_at']
+    search_fields = ['product__name', 'customer__first_name', 'customer__last_name', 'customer__dni']
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [ReviewImageInline]
+

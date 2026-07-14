@@ -25,6 +25,14 @@ def group_required(*groups):
     return decorator
 
 
+def user_can_export(request, *perms):
+    """Chequeo puntual (no decorador) para la acción de exportar/descargar
+    dentro de una vista de listado que ya está protegida por su propio
+    permiso de 'ver'. Exportar es una acción aparte: alguien puede tener
+    permiso para VER un listado sin tener permiso para DESCARGARLO."""
+    return request.user.is_superuser or any(request.user.has_perm(p) for p in perms)
+
+
 def permission_required_any(*perms):
     """
     Decorador para FBVs. Exige al menos uno de los permisos indicados
@@ -98,19 +106,11 @@ def audit_action(action_name):
                 f'Path: {path} | IP: {ip}'
             )
 
-            # También imprimir en consola para desarrollo
-            print(
-                f'\n[AUDIT] {timestamp} | User: {user} | '
-                f'Action: {action_name} | Method: {method} | '
-                f'Path: {path} | IP: {ip}'
-            )
-
             # Ejecutar la vista original normalmente
             response = view_func(request, *args, **kwargs)
 
-            # Si fue POST, registrar que la acción se completó
             if method == 'POST':
-                print(f'[AUDIT] {timestamp} | COMPLETED: {action_name} by {user}')
+                logger.info('[AUDIT] COMPLETED: %s by %s', action_name, user)
 
             return response
 

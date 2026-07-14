@@ -7,6 +7,7 @@ from decimal import Decimal
 logger = logging.getLogger(__name__)
 from billing.audit import log_action
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -23,9 +24,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from billing.models import Product, ProductGroup, Customer, Brand
+from billing.models import Product, ProductGroup, Customer, Brand, Review, ReviewImage
 from . import payphone
-from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm
+from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, ReviewForm, clean_review_images
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
 from .services import confirm_purchase_request, confirm_purchase_request_credito, InsufficientStockError
 CART_SESSION_KEY = 'storefront_cart'
@@ -333,15 +334,12 @@ def catalog_list(request):
             .select_related('brand', 'group')
             .order_by('-id')[:4]
         )
-        # "Recomendados para ti": muestra aleatoria de productos activos.
-        # En vez de ORDER BY RANDOM() (full table scan por request) tomamos los
-        # ids (index-only) y muestreamos en Python; solo se hidratan 8 filas.
-        _active_ids = list(
-            Product.objects.filter(is_active=True).values_list('id', flat=True)
-        )
-        _chosen_ids = random.sample(_active_ids, min(8, len(_active_ids)))
+        # "Recomendados para ti": muestra aleatoria sin ORDER BY RANDOM()
+        import random as _random
+        _ids = list(Product.objects.filter(is_active=True).values_list('id', flat=True))
+        _sample = _random.sample(_ids, min(8, len(_ids)))
         recommended = list(
-            Product.objects.filter(id__in=_chosen_ids)
+            Product.objects.filter(pk__in=_sample)
             .select_related('brand', 'group')
             .prefetch_related('images')
         )
@@ -390,12 +388,27 @@ def catalog_list(request):
 
 
 def product_detail(request, pk):
+    from django.db.models import Avg, Count
     product = get_object_or_404(
-        Product.objects.prefetch_related('images'), pk=pk, is_active=True
+        Product.objects.prefetch_related('images').annotate(
+            average_rating=Avg('reviews__rating'),
+            review_count=Count('reviews', distinct=True),
+        ),
+        pk=pk, is_active=True,
     )
     cart_count = sum(_get_cart(request).values())
+    reviews = product.reviews.select_related('customer').prefetch_related('images').all()
+    user_review = None
+    can_review = False
+    if _is_customer(request.user):
+        customer = request.user.customer_profile
+        user_review = reviews.filter(customer=customer).first()
+        can_review = PurchaseRequest.objects.filter(
+            customer=customer, status='confirmada', details__product=product
+        ).exists()
     return render(request, 'storefront/product_detail.html', {
         'product': product, 'cart_count': cart_count,
+        'reviews': reviews, 'user_review': user_review, 'can_review': can_review,
     })
 
 
@@ -683,6 +696,10 @@ def my_orders(request):
     else:
         requests_qs = all_requests.order_by('-created_at')
 
+    reviewed_product_ids = set(
+        Review.objects.filter(customer=customer).values_list('product_id', flat=True)
+    )
+
     return render(request, 'storefront/my_orders.html', {
         'requests':      requests_qs,
         'status':        status_filter,
@@ -690,6 +707,58 @@ def my_orders(request):
         'counts':        counts,
         'total_count':   all_requests.count(),
         'cart_count':    sum(_get_cart(request).values()),
+        'reviewed_product_ids': reviewed_product_ids,
+    })
+
+
+def leave_review(request, pk):
+    """Deja o edita la reseña del cliente autenticado sobre un producto que
+    ya compró (pedido con status='confirmada'). Una reseña por cliente y
+    producto — si ya existe, esta misma vista la edita en vez de duplicarla."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:leave_review', args=[pk])
+        return redirect('storefront:customer_login')
+    customer = request.user.customer_profile
+    product = get_object_or_404(Product, pk=pk, is_active=True)
+
+    has_purchased = PurchaseRequest.objects.filter(
+        customer=customer, status='confirmada', details__product=product
+    ).exists()
+    if not has_purchased:
+        messages.error(request, 'Solo puedes reseñar productos que hayas comprado y que estén confirmados.')
+        return redirect('storefront:product_detail', pk=product.pk)
+
+    review = Review.objects.filter(customer=customer, product=product).first()
+    form = ReviewForm(request.POST or None, instance=review)
+    image_error = None
+    if request.method == 'POST':
+        new_images = request.FILES.getlist('images')
+        try:
+            clean_review_images(new_images)
+        except forms.ValidationError as e:
+            image_error = e.messages[0]
+        if form.is_valid() and image_error is None:
+            obj = form.save(commit=False)
+            obj.customer, obj.product = customer, product
+            obj.save()
+
+            remove_ids = request.POST.getlist('remove_images')
+            if remove_ids:
+                ReviewImage.objects.filter(review=obj, pk__in=remove_ids).delete()
+
+            for f in new_images:
+                ReviewImage.objects.create(review=obj, image=f)
+
+            messages.success(request, 'Reseña actualizada.' if review else 'Gracias por tu reseña.')
+            return redirect('storefront:product_detail', pk=product.pk)
+
+    return render(request, 'storefront/leave_review.html', {
+        'product': product,
+        'form': form,
+        'existing_review': review,
+        'existing_images': review.images.all() if review else [],
+        'image_error': image_error,
+        'cart_count': sum(_get_cart(request).values()),
     })
 
 
@@ -859,8 +928,21 @@ def my_cuotas(request):
 # Pago con tarjeta (PayPhone)
 # ---------------------------------------------------------------------
 
+def _owned_pending_pr(request, pk):
+    """Devuelve la PurchaseRequest pendiente que pertenece al cliente logueado.
+    Redirige si no está autenticado o si el pedido no es suyo."""
+    if not _is_customer(request.user):
+        request.session['next_after_login'] = request.path
+        return None, redirect('storefront:customer_login')
+    customer = request.user.customer_profile
+    pr = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
+    return pr, None
+
+
 def payment_choice(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     return render(request, 'storefront/payment_choice.html', {
         'purchase_request': purchase_request,
         'numero_cuotas_sugerido': request.session.get('numero_cuotas_sugerido', 6),
@@ -868,7 +950,9 @@ def payment_choice(request, pk):
 
 
 def pay_manual(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method == 'POST':
         purchase_request.payment_method = 'manual'
         purchase_request.save()
@@ -878,7 +962,9 @@ def pay_manual(request, pk):
 def pay_with_credit(request, pk):
     """Confirma el pedido a crédito directo: genera la Factura real y su
     cronograma de cuotas de una sola vez."""
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
 
@@ -897,7 +983,9 @@ def pay_with_credit(request, pk):
 
 
 def pay_with_card(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
 
@@ -928,6 +1016,9 @@ def pay_with_card(request, pk):
 def payphone_response(request):
     transaction_id = request.GET.get('id')
     client_tx_id = request.GET.get('clientTransactionId')
+    if not transaction_id or not client_tx_id:
+        messages.error(request, 'Enlace de pago inválido o caducado.')
+        return redirect('storefront:catalog_list')
     purchase_request = get_object_or_404(PurchaseRequest, payphone_client_transaction_id=client_tx_id)
 
     if purchase_request.status == 'confirmada':
@@ -1044,7 +1135,9 @@ def purchase_request_reject(request, pk):
 # ---------------------------------------------------------------------
 
 def pay_with_paypal(request, pk):
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    purchase_request, redir = _owned_pending_pr(request, pk)
+    if redir:
+        return redir
     return render(request, 'storefront/payment_paypal.html', {
         'purchase_request': purchase_request,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
@@ -1056,7 +1149,10 @@ def pay_with_paypal(request, pk):
 def paypal_create_order(request, pk):
     """Crea una orden en PayPal server-side y devuelve el order ID."""
     import json
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if not _is_customer(request.user):
+        return JsonResponse({'error': 'Autenticación requerida.'}, status=403)
+    customer = request.user.customer_profile
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
     total = '{:.2f}'.format(purchase_request.total_estimado)
     try:
         token = paypal_access_token()
@@ -1083,7 +1179,10 @@ def paypal_create_order(request, pk):
 def paypal_capture(request, pk):
     """Captura el pago después de que PayPal lo aprueba."""
     import json
-    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente')
+    if not _is_customer(request.user):
+        return JsonResponse({'error': 'Autenticación requerida.'}, status=403)
+    customer = request.user.customer_profile
+    purchase_request = get_object_or_404(PurchaseRequest, pk=pk, status='pendiente', customer=customer)
 
     if request.method != 'POST':
         return redirect('storefront:payment_choice', pk=pk)

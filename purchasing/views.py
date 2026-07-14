@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from billing.models import Product, Supplier
-from shared.decorators import audit_action, permission_required_any
+from shared.decorators import audit_action, permission_required_any, user_can_export
 from shared.column_export import export_visible_columns_excel, export_visible_columns_pdf
 
 from creditos_compras.services import generar_cuotas
@@ -77,6 +77,9 @@ def purchase_list(request):
 
     # Export (respeta las columnas visibles seleccionadas)
     export = g.get('export')
+    if export in ('excel', 'pdf') and not user_can_export(request, 'purchasing.export_purchase'):
+        messages.error(request, 'No tienes permiso para exportar esta información.')
+        export = None
     if export in ('excel', 'pdf'):
         all_columns = get_all_purchase_columns()
         if export == 'excel':

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from billing.models import Customer
+from billing.models import Customer, Review
 
 
 class CustomerRegistrationForm(forms.Form):
@@ -76,3 +76,49 @@ class CustomerRequestForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+    def validate_unique(self):
+        pass
+
+
+REVIEW_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024
+REVIEW_IMAGE_MAX_COUNT = 5
+
+
+class ReviewForm(forms.ModelForm):
+    """Reseña de un producto ya comprado. Una por (cliente, producto),
+    reutilizable para crear o editar (se pasa instance=review existente).
+    La calificación se elige con estrellas clicables en el template; este
+    campo queda como input oculto que esa UI actualiza vía JS."""
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.HiddenInput(),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 4,
+                'placeholder': 'Cuéntanos qué te pareció el producto...',
+            }),
+        }
+        labels = {'rating': 'Calificación', 'comment': 'Comentario'}
+
+    def clean_comment(self):
+        comment = self.cleaned_data['comment'].strip()
+        if len(comment) < 5:
+            raise forms.ValidationError('El comentario es demasiado corto.')
+        return comment
+
+
+def clean_review_images(files):
+    """Valida la lista de imágenes subidas para una reseña (tamaño, tipo y
+    cantidad). Se usa en la vista porque las imágenes viven en un modelo
+    aparte (ReviewImage), no como campo del ReviewForm."""
+    if len(files) > REVIEW_IMAGE_MAX_COUNT:
+        raise forms.ValidationError(f'Puedes subir un máximo de {REVIEW_IMAGE_MAX_COUNT} imágenes.')
+    for f in files:
+        if f.size > REVIEW_IMAGE_MAX_SIZE:
+            raise forms.ValidationError(f'"{f.name}" supera el máximo de 5MB.')
+        if hasattr(f, 'content_type') and f.content_type not in REVIEW_IMAGE_ALLOWED_TYPES:
+            raise forms.ValidationError(f'"{f.name}" no es un formato permitido. Use JPG, PNG, GIF o WebP.')
+    return files

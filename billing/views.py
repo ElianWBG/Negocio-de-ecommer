@@ -17,7 +17,7 @@ from .forms import (
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
 from shared.mixins import PermissionRequiredAnyMixin
-from shared.decorators import audit_action, permission_required_any
+from shared.decorators import audit_action, permission_required_any, user_can_export
 from billing.audit import log_action
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
@@ -219,7 +219,7 @@ class SignUpView(CreateView):
 @permission_required_any('billing.view_brand')
 @audit_action('LIST_BRANDS')
 def brand_list(request):
-    qs = Brand.objects.all()
+    qs = Brand.objects.annotate(product_count=Count('products'))
     name = request.GET.get('name', '').strip()
     is_active = request.GET.get('is_active', '')
     if name:
@@ -237,7 +237,7 @@ def brand_list(request):
         elif col_key == 'description':
             return obj.description or '-'
         elif col_key == 'product_count':
-            return obj.products.count()
+            return obj.product_count
         elif col_key == 'is_active':
             return 'Activo' if obj.is_active else 'Inactivo'
         elif col_key == 'created_at':
@@ -248,6 +248,9 @@ def brand_list(request):
 
     # Export (respeta las columnas visibles seleccionadas)
     export = request.GET.get('export')
+    if export in ('excel', 'pdf') and not user_can_export(request, 'billing.export_brand'):
+        messages.error(request, 'No tienes permiso para exportar esta información.')
+        export = None
     if export in ('excel', 'pdf'):
         all_columns = get_all_brand_columns()
         if export == 'excel':
@@ -364,6 +367,9 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_productgroup'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt in ('excel', 'pdf'):
             visible_columns = self.get_visible_cols()
             all_columns = get_all_productgroup_columns()
@@ -374,7 +380,7 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = ProductGroup.objects.all()
+        qs = ProductGroup.objects.annotate(product_count=Count('products'))
         g = self.request.GET
         if name := g.get('name', '').strip():
             qs = qs.filter(name__icontains=name)
@@ -392,7 +398,7 @@ class ProductGroupListView(PermissionRequiredAnyMixin, ExportListMixin, ListView
         if col_key == 'name':
             return obj.name
         elif col_key == 'product_count':
-            return obj.products.count()
+            return obj.product_count
         elif col_key == 'is_active':
             return 'Activo' if obj.is_active else 'Inactivo'
         elif col_key == 'created_at':
@@ -487,6 +493,9 @@ class SupplierListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_supplier'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt in ('excel', 'pdf'):
             visible_columns = self.get_visible_cols()
             all_columns = get_all_supplier_columns()
@@ -622,6 +631,9 @@ class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_product'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -978,6 +990,9 @@ class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_customer'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -1282,6 +1297,9 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def get(self, request, *args, **kwargs):
         """Manejar exportaciones con columnas visibles"""
         fmt = request.GET.get('export')
+        if fmt in ('excel', 'pdf') and not user_can_export(request, 'billing.export_invoice'):
+            messages.error(request, 'No tienes permiso para exportar esta información.')
+            fmt = None
         if fmt == 'excel':
             return self.export_excel_with_visible_columns()
         if fmt == 'pdf':
@@ -1631,7 +1649,7 @@ class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
         return response
 
 
-@permission_required_any('billing.view_invoice')
+@permission_required_any('billing.export_invoice')
 def invoice_pdf(request, pk):
     """Server-generated PDF for a single invoice (opens inline in browser)."""
     from billing.services import build_invoice_pdf
@@ -1764,10 +1782,10 @@ def product_import(request):
             errors.append('Categoría requerida')
 
         try:
-            precio = round(float(str(precio_raw).replace(',', '.')), 2)
+            precio = Decimal(str(precio_raw).replace(',', '.')).quantize(Decimal('0.01'))
             if precio < 0:
                 errors.append('Precio no puede ser negativo')
-        except (ValueError, TypeError):
+        except Exception:
             precio = None
             errors.append('Precio inválido (usa número, ej: 12.50)')
 
@@ -2201,11 +2219,12 @@ def report_sales(request):
     })
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_sales_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.styles.numbers import FORMAT_TEXT
+    from openpyxl.utils import get_column_letter
     from django.http import HttpResponse
 
     date_from, date_to = _get_report_dates(request)
@@ -2269,7 +2288,7 @@ def report_sales_excel(request):
 
     # Anchos
     for col, width in enumerate([8, 18, 28, 14, 12, 12, 12], 1):
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+        ws.column_dimensions[get_column_letter(col)].width = width
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2281,7 +2300,7 @@ def report_sales_excel(request):
     return response
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_sales_pdf(request):
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
@@ -2399,10 +2418,11 @@ def report_stock(request):
     })
 
 
-@permission_required_any('billing.view_confignegocio')
+@permission_required_any('billing.descargar_reportes_financieros')
 def report_stock_excel(request):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
     from django.http import HttpResponse
     from datetime import date
 
@@ -2450,7 +2470,7 @@ def report_stock_excel(request):
                 cell.fill = row_fill
 
     for col, width in enumerate([30, 18, 18, 12, 10, 14], 1):
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+        ws.column_dimensions[get_column_letter(col)].width = width
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

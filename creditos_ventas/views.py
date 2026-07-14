@@ -1,10 +1,11 @@
 import json
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.contrib import messages
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -463,6 +464,71 @@ def pago_cuota_create(request, pk):
 
     return render(request, 'creditos_ventas/pago_form.html', {
         'form': form, 'cuota': cuota,
+    })
+
+
+@permission_required_any('creditos_ventas.add_pagocuotaventa')
+def pagar_cuotas_multi(request, factura_id):
+    """Registro manual (panel) del pago de VARIAS cuotas pendientes de una
+    factura en un solo envío — ej. pagar 2, 4 o todas de golpe. Distinto
+    del pago múltiple con PayPal (pagar_cuotas_multi_paypal), que es para
+    el cliente desde la tienda; esta vista es para que el staff registre
+    pagos recibidos por otros medios (efectivo, transferencia, etc.)."""
+    factura = get_object_or_404(Invoice.objects.select_related('customer'), pk=factura_id)
+    cuotas_pendientes = factura.cuotas.filter(estado='pendiente').order_by('numero')
+
+    if not cuotas_pendientes.exists():
+        messages.info(request, 'Esta factura no tiene cuotas pendientes.')
+        return redirect('creditos_ventas:cuota_list', factura_id=factura.id)
+
+    if request.method == 'POST':
+        seleccionadas = request.POST.getlist('cuotas')
+        observacion = request.POST.get('observacion', '').strip()
+        fecha_raw = request.POST.get('fecha', '')
+        try:
+            fecha_pago = datetime.strptime(fecha_raw, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Indica una fecha de pago válida.')
+            return redirect('creditos_ventas:pagar_cuotas_multi', factura_id=factura.id)
+
+        if not seleccionadas:
+            messages.error(request, 'Selecciona al menos una cuota para pagar.')
+        else:
+            pagadas = 0
+            total_pagado = Decimal('0.00')
+            errores = []
+            with transaction.atomic():
+                for cuota_id in seleccionadas:
+                    cuota = CuotaVenta.objects.filter(pk=cuota_id, factura=factura).first()
+                    if cuota is None:
+                        continue
+                    monto_raw = request.POST.get(f'monto_{cuota_id}', '').strip()
+                    try:
+                        monto = Decimal(monto_raw) if monto_raw else cuota.saldo
+                    except InvalidOperation:
+                        errores.append(f'Cuota {cuota.numero}: monto inválido.')
+                        continue
+                    try:
+                        registrar_pago_cuota(cuota, monto, fecha_pago, observacion)
+                    except ValueError as e:
+                        errores.append(f'Cuota {cuota.numero}: {e}')
+                    else:
+                        pagadas += 1
+                        total_pagado += monto
+
+            for error in errores:
+                messages.error(request, error)
+            if pagadas:
+                messages.success(
+                    request,
+                    f'Se registraron {pagadas} pago(s) por un total de ${total_pagado}.'
+                )
+                return redirect('creditos_ventas:cuota_list', factura_id=factura.id)
+
+    return render(request, 'creditos_ventas/pagar_cuotas_multi.html', {
+        'factura': factura,
+        'cuotas': cuotas_pendientes,
+        'hoy': timezone.localdate(),
     })
 
 

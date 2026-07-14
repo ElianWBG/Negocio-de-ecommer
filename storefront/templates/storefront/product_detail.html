@@ -39,6 +39,11 @@
   .product-badges { display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; }
   .product-badge { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; padding:.3rem .75rem; border-radius:20px; background:var(--sand-dark); color:var(--muted); border:1px solid var(--border); }
   .product-name { font-family:var(--font-head); font-size:2.2rem; font-weight:600; line-height:1.2; margin-bottom:.75rem; }
+  .product-rating-summary { display:flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--muted); margin-bottom:1rem; }
+  .product-rating-summary i.bi-star-fill { color:#f5a623; }
+  .product-rating-summary i.bi-star { color:var(--border); }
+  .product-rating-summary span { margin-left:.35rem; }
+  .product-rating-empty span { color:var(--muted); font-size:.85rem; }
   .product-price { font-size:2rem; font-weight:700; color:var(--rust); margin-bottom:1.25rem; }
 
   .stock-strip { display:flex; align-items:center; gap:.5rem; font-size:.875rem; padding:.65rem 1rem; border-radius:8px; margin-bottom:1.5rem; }
@@ -84,6 +89,21 @@
   .about-item i { font-size:1rem; color:var(--rust); flex-shrink:0; margin-top:.15rem; }
   .about-item-text { font-size:.82rem; color:var(--muted); line-height:1.45; }
   .about-desc { font-size:.9rem; color:var(--muted); line-height:1.75; margin:0; }
+
+  /* Reseñas */
+  .product-reviews-section { margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--border); }
+  .product-reviews-section > h4 { font-family:var(--font-head); font-size:1.15rem; font-weight:600; margin-bottom:1rem; }
+  .review-cta { margin-bottom:1.5rem; }
+  .reviews-list { display:flex; flex-direction:column; gap:1rem; }
+  .review-item { background:var(--sand-dark); border:1px solid var(--border); border-radius:8px; padding:1rem 1.15rem; }
+  .review-header { display:flex; align-items:center; gap:.65rem; flex-wrap:wrap; margin-bottom:.4rem; }
+  .review-stars i.bi-star-fill { color:#f5a623; }
+  .review-stars i.bi-star { color:var(--border); }
+  .review-date { font-size:.78rem; color:var(--muted); margin-left:auto; }
+  .review-comment { font-size:.88rem; color:var(--muted); line-height:1.6; margin:0; }
+  .no-reviews { font-size:.9rem; color:var(--muted); }
+  .review-images { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.6rem; }
+  .review-images img { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; }
 
   @media(max-width:700px) {
     .product-layout { grid-template-columns:1fr; gap:1.5rem; }
@@ -141,6 +161,18 @@
       <span class="product-badge">{{ product.group.name }}</span>
     </div>
     <h1 class="product-name">{{ product.name }}</h1>
+    {% if product.review_count %}
+    <div class="product-rating-summary">
+      {% for i in "12345" %}
+        <i class="bi {% if forloop.counter <= product.average_rating|floatformat:0|add:0 %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+      {% endfor %}
+      <span>{{ product.average_rating }} · {{ product.review_count }} reseña{{ product.review_count|pluralize }}</span>
+    </div>
+    {% else %}
+    <div class="product-rating-summary product-rating-empty">
+      <span>Sin reseñas aún</span>
+    </div>
+    {% endif %}
     <p class="product-price">${{ product.unit_price }}</p>
 
     {% if product.stock > 0 %}
@@ -230,6 +262,46 @@
     </div>
     {% endif %}
   </div>
+</div>
+
+<div class="product-reviews-section">
+  <h4>Reseñas de clientes</h4>
+  {% if can_review %}
+  <div class="review-cta">
+    <a href="{% url 'storefront:leave_review' product.pk %}" class="btn btn-outline-primary btn-sm">
+      {% if user_review %}
+        <i class="bi bi-pencil"></i> Editar tu reseña
+      {% else %}
+        <i class="bi bi-star"></i> Dejar una reseña
+      {% endif %}
+    </a>
+  </div>
+  {% endif %}
+  {% if reviews %}
+  <div class="reviews-list">
+    {% for r in reviews %}
+    <div class="review-item">
+      <div class="review-header">
+        <strong>{{ r.customer.full_name }}</strong>
+        <span class="review-stars">
+          {% for i in "12345" %}<i class="bi {% if forloop.counter <= r.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}
+        </span>
+        <span class="review-date">{{ r.created_at|date:"d/m/Y" }}</span>
+      </div>
+      <p class="review-comment">{{ r.comment }}</p>
+      {% if r.images.all %}
+      <div class="review-images">
+        {% for img in r.images.all %}
+        <a href="{{ img.image.url }}" target="_blank" rel="noopener"><img src="{{ img.image.url }}" alt=""></a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="no-reviews">Este producto aún no tiene reseñas.</p>
+  {% endif %}
 </div>
 
 <script>

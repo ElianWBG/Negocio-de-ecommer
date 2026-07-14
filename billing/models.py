@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from shared.validators import validate_cedula_ec
 
@@ -21,6 +22,7 @@ class Brand(models.Model):
         verbose_name = 'Marca'
         verbose_name_plural = 'Marcas'
         ordering = ['name']
+        permissions = [('export_brand', 'Puede exportar marcas a Excel/PDF')]
     def __str__(self): return self.name
 
 class ProductGroup(models.Model):
@@ -33,6 +35,7 @@ class ProductGroup(models.Model):
         verbose_name = 'Grupo de producto'
         verbose_name_plural = 'Grupos de productos'
         ordering = ['name']
+        permissions = [('export_productgroup', 'Puede exportar grupos de productos a Excel/PDF')]
     def __str__(self): return self.name
 
 class Supplier(models.Model):
@@ -49,6 +52,7 @@ class Supplier(models.Model):
         verbose_name = 'Proveedor'
         verbose_name_plural = 'Proveedores'
         ordering = ['name']
+        permissions = [('export_supplier', 'Puede exportar proveedores a Excel/PDF')]
     def __str__(self): return self.name
 
 class Product(models.Model):
@@ -68,6 +72,7 @@ class Product(models.Model):
         verbose_name = 'Producto'
         verbose_name_plural = 'Productos'
         ordering = ['name']
+        permissions = [('export_product', 'Puede exportar productos a Excel/PDF')]
     def __str__(self): return f'{self.name} ({self.brand.name})'
     
     @property
@@ -89,6 +94,16 @@ class Product(models.Model):
                 urls.append(extra.image.url)
         return urls
 
+    @property
+    def average_rating(self):
+        from django.db.models import Avg
+        result = self.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(result, 1) if result is not None else None
+
+    @property
+    def review_count(self):
+        return self.reviews.count()
+
 
 class ProductImage(models.Model):
     """Imágenes adicionales de un producto (galería / carrusel)."""
@@ -105,6 +120,43 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f'Imagen de {self.product.name} (#{self.order})'
+
+
+class Review(models.Model):
+    """Reseña de un cliente sobre un producto que ya compró (confirmado)."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Producto')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='reviews', verbose_name='Cliente')
+    rating = models.PositiveSmallIntegerField(
+        verbose_name='Calificación',
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    comment = models.TextField(verbose_name='Comentario')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['customer', 'product'], name='unique_review_per_customer_product'),
+        ]
+        ordering = ['-created_at']
+        verbose_name = 'Reseña'
+        verbose_name_plural = 'Reseñas'
+
+    def __str__(self):
+        return f'{self.customer.full_name} → {self.product.name} ({self.rating}★)'
+
+
+class ReviewImage(models.Model):
+    """Foto adjunta por el cliente en una reseña (varias por reseña)."""
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='images', verbose_name='Reseña')
+    image = models.ImageField(upload_to='reviews/', verbose_name='Imagen', max_length=500)
+
+    class Meta:
+        verbose_name = 'Imagen de reseña'
+        verbose_name_plural = 'Imágenes de reseña'
+
+    def __str__(self):
+        return f'Imagen de reseña #{self.review_id}'
 
 
 class Customer(models.Model):
@@ -139,6 +191,7 @@ class Customer(models.Model):
         verbose_name = 'Cliente'
         verbose_name_plural = 'Clientes'
         ordering = ['last_name', 'first_name']
+        permissions = [('export_customer', 'Puede exportar clientes a Excel/PDF')]
     def __str__(self): return f'{self.last_name}, {self.first_name}'
     @property
     def full_name(self): return f'{self.first_name} {self.last_name}'
@@ -182,6 +235,7 @@ class Invoice(models.Model):
         verbose_name = 'Factura'
         verbose_name_plural = 'Facturas'
         ordering = ['-invoice_date']
+        permissions = [('export_invoice', 'Puede exportar/descargar facturas en Excel/PDF')]
     def __str__(self): return f'Factura #{self.id} - {self.customer}'
     def save(self, *args, **kwargs):
         if self.tipo_pago == 'contado' and self.estado != 'anulada':
@@ -291,6 +345,7 @@ class ConfigNegocio(models.Model):
     class Meta:
         verbose_name = 'Configuración del negocio'
         verbose_name_plural = 'Configuración del negocio'
+        permissions = [('descargar_reportes_financieros', 'Puede descargar reportes financieros en Excel/PDF')]
 
     def __str__(self):
         return f'Config: {self.nombre_tienda}'

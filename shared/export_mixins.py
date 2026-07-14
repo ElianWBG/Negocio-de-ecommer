@@ -1,5 +1,8 @@
+from django.contrib import messages
 from django.http import HttpResponse
 from django.utils import timezone
+
+from shared.decorators import user_can_export
 
 class ExportListMixin:
     """
@@ -28,10 +31,16 @@ class ExportListMixin:
     # ------------------------------------------------------------------ #
     def get(self, request, *args, **kwargs):
         fmt = request.GET.get('export')
-        if fmt == 'excel':
-            return self.export_excel()
-        if fmt == 'pdf':
-            return self.export_pdf()
+        if fmt in ('excel', 'pdf'):
+            # Exportar es una acción aparte de "ver": alguien puede tener
+            # permiso para ver el listado sin poder descargarlo.
+            perm = f'{self.model._meta.app_label}.export_{self.model._meta.model_name}'
+            if not user_can_export(request, perm):
+                messages.error(request, 'No tienes permiso para exportar esta información.')
+            elif fmt == 'excel':
+                return self.export_excel()
+            else:
+                return self.export_pdf()
         return super().get(request, *args, **kwargs)
 
     # ------------------------------------------------------------------ #
