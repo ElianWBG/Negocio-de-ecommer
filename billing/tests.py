@@ -1,5 +1,5 @@
 from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
