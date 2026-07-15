@@ -281,7 +281,7 @@ def brand_list(request):
         'visible_columns_list': visible_columns_list,
     })
 
-@login_required
+@permission_required_any('billing.view_brand')
 def brand_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de marcas"""
     from django.http import JsonResponse
@@ -465,7 +465,7 @@ class ProductGroupDeleteView(PermissionRequiredAnyMixin, DeleteView):
             messages.error(self.request, 'No se puede eliminar esta categoría porque tiene productos asociados.')
             return redirect('billing:productgroup_list')
 
-@login_required
+@permission_required_any('billing.view_productgroup')
 def productgroup_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de categorías"""
     from django.http import JsonResponse
@@ -609,7 +609,7 @@ class SupplierDeleteView(PermissionRequiredAnyMixin, DeleteView):
             messages.error(self.request, 'No se puede eliminar este proveedor porque tiene productos asociados.')
             return redirect('billing:supplier_list')
 
-@login_required
+@permission_required_any('billing.view_supplier')
 def supplier_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de proveedores"""
     from django.http import JsonResponse
@@ -958,7 +958,7 @@ def product_update_image(request, pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@login_required
+@permission_required_any('billing.view_product')
 def product_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de productos"""
     from django.http import JsonResponse
@@ -1262,7 +1262,7 @@ class CustomerDeleteView(PermissionRequiredAnyMixin, DeleteView):
         return response
 
 
-@login_required
+@permission_required_any('billing.view_customer')
 def customer_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de clientes"""
     from django.http import JsonResponse
@@ -1625,7 +1625,7 @@ class InvoiceDetailView(PermissionRequiredAnyMixin, DetailView):
         return ctx
 
 
-@login_required
+@permission_required_any('billing.view_invoice')
 def invoice_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de facturas"""
     from django.http import JsonResponse

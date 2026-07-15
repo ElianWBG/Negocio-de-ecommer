@@ -21,4 +21,11 @@ def user_panel_roles(request):
         'panel_is_analista': any_perm('billing.add_product', 'purchasing.add_purchase'),
         'panel_is_finanzas': any_perm('cobros.view_cobrofactura', 'pagos.view_pagocompra'),
         'panel_is_soporte': any_perm('storefront.view_purchaserequest'),
+        # Reportes: visible a cualquier rol con acceso a al menos un reporte
+        'panel_can_reportes': any_perm(
+            'billing.view_invoice',
+            'purchasing.view_purchase',
+            'billing.view_invoicedetail',
+            'billing.view_product',
+        ),
     }

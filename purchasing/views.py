@@ -198,9 +198,7 @@ def purchase_delete(request, pk):
     """Elimina una compra y todas sus líneas (CASCADE). Solo personal staff."""
     purchase = get_object_or_404(Purchase, pk=pk)
 
-    if not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para eliminar compras. Se requiere acceso de staff.')
-        return redirect('purchasing:purchase_list')
+
 
     if request.method == 'POST':
         purchase_id = purchase.id
@@ -211,7 +209,7 @@ def purchase_delete(request, pk):
     return render(request, 'purchasing/purchase_confirm_delete.html', {'object': purchase})
 
 
-@login_required
+@permission_required_any('purchasing.view_purchase')
 def purchase_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de compras"""
     import json

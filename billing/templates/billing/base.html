@@ -365,17 +365,23 @@
   </div>
   {% endif %}
 
-  {% if panel_is_admin %}
+  {% if panel_can_reportes %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Análisis</div>
+    {% if panel_is_admin or perms.billing.view_invoice %}
     <a href="{% url 'billing:report_sales' %}" class="sidebar-link {% if 'reportes/ventas' in request.path %}active{% endif %}">
       <i class="bi bi-bar-chart-line"></i> Ventas
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_product %}
     <a href="{% url 'billing:report_stock' %}" class="sidebar-link {% if 'reportes/stock' in request.path %}active{% endif %}">
       <i class="bi bi-boxes"></i> Stock
     </a>
+    {% endif %}
   </div>
+  {% endif %}
 
+  {% if panel_is_admin %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Sistema</div>
     <a href="{% url 'billing:config_negocio' %}" class="sidebar-link {% if 'configuracion' in request.path %}active{% endif %}">
@@ -424,7 +430,7 @@
     <span class="topbar-title">{% block topbar_title %}Panel{% endblock %}</span>
   </div>
   <div class="topbar-actions">
-    {% if panel_is_admin %}
+    {% if panel_can_reportes %}
     <a href="{% url 'billing:report_sales' %}" class="topbar-btn">
       <i class="bi bi-bar-chart"></i> Reportes
     </a>
