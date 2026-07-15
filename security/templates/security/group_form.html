@@ -1,64 +1,308 @@
 {% extends 'billing/base.html' %}
 {% block title %}Rol{% endblock %}
+{% block topbar_title %}Roles y permisos{% endblock %}
+
+{% block extra_css %}
+<style>
+  .perm-toolbar {
+    position: sticky; top: var(--topbar-h); z-index: 20;
+    background: var(--paper); padding: .75rem 0;
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    border-bottom: 1px solid #E8E3DC; margin-bottom: 1rem;
+  }
+  .perm-search { position: relative; flex: 1 1 260px; max-width: 360px; }
+  .perm-search i {
+    position: absolute; left: .7rem; top: 50%; transform: translateY(-50%);
+    color: #94A0B5; font-size: .9rem; pointer-events: none;
+  }
+  .perm-search input {
+    width: 100%; padding: .45rem .7rem .45rem 2rem;
+    border: 1.5px solid #E8E3DC; border-radius: 8px;
+    background: #fff; font-size: .85rem;
+  }
+  .perm-search input:focus { outline: none; border-color: var(--navy); }
+  .perm-counter { font-size: .8rem; color: #5a5248; font-weight: 600; margin-left: auto; }
+  .perm-counter strong { color: var(--navy); }
+
+  .perm-section { background: #fff; border: 1px solid #EEF0F5; border-radius: 12px; margin-bottom: .6rem; }
+  .perm-section[hidden] { display: none; }
+  .perm-summary {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .7rem 1rem; cursor: pointer; list-style: none;
+    border-radius: 12px; user-select: none;
+  }
+  .perm-summary::-webkit-details-marker { display: none; }
+  .perm-summary:hover { background: #FAFBFF; }
+  .perm-caret { color: #94A0B5; font-size: .8rem; transition: transform .15s; }
+  .perm-section[open] > .perm-summary > .perm-caret { transform: rotate(90deg); }
+  .perm-section[open] > .perm-summary { border-bottom: 1px solid #EEF0F5; border-radius: 12px 12px 0 0; }
+  .perm-section-name { font-weight: 600; color: var(--navy); font-size: .9rem; }
+  .perm-badge {
+    font-size: .7rem; font-weight: 700; padding: .1rem .5rem; border-radius: 20px;
+    background: #EEF0F5; color: #8A93A6;
+  }
+  .perm-badge.on { background: var(--navy); color: #fff; }
+  .perm-bulk { margin-left: auto; display: flex; gap: .75rem; }
+  .perm-link {
+    background: none; border: none; padding: 0;
+    font-size: .75rem; font-weight: 600; color: var(--navy);
+    text-decoration: underline; cursor: pointer;
+  }
+  .perm-link:hover { color: var(--coral); }
+
+  .perm-body { padding: .25rem 1rem 1rem; }
+  .perm-matrix { width: 100%; border-collapse: collapse; }
+  .perm-matrix thead th {
+    font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: #94A0B5; padding: .5rem .25rem; text-align: center; white-space: nowrap;
+  }
+  .perm-matrix thead th.perm-model-col { text-align: left; }
+  .perm-matrix tbody th {
+    font-weight: 500; font-size: .85rem; color: #334155;
+    padding: .35rem .5rem .35rem 0; text-align: left;
+  }
+  .perm-matrix tbody td { text-align: center; padding: .35rem .25rem; width: 11%; }
+  .perm-matrix tbody tr:hover th, .perm-matrix tbody tr:hover td { background: #FAFBFF; }
+  .perm-matrix tbody tr[hidden] { display: none; }
+  .perm-check { width: 1.05rem; height: 1.05rem; accent-color: var(--navy); cursor: pointer; }
+  .perm-na { color: #D8DCE5; font-size: .8rem; }
+
+  .perm-extras { margin-top: .75rem; padding-top: .6rem; border-top: 1px dashed #EEF0F5; }
+  .perm-extras-title {
+    font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: #94A0B5; margin-bottom: .4rem;
+  }
+  .perm-extra {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .85rem; color: #334155; padding: .2rem 0; cursor: pointer;
+  }
+  .perm-extra[hidden] { display: none; }
+
+  .perm-advanced { margin-top: 1.25rem; }
+  .perm-advanced > summary {
+    cursor: pointer; font-size: .8rem; font-weight: 600; color: #8A93A6;
+    padding: .4rem 0; list-style: none;
+  }
+  .perm-advanced > summary::-webkit-details-marker { display: none; }
+  .perm-advanced > summary:hover { color: var(--navy); }
+  .perm-empty { display: none; padding: 2rem; text-align: center; color: #8A93A6; font-size: .875rem; }
+
+  @media (max-width: 768px) {
+    .perm-matrix thead th { font-size: .6rem; }
+    .perm-matrix tbody th { font-size: .78rem; }
+    .perm-bulk { display: none; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-9">
+<form method="post" id="role-form">
+  {% csrf_token %}
+
+  <div class="page-header d-flex justify-content-between align-items-center">
     <h2>{% if object %}Editar rol{% else %}Nuevo rol{% endif %}</h2>
-    <form method="post">
-      {% csrf_token %}
-      <div class="mb-3">
-        <label class="form-label fw-bold">Nombre del rol</label>
-        {{ form.name }}
-        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-bold">Permisos</label>
-        <p class="text-muted small mb-2">Marca qué puede ver y hacer este rol en cada sección del panel.</p>
-        {% if form.permissions.errors %}<div class="text-danger small mb-2">{{ form.permissions.errors }}</div>{% endif %}
-
-        {% for group in permission_groups %}
-        <div class="card mb-2">
-          <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <strong>{{ group.section }}</strong>
-            <div>
-              <a href="#" class="small me-2 select-all" data-section="{{ forloop.counter0 }}">Marcar todo</a>
-              <a href="#" class="small clear-all" data-section="{{ forloop.counter0 }}">Ninguno</a>
-            </div>
-          </div>
-          <div class="card-body py-2" data-section-body="{{ forloop.counter0 }}">
-            <div class="row">
-              {% for item in group.items %}
-              <div class="col-md-4 col-sm-6">
-                <div class="form-check">
-                  <input type="checkbox" name="permissions" value="{{ item.permission.pk }}"
-                         id="perm_{{ item.permission.pk }}" class="form-check-input"
-                         {% if item.checked %}checked{% endif %}>
-                  <label class="form-check-label" for="perm_{{ item.permission.pk }}">{{ item.label }}</label>
-                </div>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-
-      <button type="submit" class="btn btn-primary">Guardar</button>
-      <a href="{% url 'security:group_list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
   </div>
-</div>
+
+  <div class="mb-3" style="max-width: 420px;">
+    <label class="form-label fw-bold" for="{{ form.name.id_for_label }}">Nombre del rol</label>
+    {{ form.name }}
+    {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+  </div>
+
+  {% if form.permissions.errors %}<div class="text-danger small mb-2">{{ form.permissions.errors }}</div>{% endif %}
+
+  <div class="perm-toolbar">
+    <div class="perm-search">
+      <i class="bi bi-search"></i>
+      <input type="search" id="perm-search" placeholder="Buscar permiso o sección…" autocomplete="off">
+    </div>
+
+    <div class="dropdown">
+      <button class="topbar-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-magic"></i> Plantilla
+      </button>
+      <ul class="dropdown-menu">
+        {% for preset in presets %}
+        <li><button class="dropdown-item" type="button" data-preset="{{ preset.name }}">{{ preset.name }}</button></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <button type="button" class="topbar-btn" id="perm-collapse-all">
+      <i class="bi bi-chevron-contract"></i> Plegar todo
+    </button>
+
+    <div class="perm-counter">
+      <strong id="perm-count">0</strong> de {{ permission_total }} permisos
+    </div>
+  </div>
+
+  <div id="perm-sections">
+    {% for group in permission_groups %}
+      {% if not group.is_system %}
+        {% include 'security/_permission_section.html' %}
+      {% endif %}
+    {% endfor %}
+    <div class="perm-empty" id="perm-empty">Ningún permiso coincide con la búsqueda.</div>
+  </div>
+
+  <details class="perm-advanced" id="perm-advanced">
+    <summary><i class="bi bi-gear"></i> Avanzado — permisos internos de Django</summary>
+    <p class="text-muted small mb-2" style="font-size:.78rem;">
+      Plomería del framework (sesiones, tipos de contenido, log del admin). Un rol de negocio no los necesita.
+    </p>
+    {% for group in permission_groups %}
+      {% if group.is_system %}
+        {% include 'security/_permission_section.html' %}
+      {% endif %}
+    {% endfor %}
+  </details>
+
+  <div class="mt-4">
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% url 'security:group_list' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+
+{{ presets|json_script:"presets-data" }}
+{% endblock %}
+
+{% block extra_js %}
 <script>
-document.querySelectorAll('.select-all, .clear-all').forEach(function (link) {
-  link.addEventListener('click', function (e) {
-    e.preventDefault();
-    var section = this.dataset.section;
-    var checked = this.classList.contains('select-all');
-    document.querySelectorAll('[data-section-body="' + section + '"] input[type=checkbox]').forEach(function (cb) {
-      cb.checked = checked;
+(function () {
+  const form = document.getElementById('role-form');
+  const sections = Array.from(form.querySelectorAll('.perm-section'));
+  const searchBox = document.getElementById('perm-search');
+  const emptyMsg = document.getElementById('perm-empty');
+  const totalCounter = document.getElementById('perm-count');
+  const advanced = document.getElementById('perm-advanced');
+  const presets = JSON.parse(document.getElementById('presets-data').textContent);
+  const STORAGE_KEY = 'rolesOpenSections';
+
+  // ── Contadores ──────────────────────────────────────────────
+  function refreshCounters() {
+    let total = 0;
+    sections.forEach(function (section) {
+      const boxes = section.querySelectorAll('.perm-check');
+      const checked = section.querySelectorAll('.perm-check:checked').length;
+      const badge = section.querySelector('[data-badge]');
+      badge.textContent = checked + '/' + boxes.length;
+      badge.classList.toggle('on', checked > 0);
+      total += checked;
+    });
+    totalCounter.textContent = total;
+  }
+
+  // ── "Ver" habilita a las demás acciones: marcar cualquier otra
+  //    sin Ver deja un permiso muerto, así que se marca sola. ─────
+  form.addEventListener('change', function (e) {
+    const box = e.target;
+    if (!box.classList.contains('perm-check')) return;
+    if (box.checked && !box.dataset.role) {
+      const row = box.closest('.perm-row');
+      const viewBox = row ? row.querySelector('[data-role="view"]') : null;
+      if (viewBox) viewBox.checked = true;
+    }
+    refreshCounters();
+  });
+
+  // ── Marcar todo / Ninguno por sección ───────────────────────
+  form.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-bulk]');
+    if (!btn) return;
+    e.preventDefault();      // sin esto, el click abre/cierra el <details>
+    e.stopPropagation();
+    const on = btn.dataset.bulk === 'all';
+    btn.closest('.perm-section').querySelectorAll('.perm-check').forEach(function (box) {
+      box.checked = on;
+    });
+    refreshCounters();
+  });
+
+  // ── Plantillas ──────────────────────────────────────────────
+  document.querySelectorAll('[data-preset]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const preset = presets.find(p => p.name === btn.dataset.preset);
+      if (!preset) return;
+      const wanted = new Set(preset.ids.map(String));
+      form.querySelectorAll('.perm-check').forEach(function (box) {
+        box.checked = wanted.has(box.value);
+      });
+      // Abrir lo que quedó marcado para que el cambio sea visible.
+      sections.forEach(function (section) {
+        section.open = section.querySelectorAll('.perm-check:checked').length > 0;
+      });
+      saveOpenState();
+      refreshCounters();
     });
   });
-});
+
+  // ── Buscador ────────────────────────────────────────────────
+  let savedOpen = null;
+  function applySearch(term) {
+    let anyVisible = false;
+    sections.forEach(function (section) {
+      let sectionHits = 0;
+      section.querySelectorAll('.perm-row').forEach(function (row) {
+        const hit = !term || row.dataset.search.indexOf(term) !== -1;
+        row.hidden = !hit;
+        if (hit) sectionHits++;
+      });
+      section.hidden = term && sectionHits === 0;
+      if (!section.hidden) anyVisible = true;
+      if (term) section.open = sectionHits > 0;
+    });
+    if (term) advanced.open = true;
+    emptyMsg.style.display = (term && !anyVisible) ? 'block' : 'none';
+  }
+
+  searchBox.addEventListener('input', function () {
+    const term = searchBox.value.trim().toLowerCase();
+    if (term && savedOpen === null) {
+      savedOpen = sections.map(s => s.open);   // recordar el estado previo
+    }
+    applySearch(term);
+    if (!term && savedOpen !== null) {
+      sections.forEach(function (s, i) { s.open = savedOpen[i]; });
+      savedOpen = null;
+    }
+  });
+
+  document.getElementById('perm-collapse-all').addEventListener('click', function () {
+    sections.forEach(function (s) { s.open = false; });
+    advanced.open = false;
+    saveOpenState();
+  });
+
+  // ── Recordar qué secciones quedaron abiertas ────────────────
+  function saveOpenState() {
+    try {
+      const open = sections.filter(s => s.open).map(s => s.dataset.slug);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(open));
+    } catch (err) { /* localStorage bloqueado: no es crítico */ }
+  }
+
+  function restoreOpenState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const open = new Set(JSON.parse(raw));
+      sections.forEach(function (s) {
+        // Lo guardado abre, pero nunca cierra una sección con permisos
+        // marcados: al editar un rol hay que ver lo que ya tiene.
+        if (open.has(s.dataset.slug)) s.open = true;
+      });
+    } catch (err) { /* ignorar */ }
+  }
+
+  sections.forEach(function (s) {
+    s.addEventListener('toggle', function () {
+      if (!searchBox.value.trim()) saveOpenState();
+    });
+  });
+
+  restoreOpenState();
+  refreshCounters();
+})();
 </script>
 {% endblock %}

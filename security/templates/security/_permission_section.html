@@ -1,0 +1,62 @@
+{% comment %}
+Una sección del formulario de roles: matriz modelo × acción.
+Espera `group` (de permission_groups) y `action_columns` en el contexto.
+{% endcomment %}
+<details class="perm-section" data-slug="{{ group.slug }}" {% if group.checked_count %}open{% endif %}>
+  <summary class="perm-summary">
+    <i class="bi bi-chevron-right perm-caret"></i>
+    <span class="perm-section-name">{{ group.section }}</span>
+    <span class="perm-badge {% if group.checked_count %}on{% endif %}" data-badge>
+      {{ group.checked_count }}/{{ group.total }}
+    </span>
+    <span class="perm-bulk">
+      <button type="button" class="perm-link" data-bulk="all">Marcar todo</button>
+      <button type="button" class="perm-link" data-bulk="none">Ninguno</button>
+    </span>
+  </summary>
+
+  <div class="perm-body">
+    <table class="perm-matrix">
+      <thead>
+        <tr>
+          <th class="perm-model-col"><span class="visually-hidden">Elemento</span></th>
+          {% for col in action_columns %}<th>{{ col }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in group.rows %}
+        <tr class="perm-row" data-search="{{ row.model_label|lower }} {{ group.section|lower }}">
+          <th scope="row" class="perm-model-col">{{ row.model_label }}</th>
+          {% for cell in row.cells %}
+          <td>
+            {% if cell %}
+              <input type="checkbox" name="permissions" value="{{ cell.permission.pk }}"
+                     id="perm_{{ cell.permission.pk }}" class="perm-check"
+                     {% if forloop.first %}data-role="view"{% endif %}
+                     aria-label="{{ cell.label }}" title="{{ cell.label }}"
+                     {% if cell.checked %}checked{% endif %}>
+            {% else %}
+              <span class="perm-na" aria-hidden="true">—</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if group.extras %}
+    <div class="perm-extras">
+      <div class="perm-extras-title">Otros permisos</div>
+      {% for cell in group.extras %}
+      <label class="perm-extra perm-row" data-search="{{ cell.label|lower }} {{ group.section|lower }}">
+        <input type="checkbox" name="permissions" value="{{ cell.permission.pk }}"
+               id="perm_{{ cell.permission.pk }}" class="perm-check"
+               {% if cell.checked %}checked{% endif %}>
+        <span>{{ cell.label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</details>

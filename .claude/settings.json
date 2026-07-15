@@ -41,7 +41,13 @@
       "Read(//c/Users/PC/.agents/skills/**)",
       "Bash(python manage.py runserver 127.0.0.1:8011 --noreload)",
       "Bash(python -c \"import django,os;os.environ.setdefault\\('DJANGO_SETTINGS_MODULE','config.settings'\\);django.setup\\(\\);from billing.models import ConfigNegocio;c=ConfigNegocio.get\\(\\);print\\('logo:',repr\\(getattr\\(c.logo,'name',None\\)\\)\\);print\\('nombre:',c.nombre_tienda\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('storefront/services.py',encoding='utf-8'\\).read\\(\\)\\); print\\('services.py OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('storefront/services.py',encoding='utf-8'\\).read\\(\\)\\); print\\('services.py OK'\\)\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py check 2>&1)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\render_check.py\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\coverage_check.py\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py makemigrations --check --dry-run 2>&1)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\db_probe.py\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py test security -v 2 2>&1)"
     ],
     "additionalDirectories": [
       "c:\\Users\\PC\\.claude\\projects\\c--Users-PC-Proyect-Negocio-de-ecommer\\memory"

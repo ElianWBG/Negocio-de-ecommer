@@ -9,6 +9,16 @@ ACTION_LABELS_ES = {
     'export': 'Exportar/descargar',
 }
 
+# Columnas de la matriz de permisos, en orden de aparición.
+# 'view' va primera a propósito: es la que habilita a las demás.
+ACTION_COLUMNS = [
+    ('view', 'Ver'),
+    ('add', 'Crear'),
+    ('change', 'Editar'),
+    ('delete', 'Eliminar'),
+    ('export', 'Exportar'),
+]
+
 # Sección por modelo específico (app_label, model_name) → título del bloque
 MODEL_SECTION_LABELS_ES = {
     # Clientes
@@ -68,6 +78,14 @@ SECTION_SORT_ORDER = [
     'Administración (sistema)',
 ]
 
+# Secciones de plomería de Django: nadie las asigna a un rol de negocio.
+# Siguen disponibles, pero plegadas detrás de "Avanzado" en el formulario.
+SYSTEM_SECTIONS = {
+    'Administración (sistema)',
+    'Tipos de contenido (sistema)',
+    'Sesiones (sistema)',
+}
+
 
 def model_section_label(app_label: str, model_name: str) -> str:
     key = (app_label, model_name)
@@ -76,11 +94,26 @@ def model_section_label(app_label: str, model_name: str) -> str:
     return APP_SECTION_LABELS_ES.get(app_label, app_label.capitalize())
 
 
-def permission_label_es(permission) -> str:
-    codename = permission.codename
-    prefix, _, rest = codename.partition('_')
+def model_label_es(permission) -> str:
+    """Nombre legible del modelo al que aplica el permiso."""
+    model = permission.content_type.model_class()
+    if model is None:
+        # content type huérfano (modelo borrado sin limpiar la tabla)
+        return permission.content_type.model
+    return str(model._meta.verbose_name)
+
+
+def permission_action(permission):
+    """Acción estándar del permiso ('view', 'add', ...) o None si es un
+    permiso custom que no encaja en la matriz (ej. descargar_reportes_financieros)."""
+    prefix, _, rest = permission.codename.partition('_')
     if prefix in ACTION_LABELS_ES and rest:
-        model = permission.content_type.model_class()
-        model_name = model._meta.verbose_name if model else rest
-        return f'{ACTION_LABELS_ES[prefix]} {model_name}'
+        return prefix
+    return None
+
+
+def permission_label_es(permission) -> str:
+    action = permission_action(permission)
+    if action:
+        return f'{ACTION_LABELS_ES[action]} {model_label_es(permission)}'
     return permission.name
