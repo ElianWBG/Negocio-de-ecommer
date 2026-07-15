@@ -285,36 +285,46 @@
     </a>
   </div>
 
-  {% if panel_is_analista %}
+  {% if panel_is_admin or perms.billing.view_product or perms.billing.view_productgroup or perms.billing.view_brand %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Catálogo</div>
+    {% if panel_is_admin or perms.billing.view_product %}
     <a href="{% url 'billing:product_list' %}" class="sidebar-link {% if 'product' in request.path and 'invoice' not in request.path %}active{% endif %}">
       <i class="bi bi-box-seam"></i> Productos
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_productgroup %}
     <a href="{% url 'billing:productgroup_list' %}" class="sidebar-link {% if 'groups' in request.path %}active{% endif %}">
       <i class="bi bi-folder2"></i> Categorías
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_brand %}
     <a href="{% url 'billing:brand_list' %}" class="sidebar-link {% if 'brands' in request.path %}active{% endif %}">
       <i class="bi bi-tag"></i> Marcas
     </a>
+    {% endif %}
   </div>
   {% endif %}
 
-  {% if panel_is_vendedor or panel_is_soporte %}
+  {% if panel_is_admin or perms.storefront.view_purchaserequest or perms.billing.view_invoice or perms.billing.view_customer or perms.billing.change_customer %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ventas</div>
-    {% if panel_is_soporte %}
+    {% if panel_is_admin or perms.storefront.view_purchaserequest %}
     <a href="{% url 'storefront:purchase_request_list' %}" class="sidebar-link {% if 'solicitudes' in request.path %}active{% endif %}">
       <i class="bi bi-bell"></i> Solicitudes
     </a>
     {% endif %}
-    {% if panel_is_vendedor %}
+    {% if panel_is_admin or perms.billing.view_invoice %}
     <a href="{% url 'billing:invoice_list' %}" class="sidebar-link {% if 'invoices' in request.path %}active{% endif %}">
       <i class="bi bi-receipt"></i> Facturas
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_customer %}
     <a href="{% url 'billing:customer_list' %}" class="sidebar-link {% if 'customers' in request.path %}active{% endif %}">
       <i class="bi bi-people"></i> Clientes
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.change_customer %}
     <a href="{% url 'billing:send_promotion' %}" class="sidebar-link {% if 'promociones' in request.path %}active{% endif %}">
       <i class="bi bi-megaphone"></i> Promociones
     </a>
@@ -322,19 +332,23 @@
   </div>
   {% endif %}
 
-  {% if panel_is_analista %}
+  {% if panel_is_admin or perms.purchasing.view_purchase or perms.billing.view_supplier %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Compras</div>
+    {% if panel_is_admin or perms.purchasing.view_purchase %}
     <a href="{% url 'purchasing:purchase_list' %}" class="sidebar-link {% if 'purchases' in request.path %}active{% endif %}">
       <i class="bi bi-cart4"></i> Compras
     </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_supplier %}
     <a href="{% url 'billing:supplier_list' %}" class="sidebar-link {% if 'suppliers' in request.path %}active{% endif %}">
       <i class="bi bi-truck"></i> Proveedores
     </a>
+    {% endif %}
   </div>
   {% endif %}
 
-  {% if panel_is_finanzas %}
+  {% if panel_is_admin or perms.cobros.view_cobrofactura or perms.pagos.view_pagocompra or perms.creditos_compras.view_cuotacompra or perms.creditos_ventas.view_cuotaventa or perms.billing.view_invoice or perms.purchasing.view_purchase or perms.billing.view_product %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Finanzas</div>
     {% if perms.cobros.view_cobrofactura %}
