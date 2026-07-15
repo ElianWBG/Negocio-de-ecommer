@@ -249,10 +249,8 @@ def customer_login(request):
         if form.is_valid():
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
-            try:
-                username = User.objects.get(email=email).username
-            except User.DoesNotExist:
-                username = None
+            user_obj = User.objects.filter(email=email).first()
+            username = user_obj.username if user_obj else None
 
             user = authenticate(request, username=username, password=password) if username else None
 
@@ -1123,9 +1121,12 @@ def purchase_request_confirm(request, pk):
         except InsufficientStockError as e:
             messages.error(request, str(e))
         else:
-            log_action(request, 'confirmed', 'PurchaseRequest', purchase_request.pk,
-                       f'Solicitud #{purchase_request.id} confirmada → Factura #{invoice.id}')
-            messages.success(request, f'Solicitud #{purchase_request.id} confirmada. Factura #{invoice.id} creada.')
+            if invoice is None:
+                messages.warning(request, f'La solicitud #{purchase_request.id} ya estaba procesada.')
+            else:
+                log_action(request, 'confirmed', 'PurchaseRequest', purchase_request.pk,
+                           f'Solicitud #{purchase_request.id} confirmada → Factura #{invoice.id}')
+                messages.success(request, f'Solicitud #{purchase_request.id} confirmada. Factura #{invoice.id} creada.')
     return redirect('storefront:purchase_request_detail', pk=purchase_request.pk)
 
 
