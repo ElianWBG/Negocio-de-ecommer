@@ -124,6 +124,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'shared.middleware.NoCachePanelMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -225,6 +226,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_REDIRECT_URL = '/panel/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
+
+# Sesiones: expiran a las 8 horas de inactividad y al cerrar el navegador
+SESSION_COOKIE_AGE = 8 * 60 * 60   # 8 horas en segundos
+SESSION_SAVE_EVERY_REQUEST = True   # reinicia el contador con cada request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # cierra sesión al cerrar el navegador
 
 LOGGING = {
     'version': 1,
