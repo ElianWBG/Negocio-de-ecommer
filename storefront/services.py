@@ -74,6 +74,11 @@ def confirm_purchase_request(purchase_request):
     except Exception:
         logger.exception('Error enviando factura #%s al micro SRI', invoice.pk)
 
+    try:
+        _send_purchase_confirmation_email(purchase_request, invoice)
+    except Exception:
+        logger.exception('Error enviando email de confirmación del pedido #%s', purchase_request.pk)
+
     return invoice
 
 
@@ -143,6 +148,11 @@ def confirm_purchase_request_credito(purchase_request, numero_cuotas):
         emitir_factura_sri(invoice, purchase_request)
     except Exception:
         logger.exception('Error enviando factura #%s al micro SRI', invoice.pk)
+
+    try:
+        _send_purchase_confirmation_email(purchase_request, invoice)
+    except Exception:
+        logger.exception('Error enviando email de confirmación del pedido #%s', purchase_request.pk)
 
     return invoice
 
