@@ -42,11 +42,10 @@ def build_invoice_pdf(invoice):
         SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
     from reportlab.lib.styles import ParagraphStyle
-    from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
+    from reportlab.lib.enums import TA_RIGHT, TA_CENTER
     from reportlab.graphics.barcode import code128
     import io
     from decimal import Decimal
-    from django.utils import timezone
 
     from billing.models import ConfigNegocio
     config = ConfigNegocio.get()
@@ -69,7 +68,6 @@ def build_invoice_pdf(invoice):
         return ParagraphStyle(name, **base)
 
     s_lbl = ps('lbl', fontName='Helvetica', fontSize=7.5, textColor=grey)
-    s_val = ps('val', fontName='Helvetica-Bold', fontSize=8.5)
     s_sm = ps('sm', fontSize=7.5)
     s_smb = ps('smb', fontName='Helvetica-Bold', fontSize=8)
     s_big = ps('big', fontName='Helvetica-Bold', fontSize=13)
@@ -211,7 +209,6 @@ def build_invoice_pdf(invoice):
     elements += [bottom, Spacer(1, 8)]
 
     # ── Información adicional ──────────────────────────────────────
-    info_rows = [[Paragraph('<b>Información Adicional</b>', s_center)]]
     adic = [
         ('Emisor', config.nombre_tienda),
         ('RUC', getattr(config, 'ruc', '') or 'N/A'),
@@ -290,7 +287,6 @@ def check_credit_limit(customer, new_invoice_total):
     Debe llamarse dentro de un transaction.atomic() para que el select_for_update
     sea efectivo y evite race conditions entre dos compras a crédito simultáneas."""
     from billing.models import CustomerProfile, Invoice
-    from django.db import transaction as _tx
 
     try:
         profile = CustomerProfile.objects.select_for_update().get(customer=customer)

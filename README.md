@@ -143,7 +143,7 @@ Todo lo visual de la tienda y el panel sale de un único registro `ConfigNegocio
 ### 1. Crear el entorno virtual
 
 ```cmd
-py -m venv ent_sales_A2
+py -m venv .venv
 ```
 
 > Si `py` no funciona, usa `python` en su lugar.
@@ -151,7 +151,7 @@ py -m venv ent_sales_A2
 ### 2. Activar el entorno virtual
 
 ```cmd
-ent_sales_A2\Scripts\activate.bat
+.venv\Scripts\activate.bat
 ```
 
 ### 3. Instalar las dependencias
@@ -166,31 +166,24 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-Rellena `.env` con tus valores (ver [Variables de entorno](#variables-de-entorno)). También puedes usar `python crear_env.py` como ayuda para generarlo.
+Rellena `.env` con tus valores (ver [Variables de entorno](#variables-de-entorno)).
 
 ### 5. Aplicar las migraciones
 
 ```cmd
-ent_sales_A2\Scripts\python.exe manage.py migrate
+.venv\Scripts\python.exe manage.py migrate
 ```
 
 ### 6. Crear los roles del sistema
 
 ```cmd
-ent_sales_A2\Scripts\python.exe manage.py setup_roles
+.venv\Scripts\python.exe manage.py setup_roles
 ```
 
-### 7. (Opcional) Cargar datos de demostración
+### 7. Ejecutar el servidor
 
 ```cmd
-ent_sales_A2\Scripts\python.exe seed_demo.py
-ent_sales_A2\Scripts\python.exe seed_images.py
-```
-
-### 8. Ejecutar el servidor
-
-```cmd
-ent_sales_A2\Scripts\python.exe manage.py runserver
+.venv\Scripts\python.exe manage.py runserver
 ```
 
 Abre el navegador en: http://127.0.0.1:8000 (tienda pública) o http://127.0.0.1:8000/panel/ (panel administrativo, requiere login de staff).

@@ -1,6 +1,4 @@
 import logging
-import random
-import secrets
 import uuid
 from decimal import Decimal
 
@@ -22,7 +20,6 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from billing.models import Product, ProductGroup, Customer, Brand, Review, ReviewImage

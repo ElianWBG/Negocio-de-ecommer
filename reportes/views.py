@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import Sum, F, Count
+from django.db.models import Sum, Count
 from django.shortcuts import render
 
 from billing.models import Invoice, InvoiceDetail, Product

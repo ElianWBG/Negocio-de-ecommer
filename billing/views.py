@@ -3,10 +3,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Sum, Count, Q, F
+from django.db.models import Sum, Count, F
 from django.db.models.functions import TruncMonth
 from datetime import timedelta, date
 from .models import *
@@ -777,8 +777,8 @@ class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
     def export_pdf_with_visible_columns(self):
         """Exportar a PDF con columnas visibles"""
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4, landscape, portrait
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from django.http import HttpResponse
@@ -809,11 +809,6 @@ class ProductListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         else:
             font_size = 9
         
-        cell_style = ParagraphStyle('cell', parent=styles['Normal'], 
-                                   fontSize=font_size, leading=font_size + 2)
-        head_style = ParagraphStyle('cellHead', parent=styles['Normal'],
-                                   fontSize=font_size, leading=font_size + 2,
-                                   textColor=colors.white, fontName='Helvetica-Bold')
         
         elements = [
             Paragraph('Listado de Productos', styles['Title']),
@@ -931,7 +926,6 @@ class ProductDetailView(PermissionRequiredAnyMixin, DetailView):
 def product_update_image(request, pk):
     """Actualizar imagen del producto via AJAX"""
     from django.http import JsonResponse
-    from django.views.decorators.http import require_http_methods
     
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
@@ -1133,7 +1127,7 @@ class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         """Exportar a PDF con columnas visibles"""
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from django.http import HttpResponse
@@ -1162,11 +1156,6 @@ class CustomerListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         else:
             font_size = 9
 
-        cell_style = ParagraphStyle('cell', parent=styles['Normal'],
-                                   fontSize=font_size, leading=font_size + 2)
-        head_style = ParagraphStyle('cellHead', parent=styles['Normal'],
-                                   fontSize=font_size, leading=font_size + 2,
-                                   textColor=colors.white, fontName='Helvetica-Bold')
 
         elements = [
             Paragraph('Listado de Clientes', styles['Title']),
@@ -1438,7 +1427,7 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         """Exportar a PDF con columnas visibles"""
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from django.http import HttpResponse
@@ -1931,7 +1920,6 @@ def product_import_template(request):
     """Descarga la plantilla Excel vacía con el formato correcto."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.styles.numbers import FORMAT_TEXT
     from django.http import HttpResponse
 
     wb = Workbook()
@@ -2193,7 +2181,6 @@ def customer_import_template(request):
     ws.row_dimensions[1].height = 22
 
     # Formatear cédula y teléfono como texto para evitar notación científica y pérdida del 0
-    from openpyxl.utils import get_column_letter
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=1):
         for cell in row:
             cell.number_format = FORMAT_TEXT
@@ -2294,8 +2281,7 @@ def report_sales(request):
 @permission_required_any('billing.descargar_reportes_financieros')
 def report_sales_excel(request):
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.styles.numbers import FORMAT_TEXT
+    from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
     from django.http import HttpResponse
 
@@ -2786,7 +2772,6 @@ def verify_panel_code(request):
         lockout_until = request.session.get('verify_lockout_until')
         if lockout_until:
             from django.utils import timezone as tz
-            import datetime
             lockout_dt = tz.datetime.fromisoformat(lockout_until)
             if tz.now() < lockout_dt:
                 remaining = int((lockout_dt - tz.now()).total_seconds() // 60) + 1

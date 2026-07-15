@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.contrib.auth.models import User
 from decimal import Decimal
-from .models import Brand, ProductGroup, Supplier, Product, Customer, Invoice, InvoiceDetail
+from .models import Brand, ProductGroup, Supplier, Customer, Invoice, InvoiceDetail
 
 
 class SignUpForm(forms.ModelForm):
@@ -67,9 +67,6 @@ class SupplierForm(forms.ModelForm):
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-
-
-from .ProductForm import ProductForm
 
 
 class CustomerForm(forms.ModelForm):
