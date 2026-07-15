@@ -397,7 +397,7 @@ def product_detail(request, pk):
     from django.db.models import Avg, Count
     product = get_object_or_404(
         Product.objects.prefetch_related('images').annotate(
-            average_rating=Avg('reviews__rating'),
+            avg_rating=Avg('reviews__rating'),
             review_count=Count('reviews', distinct=True),
         ),
         pk=pk, is_active=True,

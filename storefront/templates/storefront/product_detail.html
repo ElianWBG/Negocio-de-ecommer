@@ -164,9 +164,9 @@
     {% if product.review_count %}
     <div class="product-rating-summary">
       {% for i in "12345" %}
-        <i class="bi {% if forloop.counter <= product.average_rating|floatformat:0|add:0 %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+        <i class="bi {% if forloop.counter <= product.avg_rating|floatformat:0|add:0 %}bi-star-fill{% else %}bi-star{% endif %}"></i>
       {% endfor %}
-      <span>{{ product.average_rating }} · {{ product.review_count }} reseña{{ product.review_count|pluralize }}</span>
+      <span>{{ product.avg_rating }} · {{ product.review_count }} reseña{{ product.review_count|pluralize }}</span>
     </div>
     {% else %}
     <div class="product-rating-summary product-rating-empty">
