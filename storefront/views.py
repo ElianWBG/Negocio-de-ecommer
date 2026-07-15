@@ -398,7 +398,7 @@ def product_detail(request, pk):
     product = get_object_or_404(
         Product.objects.prefetch_related('images').annotate(
             avg_rating=Avg('reviews__rating'),
-            review_count=Count('reviews', distinct=True),
+            total_reviews=Count('reviews', distinct=True),
         ),
         pk=pk, is_active=True,
     )
