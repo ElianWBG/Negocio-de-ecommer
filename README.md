@@ -26,6 +26,8 @@ Combina un **panel administrativo** (catálogo, ventas, compras, cobros, pagos, 
 | `purchasing` | Compras a proveedores (contado y crédito). |
 | `cobros` | Cuentas por cobrar: pagos parciales sobre facturas a crédito. |
 | `pagos` | Cuentas por pagar: pagos parciales sobre compras a crédito. |
+| `creditos_ventas` | Cuotas mensuales sobre facturas de venta a crédito: generación del cronograma, abonos manuales y pago con PayPal (una cuota o varias a la vez). |
+| `creditos_compras` | Cuotas mensuales sobre compras a crédito a proveedores: generación del cronograma y registro de abonos. |
 | `reportes` | Panel con cuentas por cobrar/pagar, ventas por periodo, productos más vendidos y stock bajo. |
 | `security` | Roles (grupos de Django) y traducción de permisos a español. |
 | `storefront` | Tienda pública: registro/login de clientes con verificación por email, catálogo, carrito, checkout, pagos (PayPhone, PayPal o transferencia manual) y panel de solicitudes de compra. |
@@ -221,6 +223,8 @@ El comando de arranque en Railway ejecuta, en orden: `collectstatic`, `migrate`,
 ├── purchasing/          # Compras a proveedores
 ├── cobros/               # Cuentas por cobrar
 ├── pagos/                # Cuentas por pagar
+├── creditos_ventas/      # Cuotas de facturas de venta a crédito
+├── creditos_compras/     # Cuotas de compras a crédito a proveedores
 ├── reportes/             # Panel de reportes
 ├── security/             # Roles y permisos
 ├── storefront/           # Tienda pública (catálogo, carrito, checkout, pagos)
