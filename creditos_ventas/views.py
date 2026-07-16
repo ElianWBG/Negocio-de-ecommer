@@ -404,15 +404,22 @@ def paypal_capture_cuotas(request, factura_pk):
     ultimo_pago = None
     fecha = timezone.localdate()
     try:
-        for cuota in cuotas:
-            if restante <= 0:
-                break
-            monto_cuota = min(cuota.saldo, restante)
-            ultimo_pago = registrar_pago_cuota(
-                cuota, monto_cuota, fecha,
-                observacion=f'Pago vía PayPal (orden {order_id})',
-            )
-            restante -= monto_cuota
+        # Una sola transacción para todo el lote: si una cuota falla a mitad
+        # de camino (saldo cambió, etc.), se revierten también las que ya se
+        # habían aplicado en este mismo request. Así nunca queda un cobro de
+        # PayPal ya capturado aplicado solo a medias — o se aplica todo o
+        # queda sin aplicar (y la orden sigue registrada con captured=False
+        # en PayPalCuotaOrder para que el staff la reconcilie manualmente).
+        with transaction.atomic():
+            for cuota in cuotas:
+                if restante <= 0:
+                    break
+                monto_cuota = min(cuota.saldo, restante)
+                ultimo_pago = registrar_pago_cuota(
+                    cuota, monto_cuota, fecha,
+                    observacion=f'Pago vía PayPal (orden {order_id})',
+                )
+                restante -= monto_cuota
     except ValueError as e:
         logger.exception('Error registrando pagos multi cuotas factura %s: %s', factura_pk, e)
         return JsonResponse({'error': str(e)}, status=400)
