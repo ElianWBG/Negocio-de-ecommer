@@ -407,6 +407,11 @@ class PanelVerificationCode(models.Model):
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)
+    # El rate-limit de intentos vive aquí (por cuenta), no en request.session:
+    # la sesión se resetea borrando cookies, lo que permitiría fuerza bruta
+    # ilimitada sobre el código de 6 dígitos.
+    attempts = models.PositiveSmallIntegerField(default=0)
+    lockout_until = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Código de verificación del panel'

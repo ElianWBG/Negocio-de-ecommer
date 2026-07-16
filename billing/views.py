@@ -2767,21 +2767,6 @@ def verify_panel_code(request):
             messages.success(request, 'Si el correo existe en el sistema, recibirás un nuevo código.')
             return render(request, 'billing/verify_code.html')
 
-        # --- Protección contra fuerza bruta por sesión ---
-        attempts = request.session.get('verify_attempts', 0)
-        lockout_until = request.session.get('verify_lockout_until')
-        if lockout_until:
-            from django.utils import timezone as tz
-            lockout_dt = tz.datetime.fromisoformat(lockout_until)
-            if tz.now() < lockout_dt:
-                remaining = int((lockout_dt - tz.now()).total_seconds() // 60) + 1
-                messages.error(request, f'Demasiados intentos fallidos. Espera {remaining} minuto(s) antes de intentar de nuevo.')
-                return render(request, 'billing/verify_code.html')
-            else:
-                request.session['verify_attempts'] = 0
-                request.session['verify_lockout_until'] = None
-                attempts = 0
-
         email = request.POST.get('email', '').strip()
         code = request.POST.get('code', '').strip()
 
@@ -2790,6 +2775,8 @@ def verify_panel_code(request):
             return render(request, 'billing/verify_code.html')
 
         import secrets as _secrets
+        from django.utils import timezone as tz
+        import datetime
         user = User.objects.filter(email=email).first()
         vc = PanelVerificationCode.objects.filter(user=user).order_by('-created_at').first() if user else None
 
@@ -2798,23 +2785,31 @@ def verify_panel_code(request):
             messages.error(request, 'Código incorrecto o expirado. Verifica los datos e intenta de nuevo.')
             return render(request, 'billing/verify_code.html')
 
+        # --- Protección contra fuerza bruta: por cuenta, persistida en BD ---
+        # (no en request.session: borrar cookies reiniciaría el contador).
+        if vc.lockout_until and tz.now() < vc.lockout_until:
+            remaining = int((vc.lockout_until - tz.now()).total_seconds() // 60) + 1
+            messages.error(request, f'Demasiados intentos fallidos. Espera {remaining} minuto(s) antes de intentar de nuevo.')
+            return render(request, 'billing/verify_code.html')
+        elif vc.lockout_until:
+            vc.attempts = 0
+            vc.lockout_until = None
+
         if vc.is_expired:
             messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
             return render(request, 'billing/verify_code.html')
 
         # Comparación en tiempo constante para evitar timing attacks
         if not _secrets.compare_digest(vc.code, code):
-            attempts += 1
-            request.session['verify_attempts'] = attempts
-            if attempts >= MAX_ATTEMPTS:
-                from django.utils import timezone as tz
-                import datetime
-                lockout_until_dt = tz.now() + datetime.timedelta(minutes=LOCKOUT_MINUTES)
-                request.session['verify_lockout_until'] = lockout_until_dt.isoformat()
-                request.session['verify_attempts'] = 0
+            vc.attempts += 1
+            if vc.attempts >= MAX_ATTEMPTS:
+                vc.lockout_until = tz.now() + datetime.timedelta(minutes=LOCKOUT_MINUTES)
+                vc.attempts = 0
+                vc.save(update_fields=['attempts', 'lockout_until'])
                 messages.error(request, f'Demasiados intentos fallidos. Espera {LOCKOUT_MINUTES} minutos.')
             else:
-                messages.error(request, f'Código incorrecto. Intentos restantes: {MAX_ATTEMPTS - attempts}.')
+                vc.save(update_fields=['attempts', 'lockout_until'])
+                messages.error(request, f'Código incorrecto. Intentos restantes: {MAX_ATTEMPTS - vc.attempts}.')
             return render(request, 'billing/verify_code.html')
 
         password = request.POST.get('password', '')
@@ -2831,8 +2826,6 @@ def verify_panel_code(request):
             user.save()
             vc.delete()
 
-        request.session.pop('verify_attempts', None)
-        request.session.pop('verify_lockout_until', None)
         messages.success(request, f'Cuenta verificada. Ahora inicia sesión con tu usuario: {user.username} y la contraseña que creaste.')
         return redirect('login')
 
