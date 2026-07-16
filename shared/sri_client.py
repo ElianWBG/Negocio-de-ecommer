@@ -26,7 +26,7 @@ def emitir_factura_sri(invoice, purchase_request=None) -> dict | None:
     if not base_url:
         return None
 
-    api_key = getattr(settings, 'SRI_MICRO_API_KEY', '')
+    api_key = getattr(settings, 'SRI_MICRO_API_KEY', '').strip()
 
     # Contexto de tienda para que el micro pueda armar el email con el diseño correcto
     from billing.models import ConfigNegocio
