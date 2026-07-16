@@ -93,6 +93,10 @@ def pagar_cuota_paypal(request, pk):
         messages.info(request, 'Esta cuota ya está pagada.')
         return redirect('creditos_ventas:comprobante_cuota', pk=cuota.pk)
 
+    if cuota.factura.estado == 'anulada':
+        messages.error(request, 'No se puede pagar una cuota de una factura anulada.')
+        return redirect('storefront:my_cuotas')
+
     # Orden de pago: no se puede pagar esta cuota si hay cuotas anteriores pendientes
     prev_pending = CuotaVenta.objects.filter(
         factura=cuota.factura,
@@ -122,6 +126,8 @@ def paypal_create_order_cuota(request, pk):
         return JsonResponse({'error': 'No autorizado.'}, status=403)
     if cuota.estado == 'pagada':
         return JsonResponse({'error': 'Esta cuota ya está pagada.'}, status=400)
+    if cuota.factura.estado == 'anulada':
+        return JsonResponse({'error': 'No se puede pagar una cuota de una factura anulada.'}, status=400)
 
     # Orden de pago: verificar que no haya cuotas anteriores pendientes
     if CuotaVenta.objects.filter(factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente').exists():
@@ -172,6 +178,8 @@ def paypal_capture_cuota(request, pk):
         return JsonResponse({'error': 'No autorizado.'}, status=403)
     if cuota.estado == 'pagada':
         return JsonResponse({'error': 'Esta cuota ya está pagada.'}, status=400)
+    if cuota.factura.estado == 'anulada':
+        return JsonResponse({'error': 'No se puede pagar una cuota de una factura anulada.'}, status=400)
 
     try:
         order_id = json.loads(request.body).get('orderID')
@@ -248,6 +256,10 @@ def pagar_cuotas_multi_paypal(request, factura_pk):
         messages.info(request, 'Inicia sesión para pagar tus cuotas.')
         return redirect('storefront:customer_login')
 
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se pueden pagar cuotas de una factura anulada.')
+        return redirect('storefront:my_cuotas')
+
     cuotas = list(CuotaVenta.objects.filter(factura=factura, estado='pendiente').order_by('numero'))
     if not cuotas:
         messages.info(request, 'No hay cuotas pendientes para esta factura.')
@@ -270,6 +282,8 @@ def paypal_create_order_cuotas(request, factura_pk):
     _, is_owner = _es_dueno_o_staff(request, factura)
     if not is_owner:
         return JsonResponse({'error': 'No autorizado.'}, status=403)
+    if factura.estado == 'anulada':
+        return JsonResponse({'error': 'No se pueden pagar cuotas de una factura anulada.'}, status=400)
 
     try:
         body = json.loads(request.body)
@@ -334,6 +348,8 @@ def paypal_capture_cuotas(request, factura_pk):
     _, is_owner = _es_dueno_o_staff(request, factura)
     if not is_owner:
         return JsonResponse({'error': 'No autorizado.'}, status=403)
+    if factura.estado == 'anulada':
+        return JsonResponse({'error': 'No se pueden pagar cuotas de una factura anulada.'}, status=400)
 
     try:
         body = json.loads(request.body)
@@ -476,6 +492,10 @@ def pago_cuota_create(request, pk):
         messages.error(request, 'Esta cuota ya está pagada.')
         return redirect('creditos_ventas:cuota_payment_history', pk=cuota.pk)
 
+    if cuota.factura.estado == 'anulada':
+        messages.error(request, 'No se puede registrar un pago sobre una cuota de una factura anulada.')
+        return redirect('creditos_ventas:cuota_list', factura_id=cuota.factura_id)
+
     prev_pending = CuotaVenta.objects.filter(
         factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente'
     ).order_by('numero').first()
@@ -518,6 +538,11 @@ def pagar_cuotas_multi(request, factura_id):
     el cliente desde la tienda; esta vista es para que el staff registre
     pagos recibidos por otros medios (efectivo, transferencia, etc.)."""
     factura = get_object_or_404(Invoice.objects.select_related('customer'), pk=factura_id)
+
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se pueden registrar pagos sobre cuotas de una factura anulada.')
+        return redirect('creditos_ventas:cuota_list', factura_id=factura.id)
+
     cuotas_pendientes = factura.cuotas.filter(estado='pendiente').order_by('numero')
 
     if not cuotas_pendientes.exists():
