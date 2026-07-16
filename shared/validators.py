@@ -66,37 +66,61 @@ def validate_cedula_ec(value):
             code='invalid_province'
         )
 
-    # --- Paso 4: Verificar tercer dígito ---
+    # --- Paso 4: Verificar tercer dígito y aplicar el algoritmo que le
+    # corresponde. Un RUC (13 dígitos) puede ser de:
+    #   - persona natural (tercer dígito 0-5): mismo algoritmo que la cédula.
+    #   - sociedad privada (tercer dígito 9): módulo 11 sobre 9 dígitos.
+    #   - entidad pública (tercer dígito 6): módulo 11 sobre 8 dígitos.
+    # Antes solo se aceptaba el primer caso, rechazando todo RUC de empresa.
     third_digit = int(value[2])
-    if third_digit >= 6:
+    digits = [int(c) for c in value]
+
+    if third_digit < 6:
+        # --- Módulo 10 (cédula, o los primeros 10 dígitos de un RUC de persona natural) ---
+        coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+        total = 0
+        for i in range(9):
+            result = digits[i] * coefficients[i]
+            if result > 9:
+                result -= 9
+            total += result
+        verifier = 10 - (total % 10)
+        if verifier == 10:
+            verifier = 0
+        if verifier != digits[9]:
+            raise ValidationError(
+                'Invalid ID number. The check digit does not match.',
+                code='invalid_verifier'
+            )
+    elif len(value) == 13 and third_digit == 9:
+        # --- Módulo 11, sociedad privada: coeficientes sobre los primeros 9 dígitos ---
+        coefficients = [4, 3, 2, 7, 6, 5, 4, 3, 2]
+        total = sum(digits[i] * coefficients[i] for i in range(9))
+        verifier = 11 - (total % 11)
+        if verifier == 11:
+            verifier = 0
+        if verifier == 10 or verifier != digits[9]:
+            raise ValidationError(
+                'Invalid ID number. The check digit does not match.',
+                code='invalid_verifier'
+            )
+    elif len(value) == 13 and third_digit == 6:
+        # --- Módulo 11, entidad pública: coeficientes sobre los primeros 8 dígitos ---
+        coefficients = [3, 2, 7, 6, 5, 4, 3, 2]
+        total = sum(digits[i] * coefficients[i] for i in range(8))
+        verifier = 11 - (total % 11)
+        if verifier == 11:
+            verifier = 0
+        if verifier == 10 or verifier != digits[8]:
+            raise ValidationError(
+                'Invalid ID number. The check digit does not match.',
+                code='invalid_verifier'
+            )
+    else:
         raise ValidationError(
-            'The third digit must be less than 6 for natural persons.',
+            'The third digit must be less than 6 for natural persons, or 6/9 for a company RUC.',
             code='invalid_third'
         )
 
-    # --- Paso 5: Algoritmo de validación (Módulo 10) ---
-    coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]  # Coeficientes
-    total = 0
-
-    for i in range(9):
-        result = int(value[i]) * coefficients[i]
-        # Si el resultado es mayor a 9, restar 9
-        if result > 9:
-            result -= 9
-        total += result
-
-    # --- Paso 6: Calcular dígito verificador ---
-    # Decena superior - total
-    verifier = 10 - (total % 10)
-    if verifier == 10:
-        verifier = 0
-
-    # --- Paso 7: Comparar con el décimo dígito ---
-    if verifier != int(value[9]):
-        raise ValidationError(
-            'Invalid ID number. The check digit does not match.',
-            code='invalid_verifier'
-        )
-
-    # Si llegamos aquí, la cédula es válida
+    # Si llegamos aquí, la cédula/RUC es válida
     return value
