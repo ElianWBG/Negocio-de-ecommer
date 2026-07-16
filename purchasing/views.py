@@ -201,8 +201,17 @@ def purchase_delete(request, pk):
 
 
     if request.method == 'POST':
+        from django.db.models.deletion import ProtectedError
         purchase_id = purchase.id
-        purchase.delete()
+        try:
+            purchase.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                'No se puede eliminar esta compra porque tiene pagos o cuotas registradas. '
+                'Elimínalos primero.'
+            )
+            return redirect('purchasing:purchase_detail', pk=purchase_id)
         messages.success(request, f'Compra #{purchase_id} eliminada.')
         return redirect('purchasing:purchase_list')
 
