@@ -30,6 +30,8 @@ def generar_cuotas(factura, numero_cuotas):
     """
     if numero_cuotas <= 0:
         raise ValueError('El número de cuotas debe ser mayor a cero.')
+    if factura.estado == 'anulada':
+        raise ValueError('No se pueden generar cuotas para una factura anulada.')
     if factura.tipo_pago != 'credito':
         raise ValueError('Solo se pueden generar cuotas para facturas a crédito.')
     if factura.cuotas.exists():

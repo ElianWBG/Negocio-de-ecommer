@@ -18,6 +18,8 @@ def generar_cuotas(compra, numero_cuotas):
     """
     if numero_cuotas <= 0:
         raise ValueError('El número de cuotas debe ser mayor a cero.')
+    if compra.estado == 'anulada':
+        raise ValueError('No se pueden generar cuotas para una compra anulada.')
     if compra.tipo_pago != 'credito':
         raise ValueError('Solo se pueden generar cuotas para compras a crédito.')
     if compra.cuotas.exists():

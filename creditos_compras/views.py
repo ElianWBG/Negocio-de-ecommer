@@ -21,6 +21,10 @@ def generar_cuotas_view(request, compra_id):
     """Genera el cronograma de cuotas de una compra a crédito (una sola vez)."""
     compra = get_object_or_404(Purchase, pk=compra_id)
 
+    if compra.estado == 'anulada':
+        messages.error(request, 'No se pueden generar cuotas para una compra anulada.')
+        return redirect('purchasing:purchase_detail', pk=compra.id)
+
     if compra.tipo_pago != 'credito':
         messages.error(request, 'Solo las compras a crédito pueden tener cuotas.')
         return redirect('purchasing:purchase_detail', pk=compra.id)

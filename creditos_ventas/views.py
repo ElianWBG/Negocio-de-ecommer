@@ -439,6 +439,10 @@ def generar_cuotas_view(request, factura_id):
     """Genera el cronograma de cuotas de una factura a crédito (una sola vez)."""
     factura = get_object_or_404(Invoice, pk=factura_id)
 
+    if factura.estado == 'anulada':
+        messages.error(request, 'No se pueden generar cuotas para una factura anulada.')
+        return redirect('billing:invoice_detail', pk=factura.id)
+
     if factura.tipo_pago != 'credito':
         messages.error(request, 'Solo las facturas a crédito pueden tener cuotas.')
         return redirect('billing:invoice_detail', pk=factura.id)
