@@ -17,7 +17,7 @@ from shared.decorators import permission_required_any
 from shared.paypal_client import paypal_access_token, paypal_request
 
 from .forms import GenerarCuotasForm, PagoCuotaVentaForm
-from .models import CuotaVenta, PagoCuotaVenta
+from .models import CuotaVenta, PagoCuotaVenta, PayPalCuotaOrder
 from .services import generar_cuotas, registrar_pago_cuota
 
 logger = logging.getLogger(__name__)
@@ -150,6 +150,9 @@ def paypal_create_order_cuota(request, pk):
                 'Content-Type': 'application/json',
             },
         )
+        PayPalCuotaOrder.objects.create(
+            order_id=order['id'], factura=cuota.factura, cuota_ids=[cuota.pk],
+        )
         return JsonResponse({'id': order['id']})
     except Exception as e:
         logger.exception('PayPal error (cuota %s): %s', cuota.pk, e)
@@ -174,6 +177,21 @@ def paypal_capture_cuota(request, pk):
         order_id = json.loads(request.body).get('orderID')
         if not order_id:
             return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
+
+    try:
+        orden = PayPalCuotaOrder.objects.get(order_id=order_id, factura=cuota.factura)
+    except PayPalCuotaOrder.DoesNotExist:
+        return JsonResponse({'error': 'La orden no corresponde a esta cuota.'}, status=400)
+    if orden.captured or orden.cuota_ids != [cuota.pk]:
+        return JsonResponse({'error': 'La orden no corresponde a esta cuota.'}, status=400)
+
+    # Reconfirmar orden de pago: el estado pudo cambiar entre crear la orden y capturarla.
+    if CuotaVenta.objects.filter(factura=cuota.factura, numero__lt=cuota.numero, estado='pendiente').exists():
+        return JsonResponse({'error': 'Debes pagar las cuotas anteriores primero.'}, status=400)
+
+    try:
         token = paypal_access_token()
         capture_data = paypal_request(
             f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
@@ -183,8 +201,6 @@ def paypal_capture_cuota(request, pk):
                 'Content-Type': 'application/json',
             },
         )
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
     except Exception as e:
         logger.exception('PayPal error (captura cuota %s): %s', cuota.pk, e)
         return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
@@ -208,6 +224,8 @@ def paypal_capture_cuota(request, pk):
         except ValueError as e:
             logger.exception('Error al registrar pago de cuota %s tras captura PayPal: %s', cuota.pk, e)
             return JsonResponse({'error': str(e)}, status=400)
+        orden.captured = True
+        orden.save(update_fields=['captured'])
         return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
             reverse('creditos_ventas:recibo_pago', args=[pago.pk])
         )})
@@ -298,6 +316,9 @@ def paypal_create_order_cuotas(request, factura_pk):
                 'Content-Type': 'application/json',
             },
         )
+        PayPalCuotaOrder.objects.create(
+            order_id=order['id'], factura=factura, cuota_ids=[c.pk for c in cuotas],
+        )
         return JsonResponse({'id': order['id']})
     except Exception as e:
         logger.exception('PayPal error (multi cuotas factura %s): %s', factura_pk, e)
@@ -317,14 +338,23 @@ def paypal_capture_cuotas(request, factura_pk):
     try:
         body = json.loads(request.body)
         order_id = body.get('orderID')
-        cuota_ids = [int(x) for x in body.get('cuota_ids', [])]
         if not order_id:
             return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
-    except (json.JSONDecodeError, ValueError, TypeError):
+    except json.JSONDecodeError:
         return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
 
+    # Las cuotas a pagar NUNCA se toman del body: se usan las que quedaron
+    # guardadas al crear la orden, así un cliente no puede reenviar otro
+    # conjunto de cuota_ids y aplicar el pago a cuotas distintas.
+    try:
+        orden = PayPalCuotaOrder.objects.get(order_id=order_id, factura=factura)
+    except PayPalCuotaOrder.DoesNotExist:
+        return JsonResponse({'error': 'La orden no corresponde a esta factura.'}, status=400)
+    if orden.captured:
+        return JsonResponse({'error': 'Esta orden ya fue procesada.'}, status=400)
+
     cuotas = list(CuotaVenta.objects.filter(
-        pk__in=cuota_ids, factura=factura, estado='pendiente',
+        pk__in=orden.cuota_ids, factura=factura, estado='pendiente',
     ).order_by('numero'))
 
     if not cuotas:
@@ -369,6 +399,9 @@ def paypal_capture_cuotas(request, factura_pk):
     except ValueError as e:
         logger.exception('Error registrando pagos multi cuotas factura %s: %s', factura_pk, e)
         return JsonResponse({'error': str(e)}, status=400)
+
+    orden.captured = True
+    orden.save(update_fields=['captured'])
 
     redirect_url = request.build_absolute_uri(
         reverse('creditos_ventas:recibo_pago', args=[ultimo_pago.pk]) if ultimo_pago
