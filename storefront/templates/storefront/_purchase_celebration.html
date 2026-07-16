@@ -1,0 +1,126 @@
+{% comment %}
+Animación de "compra confirmada" — pantalla vibra + estallido de partículas +
+el ícono de .result-center entra con rebote (estilo Discord Nitro).
+Incluir al FINAL del {% block content %} de la página de éxito (payment_success.html,
+request_success.html): el script hace querySelector('.result-center .icon') al
+ejecutarse, así que el markup del ícono debe existir antes en el DOM.
+Respeta prefers-reduced-motion: sin shake ni partículas, solo un fade suave.
+{% endcomment %}
+<style>
+  @keyframes celebrate-shake {
+    0%   { transform: translate(0, 0); }
+    10%  { transform: translate(-7px, 4px); }
+    20%  { transform: translate(6px, -5px); }
+    30%  { transform: translate(-5px, -3px); }
+    40%  { transform: translate(5px, 4px); }
+    50%  { transform: translate(-4px, -2px); }
+    60%  { transform: translate(3px, 3px); }
+    70%  { transform: translate(-2px, -2px); }
+    80%  { transform: translate(2px, 1px); }
+    90%  { transform: translate(-1px, 0); }
+    100% { transform: translate(0, 0); }
+  }
+  body.celebrate-shake { animation: celebrate-shake 480ms cubic-bezier(.36,.07,.19,.97) both; }
+
+  .celebrate-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; overflow: hidden;
+  }
+
+  .celebrate-flash {
+    position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--mustard) 55%, transparent) 0%, transparent 70%);
+    opacity: 0; transform: scale(.2);
+    animation: celebrate-flash-anim 700ms cubic-bezier(0,0,.2,1) both;
+  }
+  @keyframes celebrate-flash-anim {
+    0%   { opacity: 0; transform: scale(.15); }
+    35%  { opacity: .9; }
+    100% { opacity: 0; transform: scale(1); }
+  }
+
+  .celebrate-ring {
+    position: absolute; border-radius: 50%; border: 3px solid var(--coral);
+    width: 40px; height: 40px; opacity: 0;
+    animation: celebrate-ring-anim 900ms cubic-bezier(0,0,.2,1) both;
+  }
+  .celebrate-ring.r2 { border-color: var(--mustard); animation-delay: 90ms; }
+  .celebrate-ring.r3 { border-color: var(--navy); animation-delay: 180ms; }
+  @keyframes celebrate-ring-anim {
+    0%   { opacity: .85; transform: scale(0); }
+    100% { opacity: 0; transform: scale(11); }
+  }
+
+  .celebrate-particle {
+    position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+    background: var(--p-color, var(--coral)); border-radius: var(--p-radius, 2px);
+    animation: celebrate-particle-anim var(--p-duration, 900ms) cubic-bezier(.16,1,.3,1) var(--p-delay, 0ms) both;
+  }
+  @keyframes celebrate-particle-anim {
+    0%   { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--p-dx)), calc(-50% + var(--p-dy))) rotate(var(--p-rot)) scale(.4); opacity: 0; }
+  }
+
+  .celebrate-badge-pop { animation: celebrate-badge-anim 700ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes celebrate-badge-anim {
+    0%   { transform: scale(0) rotate(-20deg); }
+    55%  { transform: scale(1.3) rotate(8deg); }
+    75%  { transform: scale(.92) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.celebrate-shake { animation: none; }
+    .celebrate-flash, .celebrate-ring, .celebrate-particle { display: none; }
+    .celebrate-badge-pop { animation: none; }
+  }
+</style>
+<script>
+(function () {
+  var icon = document.querySelector('.result-center .icon');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (icon) icon.classList.add('celebrate-badge-pop');
+  if (reduce) return;
+
+  document.body.classList.add('celebrate-shake');
+  document.body.addEventListener('animationend', function onShakeEnd(e) {
+    if (e.animationName !== 'celebrate-shake') return;
+    document.body.classList.remove('celebrate-shake');
+    document.body.removeEventListener('animationend', onShakeEnd);
+  });
+
+  var overlay = document.createElement('div');
+  overlay.className = 'celebrate-overlay';
+  overlay.setAttribute('aria-hidden', 'true');
+
+  overlay.innerHTML =
+    '<div class="celebrate-flash"></div>' +
+    '<div class="celebrate-ring"></div>' +
+    '<div class="celebrate-ring r2"></div>' +
+    '<div class="celebrate-ring r3"></div>';
+
+  var colors = ['var(--coral)', 'var(--mustard)', 'var(--navy)', 'var(--pine)'];
+  var count = 28;
+  for (var i = 0; i < count; i++) {
+    var angle = (Math.PI * 2 * i) / count + (Math.random() * 0.4 - 0.2);
+    var distance = 140 + Math.random() * 220;
+    var dx = Math.cos(angle) * distance;
+    var dy = Math.sin(angle) * distance;
+    var p = document.createElement('div');
+    p.className = 'celebrate-particle';
+    p.style.setProperty('--p-dx', dx.toFixed(0) + 'px');
+    p.style.setProperty('--p-dy', dy.toFixed(0) + 'px');
+    p.style.setProperty('--p-rot', (Math.random() * 540 - 270).toFixed(0) + 'deg');
+    p.style.setProperty('--p-color', colors[i % colors.length]);
+    p.style.setProperty('--p-duration', (700 + Math.random() * 500).toFixed(0) + 'ms');
+    p.style.setProperty('--p-delay', (Math.random() * 90).toFixed(0) + 'ms');
+    if (Math.random() > 0.5) p.style.setProperty('--p-radius', '50%');
+    overlay.appendChild(p);
+  }
+
+  document.body.appendChild(overlay);
+  setTimeout(function () { overlay.remove(); }, 1700);
+})();
+</script>
