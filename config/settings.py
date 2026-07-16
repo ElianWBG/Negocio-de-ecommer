@@ -29,7 +29,10 @@ environ.Env.read_env(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-v6jps@3n-%^faq4em1drs%0!tp_&0vo=2ho5zr6t-$-r_+27+*')
+# Sin default: si SECRET_KEY no está definida en el entorno, Django debe
+# fallar al arrancar en vez de usar una clave conocida públicamente (estaba
+# hardcodeada aquí antes, lo que permitiría falsificar sesiones firmadas).
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
@@ -231,6 +234,19 @@ LOGIN_URL = '/accounts/login/'
 SESSION_COOKIE_AGE = 8 * 60 * 60   # 8 horas en segundos
 SESSION_SAVE_EVERY_REQUEST = True   # reinicia el contador con cada request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # cierra sesión al cerrar el navegador
+
+# En producción (DEBUG=False) el sitio corre detrás de HTTPS: las cookies de
+# sesión/CSRF deben marcarse Secure para que el navegador nunca las mande por
+# HTTP, y se fuerza el redirect a HTTPS. En local (DEBUG=True) se dejan
+# apagadas porque el server de desarrollo no sirve HTTPS.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+# Railway (y la mayoría de PaaS) terminan TLS en su proxy y reenvían por HTTP
+# internamente, marcando el proto original en este header. Sin esto,
+# request.is_secure() siempre daría False detrás del proxy y
+# SECURE_SSL_REDIRECT provocaría un loop infinito de redirects.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 LOGGING = {
     'version': 1,
