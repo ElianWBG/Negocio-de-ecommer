@@ -196,7 +196,7 @@ Definidas en `.env` (ver `.env.example` completo):
 
 | Variable | Uso |
 |----------|-----|
-| `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` | Configuración base de Django. |
+| `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` | Configuración base de Django. `SECRET_KEY` es **obligatoria** cuando `DEBUG=False`: si falta, la app aborta al arrancar (`ImproperlyConfigured`) en vez de usar una clave insegura por defecto. |
 | `DATABASE_URL` | Conexión Postgres, formato `postgres://usuario:password@host:puerto/bd`. |
 | `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID` | Botón de pago con tarjeta. |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` | Pagos con PayPal. |
