@@ -1,8 +1,16 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, Permission
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.text import slugify
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+
+# Nombre del grupo con el que AdminOnlyMixin autoriza el acceso a /security/.
+# Si un Administrador (no superusuario) pudiera renombrarlo o borrarlo, se
+# bloquearía a sí mismo (y a todo el resto de administradores) fuera del
+# panel de seguridad hasta que un superusuario lo recreara a mano.
+PROTECTED_GROUP_NAME = 'Administrador'
 
 from shared.mixins import GroupRequiredMixin, SuperuserRequiredMixin
 from .forms import GroupForm, PermissionForm
@@ -133,10 +141,22 @@ class GroupUpdateView(AdminOnlyMixin, PermissionGroupsContextMixin, UpdateView):
     template_name = 'security/group_form.html'
     success_url = reverse_lazy('security:group_list')
 
+    def form_valid(self, form):
+        if self.object.name == PROTECTED_GROUP_NAME and form.cleaned_data['name'] != PROTECTED_GROUP_NAME:
+            form.add_error('name', f'No se puede renombrar el grupo "{PROTECTED_GROUP_NAME}": es el rol que da acceso a este panel.')
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
 class GroupDeleteView(AdminOnlyMixin, DeleteView):
     model = Group
     template_name = 'security/confirm_delete.html'
     success_url = reverse_lazy('security:group_list')
+
+    def form_valid(self, form):
+        if self.object.name == PROTECTED_GROUP_NAME:
+            messages.error(self.request, f'No se puede eliminar el grupo "{PROTECTED_GROUP_NAME}": es el rol que da acceso a este panel.')
+            return redirect('security:group_list')
+        return super().form_valid(form)
 
 # === PERMISOS / PERMISSION (lectura: Administrador · escritura: solo superusuario) ===
 class PermissionListView(AdminOnlyMixin, ListView):
