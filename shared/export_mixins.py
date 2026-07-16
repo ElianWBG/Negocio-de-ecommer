@@ -128,6 +128,7 @@ class ExportListMixin:
     # PDF
     # ------------------------------------------------------------------ #
     def export_pdf(self):
+        import html
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -151,7 +152,7 @@ class ExportListMixin:
                                     fontSize=8, leading=10, textColor=colors.white, fontName='Helvetica-Bold')
 
         elements = [
-            Paragraph(self.get_export_title(), styles['Title']),
+            Paragraph(html.escape(self.get_export_title()), styles['Title']),
             Paragraph(
                 f"Generado: {timezone.localtime().strftime('%d/%m/%Y %H:%M')}",
                 styles['Normal'],
@@ -159,10 +160,13 @@ class ExportListMixin:
             Spacer(1, 0.4 * cm),
         ]
 
-        headers = [Paragraph(h, head_style) for h in self.get_export_headers()]
+        # reportlab interpreta el texto de Paragraph como micro-markup XML;
+        # sin escapar, un valor con &, < o > (ej. "M&M's") lanza una excepción
+        # de parseo y tumba la exportación con un 500.
+        headers = [Paragraph(html.escape(h), head_style) for h in self.get_export_headers()]
         data = [headers]
         for row in self.get_export_rows():
-            data.append([Paragraph(value, cell_style) for value in row])
+            data.append([Paragraph(html.escape(value), cell_style) for value in row])
 
         table = Table(data, repeatRows=1)
         table.setStyle(TableStyle([
