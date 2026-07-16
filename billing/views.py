@@ -41,7 +41,7 @@ from .invoice_column_config import (
     get_invoice_visible_columns, get_all_invoice_columns,
     validate_invoice_visible_columns, INVOICE_DEFAULT_VISIBLE_COLUMNS
 )
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 # === HOME / DASHBOARD ===
@@ -1558,7 +1558,7 @@ def invoice_create(request):
 
                         subtotal = sum(d.subtotal for d in invoice.details.all())
                         invoice.subtotal = subtotal
-                        invoice.tax = subtotal * Decimal('0.15')
+                        invoice.tax = (subtotal * Decimal('0.15')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                         invoice.total = invoice.subtotal + invoice.tax
 
                         if invoice.tipo_pago == 'credito':
