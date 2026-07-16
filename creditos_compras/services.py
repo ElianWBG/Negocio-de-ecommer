@@ -11,9 +11,10 @@ def generar_cuotas(compra, numero_cuotas):
     """Crea el cronograma de cuotas mensuales de una compra a crédito.
 
     La primera cuota vence 30 días después de la compra y las siguientes
-    cada 30 días. El total se reparte equitativamente entre las cuotas;
-    la última cuota absorbe el céntimo de redondeo para que la suma de
-    las cuotas cuadre exactamente con el total de la compra.
+    cada 30 días. El total se reparte en centavos enteros: cada cuota lleva
+    la parte base y las primeras `resto` cuotas cargan un centavo extra. Así
+    la suma cuadra exacta con el total y ninguna cuota queda en cero (cada
+    una vale al menos $0.01).
     """
     if numero_cuotas <= 0:
         raise ValueError('El número de cuotas debe ser mayor a cero.')
@@ -28,17 +29,21 @@ def generar_cuotas(compra, numero_cuotas):
         )
 
     fecha_compra = compra.purchase_date.date()
-    valor_cuota = (compra.total / numero_cuotas).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_centavos = int((compra.total * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    if total_centavos < numero_cuotas:
+        raise ValueError(
+            'El total de la compra es muy bajo para repartirlo en esa cantidad de '
+            'cuotas (cada cuota debe ser de al menos $0.01).'
+        )
+
+    base = total_centavos // numero_cuotas
+    resto = total_centavos % numero_cuotas
 
     with transaction.atomic():
-        acumulado = Decimal('0.00')
         cuotas = []
         for numero in range(1, numero_cuotas + 1):
-            if numero < numero_cuotas:
-                valor = valor_cuota
-                acumulado += valor
-            else:
-                valor = compra.total - acumulado  # última cuota: absorbe el redondeo
+            centavos = base + (1 if numero <= resto else 0)
+            valor = Decimal(centavos) / Decimal('100')
             cuotas.append(CuotaCompra(
                 compra=compra,
                 numero=numero,
