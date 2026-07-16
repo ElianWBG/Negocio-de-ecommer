@@ -129,13 +129,31 @@ class PermissionGroupsContextMixin:
             presets.append({'name': role_name, 'ids': ids})
         return presets
 
-class GroupCreateView(AdminOnlyMixin, PermissionGroupsContextMixin, CreateView):
+class _StripAuthPermissionsMixin:
+    """GroupCreateView/UpdateView solo exigen ser miembro del grupo
+    Administrador (AdminOnlyMixin), no ser superusuario. Pero el catálogo de
+    permisos incluye los de `auth` (add_user/change_user/delete_user,
+    add_group, add_permission, etc.) — de asignarse a un rol, cualquier
+    usuario de ese rol con acceso a /admin/ podría gestionar usuarios y
+    escalar privilegios. Un Administrador no-superusuario nunca puede dejar
+    permisos de `auth` en el grupo que guarda, sin importar qué haya
+    enviado el formulario."""
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if not self.request.user.is_superuser:
+            auth_perms = self.object.permissions.filter(content_type__app_label='auth')
+            if auth_perms.exists():
+                self.object.permissions.remove(*auth_perms)
+        return response
+
+class GroupCreateView(AdminOnlyMixin, PermissionGroupsContextMixin, _StripAuthPermissionsMixin, CreateView):
     model = Group
     form_class = GroupForm
     template_name = 'security/group_form.html'
     success_url = reverse_lazy('security:group_list')
 
-class GroupUpdateView(AdminOnlyMixin, PermissionGroupsContextMixin, UpdateView):
+class GroupUpdateView(AdminOnlyMixin, PermissionGroupsContextMixin, _StripAuthPermissionsMixin, UpdateView):
     model = Group
     form_class = GroupForm
     template_name = 'security/group_form.html'
