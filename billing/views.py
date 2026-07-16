@@ -41,7 +41,8 @@ from .invoice_column_config import (
     get_invoice_visible_columns, get_all_invoice_columns,
     validate_invoice_visible_columns, INVOICE_DEFAULT_VISIBLE_COLUMNS
 )
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from shared.validators import parse_date_param
 
 
 # === HOME / DASHBOARD ===
@@ -1326,14 +1327,20 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
             qs = qs.filter(
                 customer__first_name__icontains=customer
             ) | qs.filter(customer__last_name__icontains=customer)
-        if date_from := g.get('date_from', '').strip():
-            qs = qs.filter(invoice_date__date__gte=date_from)
-        if date_to := g.get('date_to', '').strip():
-            qs = qs.filter(invoice_date__date__lte=date_to)
+        if parsed_from := parse_date_param(g.get('date_from', '')):
+            qs = qs.filter(invoice_date__date__gte=parsed_from)
+        if parsed_to := parse_date_param(g.get('date_to', '')):
+            qs = qs.filter(invoice_date__date__lte=parsed_to)
         if total_min := g.get('total_min', '').strip():
-            qs = qs.filter(total__gte=total_min)
+            try:
+                qs = qs.filter(total__gte=Decimal(total_min))
+            except InvalidOperation:
+                pass
         if total_max := g.get('total_max', '').strip():
-            qs = qs.filter(total__lte=total_max)
+            try:
+                qs = qs.filter(total__lte=Decimal(total_max))
+            except InvalidOperation:
+                pass
         if estado := g.get('estado', '').strip():
             if estado in ('pendiente', 'parcial', 'pagada', 'anulada'):
                 qs = qs.filter(estado=estado)
@@ -2859,10 +2866,10 @@ def activity_log(request):
         qs = qs.filter(user__username__icontains=filter_user)
     if filter_action:
         qs = qs.filter(action=filter_action)
-    if date_from:
-        qs = qs.filter(timestamp__date__gte=date_from)
-    if date_to:
-        qs = qs.filter(timestamp__date__lte=date_to)
+    if parsed_from := parse_date_param(date_from):
+        qs = qs.filter(timestamp__date__gte=parsed_from)
+    if parsed_to := parse_date_param(date_to):
+        qs = qs.filter(timestamp__date__lte=parsed_to)
 
     action_choices = AuditLog.ACTION_CHOICES
     paginator = Paginator(qs, 50)

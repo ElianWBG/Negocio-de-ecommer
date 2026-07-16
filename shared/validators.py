@@ -1,4 +1,23 @@
+import datetime
+
 from django.core.exceptions import ValidationError
+
+
+def parse_date_param(value):
+    """Convierte un parámetro de fecha de un ?date_from=/date_to= de GET
+    (formato YYYY-MM-DD) a un date, o None si viene vacío o mal formado.
+
+    Pensado para filtros opcionales: un valor inválido simplemente se trata
+    como "sin filtro" en vez de dejar que el ValueError/ValidationError del
+    ORM tumbe la vista con un 500.
+    """
+    value = (value or '').strip()
+    if not value:
+        return None
+    try:
+        return datetime.datetime.strptime(value, '%Y-%m-%d').date()
+    except ValueError:
+        return None
 
 
 def validate_cedula_ec(value):

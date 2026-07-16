@@ -9,6 +9,7 @@ from django.utils import timezone
 from billing.models import Supplier
 from purchasing.models import Purchase
 from shared.decorators import permission_required_any
+from shared.validators import parse_date_param
 
 from .forms import GenerarCuotasForm, PagoCuotaCompraForm
 from .models import CuotaCompra
@@ -191,12 +192,12 @@ def cuotas_pendientes_list(request):
     if estado in ('pendiente', 'pagada'):
         cuotas = cuotas.filter(estado=estado)
 
-    if supplier := g.get('supplier', '').strip():
+    if (supplier := g.get('supplier', '').strip()) and supplier.isdigit():
         cuotas = cuotas.filter(compra__supplier_id=supplier)
-    if date_from := g.get('date_from', '').strip():
-        cuotas = cuotas.filter(fecha_vencimiento__gte=date_from)
-    if date_to := g.get('date_to', '').strip():
-        cuotas = cuotas.filter(fecha_vencimiento__lte=date_to)
+    if parsed_from := parse_date_param(g.get('date_from', '')):
+        cuotas = cuotas.filter(fecha_vencimiento__gte=parsed_from)
+    if parsed_to := parse_date_param(g.get('date_to', '')):
+        cuotas = cuotas.filter(fecha_vencimiento__lte=parsed_to)
 
     cuotas = cuotas.order_by('fecha_vencimiento')
     hoy = timezone.localdate()

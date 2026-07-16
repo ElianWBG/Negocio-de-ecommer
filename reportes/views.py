@@ -6,6 +6,7 @@ from django.shortcuts import render
 from billing.models import Invoice, InvoiceDetail, Product
 from purchasing.models import Purchase
 from shared.decorators import permission_required_any
+from shared.validators import parse_date_param
 
 
 @permission_required_any(
@@ -49,10 +50,10 @@ def ventas_por_periodo(request):
 
     date_from = g.get('date_from', '').strip()
     date_to = g.get('date_to', '').strip()
-    if date_from:
-        facturas = facturas.filter(invoice_date__date__gte=date_from)
-    if date_to:
-        facturas = facturas.filter(invoice_date__date__lte=date_to)
+    if parsed_from := parse_date_param(date_from):
+        facturas = facturas.filter(invoice_date__date__gte=parsed_from)
+    if parsed_to := parse_date_param(date_to):
+        facturas = facturas.filter(invoice_date__date__lte=parsed_to)
 
     facturas = facturas.order_by('-invoice_date')
     totales = facturas.aggregate(

@@ -26,7 +26,7 @@ def purchase_pending_list(request):
     ).exclude(cuotas__isnull=False).select_related('supplier').order_by('-purchase_date')
 
     g = request.GET
-    if supplier := g.get('supplier', '').strip():
+    if (supplier := g.get('supplier', '').strip()) and supplier.isdigit():
         purchases = purchases.filter(supplier_id=supplier)
 
     return render(request, 'pagos/purchase_pending_list.html', {

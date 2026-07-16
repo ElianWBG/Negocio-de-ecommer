@@ -11,6 +11,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from billing.models import Product, Supplier
 from shared.decorators import audit_action, permission_required_any, user_can_export
 from shared.column_export import export_visible_columns_excel, export_visible_columns_pdf
+from shared.validators import parse_date_param
 
 from creditos_compras.services import generar_cuotas
 
@@ -62,14 +63,14 @@ def purchase_list(request):
     purchases = Purchase.objects.select_related('supplier').all()
     g = request.GET
 
-    if supplier := g.get('supplier', ''):
+    if (supplier := g.get('supplier', '')) and supplier.isdigit():
         purchases = purchases.filter(supplier_id=supplier)
     if document := g.get('document_number', '').strip():
         purchases = purchases.filter(document_number__icontains=document)
-    if date_from := g.get('date_from', '').strip():
-        purchases = purchases.filter(purchase_date__date__gte=date_from)
-    if date_to := g.get('date_to', '').strip():
-        purchases = purchases.filter(purchase_date__date__lte=date_to)
+    if parsed_from := parse_date_param(g.get('date_from', '')):
+        purchases = purchases.filter(purchase_date__date__gte=parsed_from)
+    if parsed_to := parse_date_param(g.get('date_to', '')):
+        purchases = purchases.filter(purchase_date__date__lte=parsed_to)
 
     # Columnas visibles (selector de columnas)
     visible_columns_list = request.session.get('purchase_visible_columns', PURCHASE_DEFAULT_VISIBLE_COLUMNS)

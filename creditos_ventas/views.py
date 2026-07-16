@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from billing.models import Invoice, Customer
 from shared.decorators import permission_required_any
 from shared.paypal_client import paypal_access_token, paypal_request
+from shared.validators import parse_date_param
 
 from .forms import GenerarCuotasForm, PagoCuotaVentaForm
 from .models import CuotaVenta, PagoCuotaVenta, PayPalCuotaOrder
@@ -623,12 +624,12 @@ def cuotas_pendientes_list(request):
     if estado in ('pendiente', 'pagada'):
         cuotas = cuotas.filter(estado=estado)
 
-    if customer := g.get('customer', '').strip():
+    if (customer := g.get('customer', '').strip()) and customer.isdigit():
         cuotas = cuotas.filter(factura__customer_id=customer)
-    if date_from := g.get('date_from', '').strip():
-        cuotas = cuotas.filter(fecha_vencimiento__gte=date_from)
-    if date_to := g.get('date_to', '').strip():
-        cuotas = cuotas.filter(fecha_vencimiento__lte=date_to)
+    if parsed_from := parse_date_param(g.get('date_from', '')):
+        cuotas = cuotas.filter(fecha_vencimiento__gte=parsed_from)
+    if parsed_to := parse_date_param(g.get('date_to', '')):
+        cuotas = cuotas.filter(fecha_vencimiento__lte=parsed_to)
 
     cuotas = cuotas.order_by('fecha_vencimiento')
     hoy = timezone.localdate()
