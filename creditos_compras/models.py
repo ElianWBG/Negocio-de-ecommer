@@ -17,8 +17,8 @@ class CuotaCompra(models.Model):
     )
     numero = models.PositiveIntegerField(verbose_name='N° de cuota')
     fecha_vencimiento = models.DateField(verbose_name='Fecha de vencimiento')
-    valor = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor de la cuota')
-    saldo = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Saldo pendiente')
+    valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Valor de la cuota')
+    saldo = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Saldo pendiente')
     estado = models.CharField(
         max_length=15, choices=ESTADO_CHOICES, default='pendiente',
         verbose_name='Estado',
@@ -47,7 +47,7 @@ class PagoCuotaCompra(models.Model):
         verbose_name='Cuota',
     )
     fecha = models.DateField(verbose_name='Fecha de pago')
-    valor = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor abonado')
+    valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Valor abonado')
     observacion = models.TextField(blank=True, verbose_name='Observación')
     created_at = models.DateTimeField(auto_now_add=True)
 
