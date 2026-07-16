@@ -21,8 +21,10 @@ def purchase_pending_list(request):
     creditos_compras) se excluyen de aquí: sus pagos se registran por
     cuota, no como abono libre contra el saldo total.
     """
+    # Incluye 'parcial': compras con un abono previo siguen teniendo saldo
+    # y deben permitir registrar pagos adicionales.
     purchases = Purchase.objects.filter(
-        tipo_pago='credito', estado='pendiente'
+        tipo_pago='credito', estado__in=('pendiente', 'parcial')
     ).exclude(cuotas__isnull=False).select_related('supplier').order_by('-purchase_date')
 
     g = request.GET
@@ -56,10 +58,19 @@ def pago_create(request, compra_id):
         form = PagoCompraForm(request.POST, initial={'compra': compra})
         if form.is_valid():
             with transaction.atomic():
-                pago = form.save()
+                pago = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra_id)
+                if pago.valor > compra.saldo:
+                    messages.error(request, f'El monto (${pago.valor}) supera el saldo actual (${compra.saldo}). Otro pago pudo haberse registrado simultáneamente.')
+                    return redirect('pagos:pago_create', compra_id=compra_id)
+                pago.save()
                 compra.saldo = compra.saldo - pago.valor
-                compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
+                if compra.saldo <= 0:
+                    compra.estado = 'pagada'
+                elif compra.saldo < compra.total:
+                    compra.estado = 'parcial'
+                else:
+                    compra.estado = 'pendiente'
                 compra.save()
             messages.success(request, f'Pago de ${pago.valor} registrado. Saldo restante: ${compra.saldo}')
             return redirect('pagos:payment_history', compra_id=compra.id)
@@ -99,8 +110,17 @@ def pago_update(request, pk):
             with transaction.atomic():
                 pago_actualizado = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra.pk)
-                compra.saldo = compra.saldo + valor_anterior - pago_actualizado.valor
-                compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
+                nuevo_saldo = compra.saldo + valor_anterior - pago_actualizado.valor
+                if nuevo_saldo < 0:
+                    messages.error(request, f'El nuevo monto (${pago_actualizado.valor}) excede el saldo disponible. Otro pago pudo haber sido registrado simultáneamente.')
+                    return redirect('pagos:pago_update', pk=pago_actualizado.pk)
+                compra.saldo = nuevo_saldo
+                if compra.saldo <= 0:
+                    compra.estado = 'pagada'
+                elif compra.saldo < compra.total:
+                    compra.estado = 'parcial'
+                else:
+                    compra.estado = 'pendiente'
                 compra.save()
                 pago_actualizado.save()
             messages.success(request, 'Pago actualizado correctamente.')
@@ -127,7 +147,12 @@ def pago_delete(request, pk):
         with transaction.atomic():
             compra = Purchase.objects.select_for_update().get(pk=compra.pk)
             compra.saldo = compra.saldo + pago.valor
-            compra.estado = 'pendiente'
+            if compra.saldo <= 0:
+                compra.estado = 'pagada'
+            elif compra.saldo < compra.total:
+                compra.estado = 'parcial'
+            else:
+                compra.estado = 'pendiente'
             compra.save()
             pago.delete()
         messages.success(request, 'Pago eliminado y saldo repuesto.')
