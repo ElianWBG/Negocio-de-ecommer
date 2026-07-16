@@ -1234,6 +1234,8 @@ def paypal_capture(request, pk):
         try:
             confirm_purchase_request(purchase_request)
         except InsufficientStockError as e:
+            purchase_request.notes = (purchase_request.notes or '') + f'\n[ATENCIÓN] Pago vía PayPal ya capturado (orden {order_id}) pero {e}'
+            purchase_request.save(update_fields=['notes'])
             return JsonResponse({'error': str(e)}, status=400)
         return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
             reverse('storefront:payment_success', args=[purchase_request.pk])
