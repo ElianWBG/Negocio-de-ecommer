@@ -79,7 +79,7 @@ def emitir_factura_sri(invoice, purchase_request=None) -> dict | None:
             data=json.dumps(payload).encode(),
             headers={
                 'Content-Type': 'application/json',
-                'X-Api-Key': api_key,
+                'Authorization': f'Bearer {api_key}',
             },
             method='POST',
         )
