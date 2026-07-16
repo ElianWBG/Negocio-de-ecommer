@@ -1022,12 +1022,15 @@ def pay_with_card(request, pk):
 
 
 def payphone_response(request):
+    from django.http import Http404
     transaction_id = request.GET.get('id')
     client_tx_id = request.GET.get('clientTransactionId')
     if not transaction_id or not client_tx_id:
         messages.error(request, 'Enlace de pago inválido o caducado.')
         return redirect('storefront:catalog_list')
     purchase_request = get_object_or_404(PurchaseRequest, payphone_client_transaction_id=client_tx_id)
+    if not _owns_request(request.user, purchase_request):
+        raise Http404
 
     if purchase_request.status == 'confirmada':
         return render(request, 'storefront/payment_success.html', {'purchase_request': purchase_request})
