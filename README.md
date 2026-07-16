@@ -30,7 +30,7 @@ Combina un **panel administrativo** (catálogo, ventas, compras, cobros, pagos, 
 | `creditos_compras` | Cuotas mensuales sobre compras a crédito a proveedores: generación del cronograma y registro de abonos. |
 | `reportes` | Panel con cuentas por cobrar/pagar, ventas por periodo, productos más vendidos y stock bajo. |
 | `security` | Roles (grupos de Django) y traducción de permisos a español. |
-| `storefront` | Tienda pública: registro/login de clientes con verificación por email, catálogo, carrito, checkout, pagos (PayPhone, PayPal o transferencia manual) y panel de solicitudes de compra. |
+| `storefront` | Tienda pública: registro/login de clientes (verificación por email temporalmente desactivada — la cuenta se activa de inmediato), catálogo, carrito, checkout, pagos (PayPhone, PayPal o transferencia manual) y panel de solicitudes de compra. |
 | `shared` | Utilidades comunes: exportación a columnas, mixins, decoradores, validadores. |
 | `sri_microservicio` | Microservicio Django+DRF+Celery independiente para facturación electrónica real ante el SRI (Ecuador). Ver [sección dedicada](#microservicio-de-facturación-sri-opcional). |
 
