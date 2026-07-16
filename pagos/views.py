@@ -53,18 +53,22 @@ def pago_create(request, compra_id):
         return redirect('creditos_compras:cuota_list', compra_id=compra.id)
 
     if request.method == 'POST':
-        form = PagoCompraForm(request.POST, initial={'compra': compra})
+        form = PagoCompraForm(request.POST, compra=compra)
         if form.is_valid():
             with transaction.atomic():
-                pago = form.save()
+                pago = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra_id)
+                if pago.valor > compra.saldo:
+                    messages.error(request, f'El monto (${pago.valor}) supera el saldo actual (${compra.saldo}). Otro pago pudo haberse registrado simultáneamente.')
+                    return redirect('pagos:pago_create', compra_id=compra_id)
+                pago.save()
                 compra.saldo = compra.saldo - pago.valor
                 compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
                 compra.save()
             messages.success(request, f'Pago de ${pago.valor} registrado. Saldo restante: ${compra.saldo}')
             return redirect('pagos:payment_history', compra_id=compra.id)
     else:
-        form = PagoCompraForm(initial={'compra': compra, 'valor': compra.saldo})
+        form = PagoCompraForm(compra=compra, initial={'valor': compra.saldo})
 
     return render(request, 'pagos/pago_form.html', {
         'form': form, 'compra': compra, 'title': 'Registrar pago',
@@ -99,7 +103,11 @@ def pago_update(request, pk):
             with transaction.atomic():
                 pago_actualizado = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra.pk)
-                compra.saldo = compra.saldo + valor_anterior - pago_actualizado.valor
+                nuevo_saldo = compra.saldo + valor_anterior - pago_actualizado.valor
+                if nuevo_saldo < 0:
+                    messages.error(request, f'El nuevo monto (${pago_actualizado.valor}) excede el saldo disponible. Otro pago pudo haber sido registrado simultáneamente.')
+                    return redirect('pagos:pago_update', pk=pago_actualizado.pk)
+                compra.saldo = nuevo_saldo
                 compra.estado = 'pagada' if compra.saldo <= 0 else 'pendiente'
                 compra.save()
                 pago_actualizado.save()
