@@ -52,7 +52,7 @@ def cobro_create(request, factura_id):
         return redirect('creditos_ventas:cuota_list', factura_id=factura.id)
 
     if request.method == 'POST':
-        form = CobroFacturaForm(request.POST, initial={'factura': factura})
+        form = CobroFacturaForm(request.POST, factura=factura)
         if form.is_valid():
             with transaction.atomic():
                 cobro = form.save(commit=False)
@@ -72,7 +72,7 @@ def cobro_create(request, factura_id):
             messages.success(request, f'Pago de ${cobro.valor} registrado. Saldo restante: ${factura.saldo}')
             return redirect('cobros:payment_history', factura_id=factura.id)
     else:
-        form = CobroFacturaForm(initial={'factura': factura, 'valor': factura.saldo})
+        form = CobroFacturaForm(factura=factura, initial={'valor': factura.saldo})
 
     return render(request, 'cobros/cobro_form.html', {
         'form': form, 'factura': factura, 'title': 'Registrar pago',

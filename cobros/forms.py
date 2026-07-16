@@ -3,23 +3,27 @@ from .models import CobroFactura
 
 
 class CobroFacturaForm(forms.ModelForm):
-    """Formulario para registrar/editar un cobro. El campo `factura` viaja
-    oculto en el formulario: se fija desde la URL (siempre se registra un
-    pago PARA una factura específica, el usuario no la elige aquí)."""
+    """Formulario para registrar/editar un cobro. La factura NUNCA se toma
+    del formulario/POST: siempre se fija en el constructor a partir de la
+    URL (creación) o de la instancia existente (edición), para que un POST
+    manipulado no pueda aplicar el cobro contra una factura distinta."""
 
     class Meta:
         model = CobroFactura
-        fields = ['factura', 'fecha', 'valor', 'observacion']
+        fields = ['fecha', 'valor', 'observacion']
         widgets = {
-            'factura': forms.HiddenInput(),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'observacion': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
+    def __init__(self, *args, factura=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.factura = factura or (self.instance.factura if self.instance.pk else None)
+
     def clean(self):
         cleaned_data = super().clean()
-        factura = cleaned_data.get('factura')
+        factura = self.factura
         valor = cleaned_data.get('valor')
 
         if factura is None or valor is None:
@@ -45,3 +49,10 @@ class CobroFacturaForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.factura = self.factura
+        if commit:
+            instance.save()
+        return instance
