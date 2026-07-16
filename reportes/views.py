@@ -20,9 +20,11 @@ def reportes_index(request):
 
 @permission_required_any('billing.view_invoice')
 def cuentas_por_cobrar(request):
-    """Resumen de cuánto le deben a la empresa: facturas a crédito pendientes."""
+    """Resumen de cuánto le deben a la empresa: facturas a crédito con saldo.
+    Incluye 'parcial': una factura con un abono previo sigue debiendo su saldo
+    y debe contar en las cuentas por cobrar."""
     facturas = Invoice.objects.filter(
-        tipo_pago='credito', estado='pendiente'
+        tipo_pago='credito', estado__in=('pendiente', 'parcial')
     ).select_related('customer').order_by('-invoice_date')
     total_por_cobrar = facturas.aggregate(t=Sum('saldo'))['t'] or Decimal('0')
     return render(request, 'reportes/cuentas_por_cobrar.html', {
@@ -32,9 +34,11 @@ def cuentas_por_cobrar(request):
 
 @permission_required_any('purchasing.view_purchase')
 def cuentas_por_pagar(request):
-    """Resumen de cuánto debe la empresa a proveedores: compras a crédito pendientes."""
+    """Resumen de cuánto debe la empresa a proveedores: compras a crédito con saldo.
+    Incluye 'parcial': una compra con un abono previo sigue debiendo su saldo
+    y debe contar en las cuentas por pagar."""
     compras = Purchase.objects.filter(
-        tipo_pago='credito', estado='pendiente'
+        tipo_pago='credito', estado__in=('pendiente', 'parcial')
     ).select_related('supplier').order_by('-purchase_date')
     total_por_pagar = compras.aggregate(t=Sum('saldo'))['t'] or Decimal('0')
     return render(request, 'reportes/cuentas_por_pagar.html', {

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
+from django.views import View
 
 from shared.validators import validate_cedula_ec
 from shared.mixins import StaffRequiredMixin
@@ -53,10 +54,11 @@ class StaffRequiredMixinTestCase(TestCase):
         self.regular_user = User.objects.create_user(username='regular', password='password')
         self.staff_user = User.objects.create_user(username='staff', password='password', is_staff=True)
 
-        # Crear una clase de vista de prueba simple utilizando el mixin
-        class DummyView(StaffRequiredMixin):
-            def dispatch(self, request, *args, **kwargs):
-                # Si pasa la verificación del mixin, devolvemos un response exitoso
+        # Crear una clase de vista de prueba real usando el mixin. Debe heredar
+        # de View y NO sobrescribir dispatch, para que se ejecute el dispatch
+        # del mixin (StaffRequiredMixin.dispatch delega en super() al aprobar).
+        class DummyView(StaffRequiredMixin, View):
+            def get(self, request, *args, **kwargs):
                 return HttpResponse("Success")
 
         self.view_class = DummyView
@@ -64,7 +66,11 @@ class StaffRequiredMixinTestCase(TestCase):
     def test_non_staff_redirect(self):
         request = self.factory.get('/')
         request.user = self.regular_user
-        
+
+        # FallbackStorage instancia SessionStorage, que en Django 6 exige
+        # request.session. RequestFactory no la añade, así que la creamos aquí.
+        from django.contrib.sessions.backends.db import SessionStore
+        request.session = SessionStore()
         # Necesitamos configurar el storage de mensajes
         setattr(request, '_messages', FallbackStorage(request))
         

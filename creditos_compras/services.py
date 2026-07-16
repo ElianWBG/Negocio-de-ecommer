@@ -4,6 +4,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction
 from django.db.models import Sum
 
+from purchasing.models import Purchase
+
 from .models import CuotaCompra, PagoCuotaCompra
 
 
@@ -71,6 +73,7 @@ def registrar_pago_cuota(cuota, monto, fecha, observacion=''):
         raise ValueError('El monto del pago debe ser mayor a cero.')
 
     with transaction.atomic():
+        # Re-leer con lock: los checks se hacen sobre el saldo ya bloqueado.
         cuota_locked = CuotaCompra.objects.select_for_update().get(pk=cuota.pk)
         if cuota_locked.estado == 'pagada':
             raise ValueError('Esta cuota ya está pagada.')
@@ -85,26 +88,40 @@ def registrar_pago_cuota(cuota, monto, fecha, observacion=''):
         cuota_locked.estado = 'pagada' if cuota_locked.saldo <= 0 else 'pendiente'
         cuota_locked.save()
 
-        compra = cuota_locked.compra.__class__.objects.select_for_update().get(pk=cuota_locked.compra_id)
+        compra = Purchase.objects.select_for_update().get(pk=cuota_locked.compra_id)
         verificar_compra_pagada(compra)
 
+    # Reflejar el nuevo estado en el objeto recibido (la vista lo usa para el
+    # mensaje de "saldo restante").
     cuota.saldo = cuota_locked.saldo
     cuota.estado = cuota_locked.estado
     return pago
 
 
 def verificar_compra_pagada(compra):
-    """Revisa si todas las cuotas de la compra están pagadas y, de ser
-    así, marca la compra como pagada. Siempre persiste la compra.
+    """Recalcula saldo y estado de la compra desde el saldo de sus cuotas.
 
     Fuente de verdad = suma de saldos de las cuotas (no un decremento
-    incremental que puede driftear)."""
+    incremental que puede driftear). Marca 'pagada' cuando todas las cuotas
+    lo están, 'parcial' cuando ya hubo algún abono y 'pendiente' si no. Siempre
+    persiste la compra.
+    """
     cuotas = compra.cuotas.all()
+    total_cuotas = cuotas.count()
+    if not total_cuotas:
+        compra.save()
+        return
+
+    pagadas = cuotas.filter(estado='pagada').count()
     saldo = cuotas.aggregate(s=Sum('saldo'))['s'] or Decimal('0.00')
 
-    if not cuotas.exclude(estado='pagada').exists():
+    if pagadas == total_cuotas:
         compra.estado = 'pagada'
         compra.saldo = Decimal('0.00')
+    elif saldo < compra.total:
+        compra.estado = 'parcial'
+        compra.saldo = saldo
     else:
+        compra.estado = 'pendiente'
         compra.saldo = saldo
     compra.save()

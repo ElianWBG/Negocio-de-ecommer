@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,14 +29,24 @@ environ.Env.read_env(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# Sin default: si SECRET_KEY no está definida en el entorno, Django debe
-# fallar al arrancar en vez de usar una clave conocida públicamente (estaba
-# hardcodeada aquí antes, lo que permitiría falsificar sesiones firmadas).
-SECRET_KEY = env('SECRET_KEY')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# En desarrollo (DEBUG=True) se permite una clave insegura por defecto para
+# poder arrancar sin configurar nada. En producción (DEBUG=False) la variable
+# de entorno SECRET_KEY es OBLIGATORIA: si falta, abortamos en vez de arrancar
+# con una clave conocida y predecible.
+if DEBUG:
+    SECRET_KEY = env('SECRET_KEY', default='django-insecure-v6jps@3n-%^faq4em1drs%0!tp_&0vo=2ho5zr6t-$-r_+27+*')
+else:
+    SECRET_KEY = env('SECRET_KEY', default='')
+    if not SECRET_KEY:
+        raise ImproperlyConfigured(
+            'La variable de entorno SECRET_KEY es obligatoria cuando DEBUG=False. '
+            'Genera una con: python -c "from django.core.management.utils import '
+            'get_random_secret_key; print(get_random_secret_key())"'
+        )
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
@@ -235,18 +246,34 @@ SESSION_COOKIE_AGE = 8 * 60 * 60   # 8 horas en segundos
 SESSION_SAVE_EVERY_REQUEST = True   # reinicia el contador con cada request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # cierra sesión al cerrar el navegador
 
-# En producción (DEBUG=False) el sitio corre detrás de HTTPS: las cookies de
-# sesión/CSRF deben marcarse Secure para que el navegador nunca las mande por
-# HTTP, y se fuerza el redirect a HTTPS. En local (DEBUG=True) se dejan
-# apagadas porque el server de desarrollo no sirve HTTPS.
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-# Railway (y la mayoría de PaaS) terminan TLS en su proxy y reenvían por HTTP
-# internamente, marcando el proto original en este header. Sin esto,
-# request.is_secure() siempre daría False detrás del proxy y
-# SECURE_SSL_REDIRECT provocaría un loop infinito de redirects.
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# ─────────────────────────────────────────────────────────────
+# Endurecimiento de seguridad para PRODUCCIÓN (solo cuando DEBUG=False).
+# En local (DEBUG=True) queda desactivado para poder usar HTTP sin SSL.
+# ─────────────────────────────────────────────────────────────
+if not DEBUG:
+    # Railway/Render terminan el TLS en su proxy y reenvían la petición al
+    # worker por HTTP con la cabecera X-Forwarded-Proto. Sin esto, Django
+    # creería que la conexión es insegura y SECURE_SSL_REDIRECT entraría en un
+    # bucle infinito de redirecciones.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Redirige todo el tráfico HTTP a HTTPS.
+    SECURE_SSL_REDIRECT = True
+
+    # Cookies solo por HTTPS: dificulta que un sniffer robe la sesión o el
+    # token CSRF.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # HTTP Strict Transport Security: el navegador recuerda usar solo HTTPS.
+    # 1 año, incluyendo subdominios y con preload. Si aún no sirves TODO por
+    # HTTPS, baja SECURE_HSTS_SECONDS a un valor pequeño (p. ej. 3600) primero.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # No permitir que el navegador adivine (sniff) el Content-Type.
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 LOGGING = {
     'version': 1,

@@ -410,9 +410,28 @@ def product_detail(request, pk):
         can_review = PurchaseRequest.objects.filter(
             customer=customer, status='confirmada', details__product=product
         ).exists()
+
+    # Relacionados: mismo grupo primero (para completar 8, misma marca).
+    related = list(
+        Product.objects.filter(group=product.group, is_active=True)
+        .exclude(pk=product.pk)
+        .select_related('brand', 'group')
+        .prefetch_related('images')[:8]
+    )
+    if len(related) < 8:
+        seen = {product.pk} | {p.pk for p in related}
+        extra = (
+            Product.objects.filter(brand=product.brand, is_active=True)
+            .exclude(pk__in=seen)
+            .select_related('brand', 'group')
+            .prefetch_related('images')[:8 - len(related)]
+        )
+        related += list(extra)
+
     return render(request, 'storefront/product_detail.html', {
         'product': product, 'cart_count': cart_count,
         'reviews': reviews, 'user_review': user_review, 'can_review': can_review,
+        'related': related,
     })
 
 

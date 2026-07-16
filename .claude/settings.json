@@ -47,7 +47,10 @@
       "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\coverage_check.py\")",
       "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py makemigrations --check --dry-run 2>&1)",
       "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\db_probe.py\")",
-      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py test security -v 2 2>&1)"
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py test security -v 2 2>&1)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe manage.py test storefront.tests_related.RelatedProductsTests.test_no_related_section_without_matches -v 2 > \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\fail.txt\" 2>&1; Write-Output done)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe \"C:\\\\Users\\\\PC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-PC-Proyect-Negocio-de-ecommer\\\\4b1d45d4-55f3-451a-b2d2-546fd033c316\\\\scratchpad\\\\render_related.py\")",
+      "Bash(git fetch *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\PC\\.claude\\projects\\c--Users-PC-Proyect-Negocio-de-ecommer\\memory"

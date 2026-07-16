@@ -196,24 +196,36 @@ def purchase_detail(request, pk):
 @permission_required_any('purchasing.delete_purchase')
 @audit_action('DELETE_PURCHASE')
 def purchase_delete(request, pk):
-    """Elimina una compra y todas sus líneas (CASCADE). Solo personal staff."""
+    """Elimina una compra y todas sus líneas (CASCADE). Solo personal staff.
+
+    Revierte el stock que la compra sumó al inventario: la compra suma stock al
+    crearse, así que borrarla debe restarlo para no dejar unidades fantasma
+    (simétrico a cómo la anulación de una factura repone el stock vendido).
+    """
+    from django.db.models.deletion import ProtectedError
+    from django.db.models.functions import Greatest
+
     purchase = get_object_or_404(Purchase, pk=pk)
 
-
-
     if request.method == 'POST':
-        from django.db.models.deletion import ProtectedError
         purchase_id = purchase.id
         try:
-            purchase.delete()
+            with transaction.atomic():
+                # Restar el stock que se sumó al crear la compra. Greatest evita
+                # dejar stock negativo si parte de esas unidades ya se vendió.
+                for detail in purchase.details.select_related('product').all():
+                    Product.objects.filter(pk=detail.product_id).update(
+                        stock=Greatest(F('stock') - detail.quantity, 0)
+                    )
+                purchase.delete()
         except ProtectedError:
             messages.error(
                 request,
-                'No se puede eliminar esta compra porque tiene pagos o cuotas registradas. '
-                'Elimínalos primero.'
+                'No se puede eliminar esta compra porque tiene cuotas o pagos '
+                'registrados. Elimínalos primero.'
             )
             return redirect('purchasing:purchase_detail', pk=purchase_id)
-        messages.success(request, f'Compra #{purchase_id} eliminada.')
+        messages.success(request, f'Compra #{purchase_id} eliminada y stock revertido.')
         return redirect('purchasing:purchase_list')
 
     return render(request, 'purchasing/purchase_confirm_delete.html', {'object': purchase})
