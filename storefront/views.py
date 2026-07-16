@@ -1181,6 +1181,11 @@ def paypal_create_order(request, pk):
                 'Content-Type': 'application/json',
             },
         )
+        # Vincula la orden a ESTE pedido: al capturar se exige que el orderID
+        # recibido coincida con el guardado aquí, para que no se pueda pagar
+        # un pedido caro usando la orden (más barata) de otro pedido.
+        purchase_request.paypal_order_id = order['id']
+        purchase_request.save(update_fields=['paypal_order_id'])
         return JsonResponse({'id': order['id']})
     except Exception as e:
         logger.exception('PayPal error: %s', e)
@@ -1202,6 +1207,8 @@ def paypal_capture(request, pk):
         order_id = json.loads(request.body).get('orderID')
         if not order_id:
             return JsonResponse({'error': 'Falta el identificador de la orden.'}, status=400)
+        if order_id != purchase_request.paypal_order_id:
+            return JsonResponse({'error': 'La orden no corresponde a este pedido.'}, status=400)
         token = paypal_access_token()
         capture_data = paypal_request(
             f'{settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture',
