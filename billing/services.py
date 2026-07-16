@@ -291,7 +291,7 @@ def check_credit_limit(customer, new_invoice_total):
     try:
         profile = CustomerProfile.objects.select_for_update().get(customer=customer)
         limit = profile.credit_limit
-    except Exception:
+    except CustomerProfile.DoesNotExist:
         return
 
     if limit <= 0:
