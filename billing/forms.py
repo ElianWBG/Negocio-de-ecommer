@@ -125,15 +125,34 @@ class InvoicePaymentForm(forms.Form):
     )
 
 
+class InvoiceDetailForm(forms.ModelForm):
+    """unit_price es readonly solo en la UI (JS lo llena al elegir producto);
+    el valor que llega en el POST no es de fiar. Aquí se ignora y se fija
+    siempre al precio actual del producto, para que no se pueda facturar
+    con un precio manipulado."""
+
+    class Meta:
+        model = InvoiceDetail
+        fields = ['product', 'quantity', 'unit_price']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-select product-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'value': 1}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'readonly': 'readonly'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        if product is not None:
+            cleaned_data['unit_price'] = product.unit_price
+        return cleaned_data
+
+
 InvoiceDetailFormSet = inlineformset_factory(
     Invoice,
     InvoiceDetail,
+    form=InvoiceDetailForm,
     fields=['product', 'quantity', 'unit_price'],
     extra=1,
     can_delete=True,
-    widgets={
-        'product': forms.Select(attrs={'class': 'form-select product-select'}),
-        'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'value': 1}),
-        'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'readonly': 'readonly'}),
-    }
 )
