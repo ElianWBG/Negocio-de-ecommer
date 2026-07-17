@@ -1,0 +1,113 @@
+{% extends 'billing/base.html' %}
+{% block title %}Reseñas{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 page-header">
+  <h2 class="mb-0">Reseñas de productos</h2>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-header bg-light py-2"><strong class="small">Filtros de búsqueda</strong></div>
+  <div class="card-body pb-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label form-label-sm mb-1">Producto</label>
+        <input type="text" name="product" class="form-control form-control-sm" value="{{ request.GET.product }}" placeholder="Buscar producto...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label form-label-sm mb-1">Cliente</label>
+        <input type="text" name="customer" class="form-control form-control-sm" value="{{ request.GET.customer }}" placeholder="Buscar cliente...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label form-label-sm mb-1">Calificación</label>
+        <select name="rating" class="form-select form-select-sm">
+          <option value="">Todas</option>
+          {% for n in "12345"|make_list %}
+          <option value="{{ n }}" {% if request.GET.rating == n %}selected{% endif %}>{{ n }} ★</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-fill">Buscar</button>
+        <a href="{% url 'billing:review_list' %}" class="btn btn-sm btn-outline-secondary flex-fill">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Producto</th>
+            <th>Cliente</th>
+            <th>Calificación</th>
+            <th>Comentario</th>
+            <th>Fecha</th>
+            <th class="text-end" style="width: 110px;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for review in items %}
+          <tr>
+            <td>{{ review.product.name }}</td>
+            <td>{{ review.customer.full_name }}</td>
+            <td>
+              <span class="text-warning">{% for n in "12345"|make_list %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+            </td>
+            <td><small>{{ review.comment|truncatewords:15 }}</small></td>
+            <td><small>{{ review.created_at|date:"d/m/Y H:i" }}</small></td>
+            <td class="text-end text-nowrap">
+              {% if perms.billing.delete_review %}
+              <a href="{% url 'billing:review_delete' review.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty-state"><i class="bi bi-inbox"></i><span>No hay reseñas registradas.</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Paginación -->
+{% if is_paginated %}
+<div class="mt-3">
+  <nav>
+    <ul class="pagination pagination-sm justify-content-center mb-1">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{{ search_params }}&page=1">«</a></li>
+      <li class="page-item"><a class="page-link" href="?{{ search_params }}&page={{ page_obj.previous_page_number }}">‹</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">«</span></li>
+      <li class="page-item disabled"><span class="page-link">‹</span></li>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <li class="page-item"><a class="page-link" href="?{{ search_params }}&page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?{{ search_params }}&page={{ page_obj.next_page_number }}">›</a></li>
+      <li class="page-item"><a class="page-link" href="?{{ search_params }}&page={{ page_obj.paginator.num_pages }}">»</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">›</span></li>
+      <li class="page-item disabled"><span class="page-link">»</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  <p class="text-center text-muted small mb-0">
+    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} &mdash; {{ paginator.count }} reseña(s) encontrada(s)
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

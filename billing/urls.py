@@ -83,6 +83,10 @@ urlpatterns = [
     # Registro de actividad
     path('actividad/', views.activity_log, name='activity_log'),
 
+    # Reseñas de productos (moderación)
+    path('resenas/', views.review_list, name='review_list'),
+    path('resenas/<int:pk>/eliminar/', views.review_delete, name='review_delete'),
+
     # Promociones (envío masivo de correo)
     path('promociones/', views.send_promotion, name='send_promotion'),
 

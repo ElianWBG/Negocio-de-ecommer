@@ -326,7 +326,7 @@
   </div>
   {% endif %}
 
-  {% if panel_is_admin or perms.storefront.view_purchaserequest or perms.billing.view_invoice or perms.billing.view_customer or perms.billing.change_customer %}
+  {% if panel_is_admin or perms.storefront.view_purchaserequest or perms.billing.view_invoice or perms.billing.view_customer or perms.billing.change_customer or perms.billing.view_review %}
   <div class="sidebar-section">
     <div class="sidebar-section-label">Ventas</div>
     {% if panel_is_admin or perms.storefront.view_purchaserequest %}
@@ -342,6 +342,11 @@
     {% if panel_is_admin or perms.billing.view_customer %}
     <a href="{% url 'billing:customer_list' %}" class="sidebar-link {% if 'customers' in request.path %}active{% endif %}">
       <i class="bi bi-people"></i> Clientes
+    </a>
+    {% endif %}
+    {% if panel_is_admin or perms.billing.view_review %}
+    <a href="{% url 'billing:review_list' %}" class="sidebar-link {% if 'resenas' in request.path %}active{% endif %}">
+      <i class="bi bi-star"></i> Reseñas
     </a>
     {% endif %}
     {% if panel_is_admin or perms.billing.change_customer %}

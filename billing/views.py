@@ -2899,6 +2899,54 @@ def activity_log(request):
 
 
 # ─────────────────────────────────────────────
+# Reseñas de productos (moderación)
+# ─────────────────────────────────────────────
+
+@permission_required_any('billing.view_review')
+@audit_action('LIST_REVIEWS')
+def review_list(request):
+    """Lista las reseñas dejadas por clientes, para moderación del staff."""
+    from django.core.paginator import Paginator
+
+    reviews = Review.objects.select_related('customer', 'product').prefetch_related('images')
+    g = request.GET
+
+    if product := g.get('product', '').strip():
+        reviews = reviews.filter(product__name__icontains=product)
+    if customer := g.get('customer', '').strip():
+        reviews = reviews.filter(customer__last_name__icontains=customer) | reviews.filter(customer__first_name__icontains=customer)
+    if rating := g.get('rating', ''):
+        if rating.isdigit():
+            reviews = reviews.filter(rating=rating)
+
+    paginator = Paginator(reviews, 20)
+    page_obj = paginator.get_page(g.get('page'))
+
+    params = g.copy()
+    params.pop('page', None)
+
+    return render(request, 'billing/review_list.html', {
+        'items': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'paginator': paginator,
+        'search_params': params.urlencode(),
+    })
+
+
+@permission_required_any('billing.delete_review')
+@audit_action('DELETE_REVIEW')
+def review_delete(request, pk):
+    """Elimina una reseña (moderación de contenido inapropiado)."""
+    review = get_object_or_404(Review, pk=pk)
+    if request.method == 'POST':
+        review.delete()
+        messages.success(request, 'Reseña eliminada.')
+        return redirect('billing:review_list')
+    return render(request, 'billing/review_confirm_delete.html', {'object': review})
+
+
+# ─────────────────────────────────────────────
 # Promociones (envío masivo de correo)
 # ─────────────────────────────────────────────
 
