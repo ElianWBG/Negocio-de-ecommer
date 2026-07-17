@@ -6,10 +6,15 @@
   <a href="{% url 'reportes:index' %}" class="btn btn-outline-secondary">Volver a reportes</a>
 </div>
 
-<div class="card shadow-sm border-0 mb-3">
-  <div class="card-body">
-    <div class="small text-muted">Total pendiente de cobro</div>
-    <div class="fs-3 fw-bold text-danger">${{ total_por_cobrar }}</div>
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-4">
+    <div class="stat-tile" style="--accent:#E1503A;">
+      <div class="stat-tile-ic"><i class="bi bi-cash-coin"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Total pendiente de cobro</div>
+        <div class="stat-tile-value">${{ total_por_cobrar }}</div>
+      </div>
+    </div>
   </div>
 </div>
 

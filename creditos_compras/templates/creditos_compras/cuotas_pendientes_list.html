@@ -39,10 +39,15 @@
   </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-3">
-  <div class="card-body">
-    <div class="small text-muted">Total pendiente por pagar (según filtros)</div>
-    <div class="fs-3 fw-bold text-danger">${{ total_pendiente }}</div>
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-4">
+    <div class="stat-tile" style="--accent:#E1503A;">
+      <div class="stat-tile-ic"><i class="bi bi-calendar3"></i></div>
+      <div class="stat-tile-body">
+        <div class="stat-tile-label">Total pendiente por pagar (según filtros)</div>
+        <div class="stat-tile-value">${{ total_pendiente }}</div>
+      </div>
+    </div>
   </div>
 </div>
 
