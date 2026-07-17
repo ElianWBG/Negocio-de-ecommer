@@ -137,6 +137,10 @@
       padding: .3rem .75rem; border-radius: 20px;
       font-size: .7rem; font-weight: 700; letter-spacing: .02em;
       color: #fff; white-space: nowrap;
+      /* color por defecto: si el rol no calza con ninguna clase de abajo
+         (nombre de rol distinto/personalizado), igual se ve la insignia
+         en vez de quedar blanca sobre el topbar blanco */
+      background: linear-gradient(135deg, #6b7385, #4a5266);
     }
     .role-badge i { font-size: .8rem; }
     .role-badge-administrador { background: linear-gradient(135deg, var(--navy), #3a4d7a); }
