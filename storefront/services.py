@@ -64,6 +64,8 @@ def confirm_purchase_request(purchase_request):
         pr.status = 'confirmada'
         pr.invoice = invoice
         pr.reviewed_at = timezone.now()
+        if purchase_request.payphone_transaction_id:
+            pr.payphone_transaction_id = purchase_request.payphone_transaction_id
         pr.save()
         purchase_request.status = pr.status
         purchase_request.invoice = invoice

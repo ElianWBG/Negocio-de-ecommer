@@ -75,6 +75,14 @@ def registrar_pago_cuota(cuota, monto, fecha, observacion=''):
     with transaction.atomic():
         # Re-leer con lock: los checks se hacen sobre el saldo ya bloqueado.
         cuota_locked = CuotaCompra.objects.select_for_update().get(pk=cuota.pk)
+
+        # Bloquear y verificar la compra ANTES de crear el pago: si la compra
+        # ya fue anulada, no se debe poder registrar un abono que luego
+        # "resucite" su estado en verificar_compra_pagada.
+        compra = Purchase.objects.select_for_update().get(pk=cuota_locked.compra_id)
+        if compra.estado == 'anulada':
+            raise ValueError('No se puede registrar un pago sobre una cuota de una compra anulada.')
+
         if cuota_locked.estado == 'pagada':
             raise ValueError('Esta cuota ya está pagada.')
         if monto > cuota_locked.saldo:
@@ -88,7 +96,6 @@ def registrar_pago_cuota(cuota, monto, fecha, observacion=''):
         cuota_locked.estado = 'pagada' if cuota_locked.saldo <= 0 else 'pendiente'
         cuota_locked.save()
 
-        compra = Purchase.objects.select_for_update().get(pk=cuota_locked.compra_id)
         verificar_compra_pagada(compra)
 
     # Reflejar el nuevo estado en el objeto recibido (la vista lo usa para el

@@ -60,6 +60,9 @@ def pago_create(request, compra_id):
             pago = form.save(commit=False)
             with transaction.atomic():
                 compra = Purchase.objects.select_for_update().get(pk=compra_id)
+                if compra.estado == 'anulada':
+                    messages.error(request, 'No se puede registrar un pago sobre una compra anulada.')
+                    return redirect('pagos:purchase_pending_list')
                 if pago.valor > compra.saldo:
                     messages.error(request, f'El monto (${pago.valor}) supera el saldo actual (${compra.saldo}).')
                     return redirect('pagos:pago_create', compra_id=compra_id)
@@ -110,6 +113,9 @@ def pago_update(request, pk):
             with transaction.atomic():
                 pago_actualizado = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra.pk)
+                if compra.estado == 'anulada':
+                    messages.error(request, 'No se puede editar un pago de una compra anulada.')
+                    return redirect('pagos:payment_history', compra_id=compra.id)
                 nuevo_saldo = compra.saldo + valor_anterior - pago_actualizado.valor
                 if nuevo_saldo < 0:
                     messages.error(request, f'El nuevo monto (${pago_actualizado.valor}) excede el saldo disponible.')
@@ -146,6 +152,9 @@ def pago_delete(request, pk):
     if request.method == 'POST':
         with transaction.atomic():
             compra = Purchase.objects.select_for_update().get(pk=compra.pk)
+            if compra.estado == 'anulada':
+                messages.error(request, 'No se puede eliminar un pago de una compra anulada.')
+                return redirect('pagos:payment_history', compra_id=compra.id)
             compra.saldo = compra.saldo + pago.valor
             if compra.saldo <= 0:
                 compra.estado = 'pagada'

@@ -57,6 +57,9 @@ def cobro_create(request, factura_id):
             with transaction.atomic():
                 cobro = form.save(commit=False)
                 factura = Invoice.objects.select_for_update().get(pk=factura_id)
+                if factura.estado == 'anulada':
+                    messages.error(request, 'No se puede registrar un pago sobre una factura anulada.')
+                    return redirect('cobros:invoice_pending_list')
                 if cobro.valor > factura.saldo:
                     messages.error(request, f'El monto (${cobro.valor}) supera el saldo actual (${factura.saldo}). Otro pago pudo haberse registrado simultáneamente.')
                     return redirect('cobros:cobro_create', factura_id=factura_id)
@@ -109,6 +112,9 @@ def cobro_update(request, pk):
             with transaction.atomic():
                 cobro_actualizado = form.save(commit=False)
                 factura = Invoice.objects.select_for_update().get(pk=factura.pk)
+                if factura.estado == 'anulada':
+                    messages.error(request, 'No se puede editar un pago de una factura anulada.')
+                    return redirect('cobros:payment_history', factura_id=factura.id)
                 nuevo_saldo = factura.saldo + valor_anterior - cobro_actualizado.valor
                 if nuevo_saldo < 0:
                     messages.error(request, f'El nuevo monto (${cobro_actualizado.valor}) excede el saldo disponible. Otro pago pudo haber sido registrado simultáneamente.')
@@ -146,6 +152,9 @@ def cobro_delete(request, pk):
     if request.method == 'POST':
         with transaction.atomic():
             factura = Invoice.objects.select_for_update().get(pk=factura.pk)
+            if factura.estado == 'anulada':
+                messages.error(request, 'No se puede eliminar un pago de una factura anulada.')
+                return redirect('cobros:payment_history', factura_id=factura.id)
             factura.saldo = factura.saldo + cobro.valor
             if factura.saldo <= 0:
                 factura.estado = 'pagada'

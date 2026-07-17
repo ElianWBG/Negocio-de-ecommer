@@ -1703,11 +1703,14 @@ class InvoiceDeleteView(PermissionRequiredAnyMixin, DeleteView):
         pk = self.object.pk
         try:
             with transaction.atomic():
-                # Restaurar stock de cada línea antes de eliminar
-                for detail in self.object.details.select_related('product').all():
-                    Product.objects.filter(pk=detail.product_id).update(
-                        stock=F('stock') + detail.quantity
-                    )
+                invoice = Invoice.objects.select_for_update().get(pk=pk)
+                # Si la factura ya fue anulada (invoice_void), el stock ya se
+                # restauró en ese momento; no volver a sumarlo aquí o se duplica.
+                if invoice.estado != 'anulada':
+                    for detail in self.object.details.select_related('product').all():
+                        Product.objects.filter(pk=detail.product_id).update(
+                            stock=F('stock') + detail.quantity
+                        )
                 response = super().form_valid(form)
         except ProtectedError:
             messages.error(

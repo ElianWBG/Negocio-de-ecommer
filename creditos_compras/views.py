@@ -83,6 +83,10 @@ def pago_cuota_create(request, pk):
     """Registra un nuevo abono sobre una cuota específica."""
     cuota = get_object_or_404(CuotaCompra.objects.select_related('compra'), pk=pk)
 
+    if cuota.compra.estado == 'anulada':
+        messages.error(request, 'No se puede registrar un pago sobre una cuota de una compra anulada.')
+        return redirect('creditos_compras:cuota_payment_history', pk=cuota.pk)
+
     if cuota.estado == 'pagada':
         messages.error(request, 'Esta cuota ya está pagada.')
         return redirect('creditos_compras:cuota_payment_history', pk=cuota.pk)
@@ -117,6 +121,11 @@ def pagar_cuotas_multi(request, compra_id):
     solo envío (ej. pagar 2, 4 o todas de golpe). Cada cuota seleccionada
     se paga por el monto indicado (por defecto, su saldo completo)."""
     compra = get_object_or_404(Purchase.objects.select_related('supplier'), pk=compra_id)
+
+    if compra.estado == 'anulada':
+        messages.error(request, 'No se puede registrar un pago sobre una cuota de una compra anulada.')
+        return redirect('creditos_compras:cuota_list', compra_id=compra.id)
+
     cuotas_pendientes = compra.cuotas.filter(estado='pendiente').order_by('numero')
 
     if not cuotas_pendientes.exists():

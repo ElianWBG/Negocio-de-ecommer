@@ -43,7 +43,7 @@ def validate_cedula_ec(value):
     """
 
     # --- Paso 1: Verificar que solo contenga números ---
-    if not value.isdigit():
+    if not (value.isascii() and value.isdigit()):
         raise ValidationError(
             'The ID must contain only numbers.',
             code='invalid_chars'

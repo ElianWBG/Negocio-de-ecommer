@@ -140,6 +140,12 @@ class InvoiceDetailForm(forms.ModelForm):
             'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'readonly': 'readonly'}),
         }
 
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None and quantity < 1:
+            raise forms.ValidationError('La cantidad debe ser mayor a cero.')
+        return quantity
+
     def clean(self):
         cleaned_data = super().clean()
         product = cleaned_data.get('product')

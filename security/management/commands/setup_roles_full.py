@@ -13,7 +13,12 @@ class Command(BaseCommand):
             group, created = Group.objects.get_or_create(name=role_name)
 
             if codenames == '__all__':
-                perms = Permission.objects.all()
+                # Nunca incluir permisos de auth.* en el preset "todos los permisos":
+                # un Administrador no-superusuario nunca debe poder gestionar usuarios/
+                # permisos/grupos de Django (mismo criterio que _StripAuthPermissionsMixin
+                # en security/views.py). Los superusuarios reales no se ven afectados,
+                # ya que ignoran las verificaciones de permisos.
+                perms = Permission.objects.exclude(content_type__app_label='auth')
             else:
                 perms = Permission.objects.filter(codename__in=codenames)
 

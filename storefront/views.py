@@ -1015,9 +1015,6 @@ def pay_with_card(request, pk):
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
 
     client_tx_id = purchase_request.payphone_client_transaction_id or uuid.uuid4().hex[:12]
-    purchase_request.payphone_client_transaction_id = client_tx_id
-    purchase_request.payment_method = 'tarjeta'
-    purchase_request.save()
 
     amount_cents = int(round(purchase_request.total_estimado * 100))
     subtotal_cents = int(round(purchase_request.subtotal_estimado * 100))
@@ -1036,6 +1033,13 @@ def pay_with_card(request, pk):
     except payphone.PayphoneError as e:
         messages.error(request, f'No se pudo iniciar el pago: {e}')
         return redirect('storefront:payment_choice', pk=purchase_request.pk)
+
+    # Solo se persiste una vez que PayPhone aceptó la sesión de pago: antes de
+    # este punto no puede existir un cargo, así que un fallo aquí no debe
+    # bloquear la cancelación automática del pedido (ver can_be_cancelled).
+    purchase_request.payphone_client_transaction_id = client_tx_id
+    purchase_request.payment_method = 'tarjeta'
+    purchase_request.save()
 
     return redirect(result['payWithCard'])
 
@@ -1243,6 +1247,24 @@ def paypal_capture(request, pk):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Solicitud inválida.'}, status=400)
     except Exception as e:
+        if 'ORDER_ALREADY_CAPTURED' in str(e):
+            # Ya se capturó en un intento anterior (probablemente un timeout de
+            # nuestro lado tras un capture exitoso en PayPal). Confirmamos el
+            # pedido en vez de tratarlo como fallo, para no dejar un cargo real
+            # con el pedido pendiente ni arriesgar un segundo cargo si el
+            # cliente reintenta desde cero.
+            purchase_request.payment_method = 'tarjeta'
+            purchase_request.paypal_order_id = order_id
+            purchase_request.save(update_fields=['payment_method', 'paypal_order_id'])
+            try:
+                confirm_purchase_request(purchase_request)
+            except InsufficientStockError as e2:
+                purchase_request.notes = (purchase_request.notes or '') + f'\n[ATENCIÓN] Pago vía PayPal ya capturado (orden {order_id}) pero {e2}'
+                purchase_request.save(update_fields=['notes'])
+                return JsonResponse({'error': str(e2)}, status=400)
+            return JsonResponse({'status': 'ok', 'redirect': request.build_absolute_uri(
+                reverse('storefront:payment_success', args=[purchase_request.pk])
+            )})
         logger.exception('PayPal error: %s', e)
         return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
 

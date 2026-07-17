@@ -125,7 +125,7 @@
             {% endfor %}
             <td class="column-actions text-end text-nowrap">
               <a href="{% url 'billing:invoice_detail' item.pk %}" class="btn btn-sm btn-info text-white"><i class="bi bi-file-text"></i> Ver Detalles</a>
-              {% if perms.billing.delete_invoice %}
+              {% if perms.billing.delete_invoice and item.estado != 'anulada' %}
               <a href="{% url 'billing:invoice_delete' item.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
               {% endif %}
             </td>
