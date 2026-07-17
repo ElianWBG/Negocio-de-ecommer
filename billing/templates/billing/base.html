@@ -124,6 +124,28 @@
       color: #1A1209; font-size: 1.25rem;
     }
 
+    /* ── SALUDO + ROL (topbar) ── */
+    .topbar-greeting {
+      display: flex; align-items: center; gap: .6rem;
+      margin-right: .75rem; padding-right: .75rem;
+      border-right: 1px solid #E8E3DC;
+    }
+    .topbar-greeting-text { font-size: .85rem; color: #5a5248; white-space: nowrap; }
+    .topbar-greeting-text strong { color: #1A1209; font-weight: 700; }
+    .role-badge {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .3rem .75rem; border-radius: 20px;
+      font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+      color: #fff; white-space: nowrap;
+    }
+    .role-badge i { font-size: .8rem; }
+    .role-badge-administrador { background: linear-gradient(135deg, var(--navy), #3a4d7a); }
+    .role-badge-vendedor { background: linear-gradient(135deg, var(--pine), #2e6b55); }
+    .role-badge-analista-de-compras { background: linear-gradient(135deg, var(--mustard), #c98f2a); color: #1A1209; }
+    .role-badge-contador { background: linear-gradient(135deg, var(--coral), var(--coral-dark)); }
+    .role-badge-atencion-al-cliente { background: linear-gradient(135deg, #5a6b8c, #3d4a63); }
+    .role-badge-sin-rol { background: #9a9488; }
+
     /* ── MAIN ── */
     .main-wrap {
       margin-left: var(--sidebar-w);
@@ -148,6 +170,10 @@
       .topbar { left: 0; }
       .main-wrap { margin-left: 0; padding: 1rem; }
       .hamburger { display: flex; }
+
+      /* Poco espacio: se queda solo la insignia de rol, sin el texto "Hola, ..." */
+      .topbar-greeting-text { display: none; }
+      .topbar-greeting { border-right: none; margin-right: .25rem; padding-right: 0; }
 
       /* Page header: stack title + buttons vertically */
       .page-header { flex-direction: column; align-items: flex-start !important; gap: .5rem; }
@@ -175,6 +201,8 @@
       .topbar-title { font-size: .9rem; }
       /* On very small screens, hide the topbar "Ver tienda" button (it's in sidebar) */
       .topbar-btn.primary { display: none; }
+      /* Y ya no hay espacio ni para la insignia de rol */
+      .topbar-greeting { display: none; }
     }
 
     /* ============================================================
@@ -469,6 +497,14 @@
     <span class="topbar-title">{% block topbar_title %}Panel{% endblock %}</span>
   </div>
   <div class="topbar-actions">
+    {% if user.is_authenticated %}
+    <div class="topbar-greeting">
+      <span class="topbar-greeting-text">Hola, <strong>{{ user.username|upper }}</strong></span>
+      <span class="role-badge role-badge-{{ panel_role_name|slugify }}">
+        <i class="bi bi-award-fill"></i> {{ panel_role_name }}
+      </span>
+    </div>
+    {% endif %}
     {% if panel_can_reportes %}
     <a href="{% url 'billing:report_sales' %}" class="topbar-btn">
       <i class="bi bi-bar-chart"></i> Reportes

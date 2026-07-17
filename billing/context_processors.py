@@ -8,11 +8,21 @@ def user_panel_roles(request):
     # por tener, por ejemplo, permiso de editar usuarios.
     is_admin = u.is_superuser or u.groups.filter(name='Administrador').exists()
 
+    # Nombre del rol a mostrar en el saludo del topbar. Un superusuario
+    # puede no estar en el grupo 'Administrador' y aun asi contar como tal;
+    # si el usuario no tiene ningun grupo asignado, se muestra un texto
+    # neutro en vez de dejarlo en blanco.
+    if is_admin:
+        role_name = 'Administrador'
+    else:
+        role_name = u.groups.values_list('name', flat=True).first() or 'Sin rol'
+
     def any_perm(*perms):
         return is_admin or any(u.has_perm(p) for p in perms)
 
     return {
         'panel_is_admin': is_admin,
+        'panel_role_name': role_name,
         # Ancladas a un permiso de ESCRITURA propio de cada rol dueño de la
         # sección (no de solo-lectura): así un rol como "Contador", que
         # necesita ver facturas/productos como contexto mas no venderlos,
