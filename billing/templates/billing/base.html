@@ -175,8 +175,6 @@
       .main-wrap { margin-left: 0; padding: 1rem; }
       .hamburger { display: flex; }
 
-      /* Poco espacio: se queda solo la insignia de rol, sin el texto "Hola, ..." */
-      .topbar-greeting-text { display: none; }
       .topbar-greeting { border-right: none; margin-right: .25rem; padding-right: 0; }
 
       /* Page header: stack title + buttons vertically */
@@ -503,7 +501,6 @@
   <div class="topbar-actions">
     {% if user.is_authenticated %}
     <div class="topbar-greeting">
-      <span class="topbar-greeting-text">Hola, <strong>{{ user.username|upper }}</strong></span>
       <span class="role-badge role-badge-{{ panel_role_name|slugify }}">
         <i class="bi bi-award-fill"></i> {{ panel_role_name }}
       </span>
