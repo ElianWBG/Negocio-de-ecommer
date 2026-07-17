@@ -28,7 +28,7 @@
           <td><span class="badge bg-danger">{{ p.stock }}</span></td>
         </tr>
         {% empty %}
-        <tr><td colspan="3" class="text-center text-muted py-4">No hay productos por debajo del umbral de {{ umbral }} unidades.</td></tr>
+        <tr><td colspan="3" class="empty-state"><i class="bi bi-inbox"></i><span>No hay productos por debajo del umbral de {{ umbral }} unidades.</span></td></tr>
         {% endfor %}
       </tbody>
     </table>

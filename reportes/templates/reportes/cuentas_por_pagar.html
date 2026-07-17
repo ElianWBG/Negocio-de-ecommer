@@ -29,7 +29,7 @@
           <td>${{ c.total }}</td><td><strong>${{ c.saldo }}</strong></td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-4">No hay cuentas por pagar pendientes.</td></tr>
+        <tr><td colspan="5" class="empty-state"><i class="bi bi-inbox"></i><span>No hay cuentas por pagar pendientes.</span></td></tr>
         {% endfor %}
       </tbody>
     </table>
