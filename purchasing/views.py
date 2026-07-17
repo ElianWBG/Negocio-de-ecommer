@@ -298,11 +298,8 @@ def purchase_delete(request, pk):
 
     if request.method == 'POST':
         purchase_id = purchase.id
-<<<<<<< HEAD
         try:
             with transaction.atomic():
-                # Restar el stock que se sumó al crear la compra. Greatest evita
-                # dejar stock negativo si parte de esas unidades ya se vendió.
                 for detail in purchase.details.select_related('product').all():
                     Product.objects.filter(pk=detail.product_id).update(
                         stock=Greatest(F('stock') - detail.quantity, 0)
@@ -316,15 +313,6 @@ def purchase_delete(request, pk):
             )
             return redirect('purchasing:purchase_detail', pk=purchase_id)
         messages.success(request, f'Compra #{purchase_id} eliminada y stock revertido.')
-=======
-        with transaction.atomic():
-            for detail in purchase.details.all():
-                Product.objects.filter(pk=detail.product_id).update(
-                    stock=F('stock') - detail.quantity
-                )
-            purchase.delete()
-        messages.success(request, f'Compra #{purchase_id} eliminada.')
->>>>>>> fc7acf6 (fix(bugs): 7 correcciones de race conditions, lógica y validación)
         return redirect('purchasing:purchase_list')
 
     return render(request, 'purchasing/purchase_confirm_delete.html', {'object': purchase})
