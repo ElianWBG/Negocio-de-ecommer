@@ -17,7 +17,7 @@
   </div></div></div></div>
 </div>
 
-{% if factura.estado == 'pendiente' %}
+{% if perms.cobros.add_cobrofactura and factura.estado == 'pendiente' %}
 <a href="{% url 'cobros:cobro_create' factura.id %}" class="btn btn-success mb-3">+ Registrar nuevo pago</a>
 {% endif %}
 
@@ -36,8 +36,12 @@
           <td>{{ c.observacion|default:"-" }}</td>
           <td class="text-end">
             {% if factura.estado != 'anulada' %}
+            {% if perms.cobros.change_cobrofactura %}
             <a href="{% url 'cobros:cobro_update' c.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+            {% endif %}
+            {% if perms.cobros.delete_cobrofactura %}
             <a href="{% url 'cobros:cobro_delete' c.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+            {% endif %}
             {% endif %}
           </td>
         </tr>

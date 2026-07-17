@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="mb-0">Cuotas — Factura #{{ factura.id }} ({{ factura.customer }})</h2>
   <div class="d-flex gap-2">
-    {% if cuotas_pendientes %}
+    {% if perms.creditos_ventas.add_pagocuotaventa and cuotas_pendientes %}
     <a href="{% url 'creditos_ventas:pagar_cuotas_multi' factura.id %}" class="btn btn-success">Pagar varias cuotas</a>
     {% endif %}
     <a href="{% url 'billing:invoice_detail' factura.id %}" class="btn btn-outline-secondary">Volver a la factura</a>
@@ -39,10 +39,12 @@
             {% else %}<span class="badge bg-warning text-dark">Pendiente</span>{% endif %}
           </td>
           <td class="text-end">
-            {% if c.estado == 'pendiente' %}
+            {% if perms.creditos_ventas.add_pagocuotaventa and c.estado == 'pendiente' %}
             <a href="{% url 'creditos_ventas:pago_cuota_create' c.pk %}" class="btn btn-sm btn-success">Registrar pago</a>
             {% endif %}
+            {% if perms.creditos_ventas.view_pagocuotaventa %}
             <a href="{% url 'creditos_ventas:cuota_payment_history' c.pk %}" class="btn btn-sm btn-outline-secondary">Historial</a>
+            {% endif %}
             <a href="{% url 'creditos_ventas:comprobante_cuota' c.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">Comprobante</a>
           </td>
         </tr>

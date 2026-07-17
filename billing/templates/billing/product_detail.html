@@ -157,12 +157,16 @@
 
         <!-- Botones de acción -->
         <div class="mt-5 pt-4 border-top d-flex gap-2">
+          {% if perms.billing.change_product %}
           <a href="{% url 'billing:product_update' product.pk %}" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Editar Producto
           </a>
+          {% endif %}
+          {% if perms.billing.delete_product %}
           <a href="{% url 'billing:product_delete' product.pk %}" class="btn btn-danger">
             <i class="bi bi-trash"></i> Eliminar
           </a>
+          {% endif %}
           <a href="{% url 'billing:product_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-list"></i> Ver Listado
           </a>

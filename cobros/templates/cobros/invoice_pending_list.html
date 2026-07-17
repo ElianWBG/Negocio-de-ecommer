@@ -40,7 +40,9 @@
           <td>${{ f.total }}</td>
           <td><strong>${{ f.saldo }}</strong></td>
           <td class="text-end">
+            {% if perms.cobros.add_cobrofactura %}
             <a href="{% url 'cobros:cobro_create' f.id %}" class="btn btn-sm btn-success">Registrar pago</a>
+            {% endif %}
             <a href="{% url 'cobros:payment_history' f.id %}" class="btn btn-sm btn-outline-secondary">Historial</a>
           </td>
         </tr>

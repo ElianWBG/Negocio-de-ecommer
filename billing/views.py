@@ -17,7 +17,9 @@ from .forms import (
 from .ProductForm import ProductForm
 from shared.export_mixins import ExportListMixin
 from shared.mixins import PermissionRequiredAnyMixin
-from shared.decorators import audit_action, permission_required_any, user_can_export
+from shared.decorators import (
+    audit_action, permission_required_any, permission_required_any_json, user_can_export,
+)
 from billing.audit import log_action
 from .column_config import get_visible_columns, get_all_columns, validate_visible_columns, DEFAULT_VISIBLE_COLUMNS
 from .brand_column_config import (
@@ -282,7 +284,7 @@ def brand_list(request):
         'visible_columns_list': visible_columns_list,
     })
 
-@permission_required_any('billing.view_brand')
+@permission_required_any_json('billing.view_brand')
 def brand_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de marcas"""
     from django.http import JsonResponse
@@ -466,7 +468,7 @@ class ProductGroupDeleteView(PermissionRequiredAnyMixin, DeleteView):
             messages.error(self.request, 'No se puede eliminar esta categoría porque tiene productos asociados.')
             return redirect('billing:productgroup_list')
 
-@permission_required_any('billing.view_productgroup')
+@permission_required_any_json('billing.view_productgroup')
 def productgroup_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de categorías"""
     from django.http import JsonResponse
@@ -610,7 +612,7 @@ class SupplierDeleteView(PermissionRequiredAnyMixin, DeleteView):
             messages.error(self.request, 'No se puede eliminar este proveedor porque tiene productos asociados.')
             return redirect('billing:supplier_list')
 
-@permission_required_any('billing.view_supplier')
+@permission_required_any_json('billing.view_supplier')
 def supplier_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de proveedores"""
     from django.http import JsonResponse
@@ -959,7 +961,7 @@ def product_update_image(request, pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@permission_required_any('billing.view_product')
+@permission_required_any_json('billing.view_product')
 def product_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de productos"""
     from django.http import JsonResponse
@@ -1263,7 +1265,7 @@ class CustomerDeleteView(PermissionRequiredAnyMixin, DeleteView):
         return response
 
 
-@permission_required_any('billing.view_customer')
+@permission_required_any_json('billing.view_customer')
 def customer_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de clientes"""
     from django.http import JsonResponse
@@ -1632,7 +1634,7 @@ class InvoiceDetailView(PermissionRequiredAnyMixin, DetailView):
         return ctx
 
 
-@permission_required_any('billing.view_invoice')
+@permission_required_any_json('billing.view_invoice')
 def invoice_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de facturas"""
     from django.http import JsonResponse
@@ -2670,7 +2672,11 @@ def user_management(request):
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'set_group':
+        if action == 'set_group' and not (request.user.is_superuser or request.user.has_perm('auth.change_user')):
+            messages.error(request, 'No tienes permiso para cambiar el rol de un usuario.')
+        elif action == 'create_user' and not (request.user.is_superuser or request.user.has_perm('auth.add_user')):
+            messages.error(request, 'No tienes permiso para crear usuarios.')
+        elif action == 'set_group':
             user_id = request.POST.get('user_id')
             group_name = request.POST.get('group_name', '')
             try:

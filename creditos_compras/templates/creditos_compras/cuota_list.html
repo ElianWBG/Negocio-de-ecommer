@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="mb-0">Cuotas — Compra #{{ compra.id }} ({{ compra.supplier }})</h2>
   <div class="d-flex gap-2">
-    {% if cuotas_pendientes %}
+    {% if perms.creditos_compras.add_pagocuotacompra and cuotas_pendientes %}
     <a href="{% url 'creditos_compras:pagar_cuotas_multi' compra.id %}" class="btn btn-success">Pagar varias cuotas</a>
     {% endif %}
     <a href="{% url 'purchasing:purchase_detail' compra.id %}" class="btn btn-outline-secondary">Volver a la compra</a>
@@ -39,10 +39,12 @@
             {% else %}<span class="badge bg-warning text-dark">Pendiente</span>{% endif %}
           </td>
           <td class="text-end">
-            {% if c.estado == 'pendiente' %}
+            {% if perms.creditos_compras.add_pagocuotacompra and c.estado == 'pendiente' %}
             <a href="{% url 'creditos_compras:pago_cuota_create' c.pk %}" class="btn btn-sm btn-success">Registrar pago</a>
             {% endif %}
+            {% if perms.creditos_compras.view_pagocuotacompra %}
             <a href="{% url 'creditos_compras:cuota_payment_history' c.pk %}" class="btn btn-sm btn-outline-secondary">Historial</a>
+            {% endif %}
           </td>
         </tr>
         {% empty %}

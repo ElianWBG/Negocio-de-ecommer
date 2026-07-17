@@ -2,6 +2,7 @@ import logging
 from functools import wraps
 from django.utils import timezone
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 
@@ -51,6 +52,38 @@ def permission_required_any(*perms):
                 if not any(request.user.has_perm(p) for p in perms):
                     messages.error(request, 'No tienes permisos para acceder a esta sección.')
                     return redirect('billing:home')
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
+
+
+def permission_required_any_json(*perms):
+    """
+    Igual que permission_required_any, pero para endpoints de API/AJAX
+    (fetch/JSON) en lugar de vistas de página completa: en vez de redirigir
+    con un mensaje flash, responde 403 con un JSON claro. Así, si alguien
+    intenta forzar la acción con una petición directa (sin pasar por la UI,
+    que ya oculta el botón), recibe un error entendible en vez de un
+    redirect que su cliente HTTP no sabría interpretar.
+
+    Uso:
+        @permission_required_any_json('purchasing.view_purchase')
+        def purchase_update_visible_columns(request):
+            ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return JsonResponse(
+                    {'success': False, 'error': 'Debes iniciar sesión para realizar esta acción.'},
+                    status=403,
+                )
+            if not request.user.is_superuser and not any(request.user.has_perm(p) for p in perms):
+                return JsonResponse(
+                    {'success': False, 'error': 'No tienes permiso para realizar esta acción.'},
+                    status=403,
+                )
             return view_func(request, *args, **kwargs)
         return wrapped
     return decorator

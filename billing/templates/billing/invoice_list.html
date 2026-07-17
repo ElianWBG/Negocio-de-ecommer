@@ -8,9 +8,13 @@
     <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#columnSelectModal">
       <i class="bi bi-sliders"></i> Seleccionar columnas
     </button>
+    {% if perms.billing.export_invoice %}
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=pdf" class="btn btn-outline-danger">Listado PDF</a>
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=excel" class="btn btn-outline-success">Listado Excel</a>
+    {% endif %}
+    {% if perms.billing.add_invoice %}
     <a href="{% url 'billing:invoice_create' %}" class="btn btn-primary">+ Nueva factura</a>
+    {% endif %}
   </div>
 </div>
 
@@ -121,7 +125,9 @@
             {% endfor %}
             <td class="column-actions text-end text-nowrap">
               <a href="{% url 'billing:invoice_detail' item.pk %}" class="btn btn-sm btn-info text-white"><i class="bi bi-file-text"></i> Ver Detalles</a>
+              {% if perms.billing.delete_invoice %}
               <a href="{% url 'billing:invoice_delete' item.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

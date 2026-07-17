@@ -9,7 +9,9 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from billing.models import Product, Supplier
-from shared.decorators import audit_action, permission_required_any, user_can_export
+from shared.decorators import (
+    audit_action, permission_required_any, permission_required_any_json, user_can_export,
+)
 from shared.column_export import export_visible_columns_excel, export_visible_columns_pdf
 from shared.validators import parse_date_param
 
@@ -174,6 +176,93 @@ def purchase_create(request):
     })
 
 
+@permission_required_any('purchasing.change_purchase')
+@audit_action('UPDATE_PURCHASE')
+def purchase_update(request, pk):
+    """Edita la cabecera y las líneas de una compra existente.
+
+    Ajusta el stock por la diferencia entre cantidades antiguas y nuevas
+    (simétrico a como purchase_create suma y purchase_delete resta stock).
+    Si la compra ya tiene cuotas o pagos registrados, no se permite editarla:
+    el total ya está comprometido en un cronograma de pagos y cambiarlo lo
+    desincronizaría.
+    """
+    from django.db.models import Sum
+    from django.db.models.functions import Greatest
+
+    purchase = get_object_or_404(Purchase, pk=pk)
+
+    if purchase.cuotas.exists() or purchase.pagos.exists():
+        messages.error(
+            request,
+            'No se puede editar esta compra porque ya tiene cuotas o pagos '
+            'registrados. Elimínala y crea una nueva si necesitas corregirla.'
+        )
+        return redirect('purchasing:purchase_detail', pk=purchase.pk)
+
+    if request.method == 'POST':
+        form = PurchaseForm(request.POST, instance=purchase)
+        formset = PurchaseDetailFormSet(request.POST, instance=purchase)
+
+        if form.is_valid() and formset.is_valid():
+            old_quantities = dict(
+                purchase.details.values('product_id')
+                .annotate(total_qty=Sum('quantity'))
+                .values_list('product_id', 'total_qty')
+            )
+            try:
+                with transaction.atomic():
+                    purchase = form.save(commit=False)
+                    purchase.save()
+
+                    formset.instance = purchase
+                    formset.save()
+
+                    subtotal = sum(d.subtotal for d in purchase.details.all())
+                    purchase.subtotal = subtotal
+                    purchase.tax = subtotal * Decimal('0.15')
+                    purchase.total = purchase.subtotal + purchase.tax
+
+                    if purchase.tipo_pago == 'credito':
+                        purchase.saldo = purchase.total
+                        purchase.estado = 'pendiente'
+
+                    purchase.save()
+
+                    new_quantities = dict(
+                        purchase.details.values('product_id')
+                        .annotate(total_qty=Sum('quantity'))
+                        .values_list('product_id', 'total_qty')
+                    )
+
+                    for product_id in set(old_quantities) | set(new_quantities):
+                        delta = new_quantities.get(product_id, 0) - old_quantities.get(product_id, 0)
+                        if delta:
+                            Product.objects.filter(pk=product_id).update(
+                                stock=Greatest(F('stock') + delta, 0)
+                            )
+            except IntegrityError:
+                messages.error(
+                    request,
+                    f'Ya existe una compra con el documento '
+                    f'"{form.cleaned_data.get("document_number")}" para este proveedor.'
+                )
+            else:
+                messages.success(request, f'Compra #{purchase.id} actualizada. Total: ${purchase.total}')
+                return redirect('purchasing:purchase_detail', pk=purchase.id)
+    else:
+        form = PurchaseForm(instance=purchase)
+        formset = PurchaseDetailFormSet(instance=purchase)
+
+    return render(request, 'purchasing/purchase_form.html', {
+        'form': form,
+        'formset': formset,
+        'title': f'Editar compra #{purchase.id}',
+        'purchase': purchase,
+        'is_edit': True,
+    })
+
+
 @permission_required_any('purchasing.view_purchase')
 @audit_action('VIEW_PURCHASE')
 def purchase_detail(request, pk):
@@ -231,7 +320,7 @@ def purchase_delete(request, pk):
     return render(request, 'purchasing/purchase_confirm_delete.html', {'object': purchase})
 
 
-@permission_required_any('purchasing.view_purchase')
+@permission_required_any_json('purchasing.view_purchase')
 def purchase_update_visible_columns(request):
     """Actualizar columnas visibles para el listado de compras"""
     import json

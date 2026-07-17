@@ -179,7 +179,7 @@
   </div>
 
   <!-- ── Actions ───────────────────────────────────────── -->
-  {% if purchase_request.status == 'pendiente' %}
+  {% if purchase_request.status == 'pendiente' and perms.storefront.change_purchaserequest %}
   <div class="req-actions">
     <button type="button" class="btn-action btn-action-confirm"
             data-bs-toggle="modal" data-bs-target="#modalConfirmar">

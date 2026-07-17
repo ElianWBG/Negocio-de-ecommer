@@ -17,7 +17,7 @@
   </div></div></div></div>
 </div>
 
-{% if compra.estado == 'pendiente' %}
+{% if perms.pagos.add_pagocompra and compra.estado == 'pendiente' %}
 <a href="{% url 'pagos:pago_create' compra.id %}" class="btn btn-success mb-3">+ Registrar nuevo pago</a>
 {% endif %}
 
@@ -36,8 +36,12 @@
           <td>{{ p.observacion|default:"-" }}</td>
           <td class="text-end">
             {% if compra.estado != 'anulada' %}
+            {% if perms.pagos.change_pagocompra %}
             <a href="{% url 'pagos:pago_update' p.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+            {% endif %}
+            {% if perms.pagos.delete_pagocompra %}
             <a href="{% url 'pagos:pago_delete' p.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+            {% endif %}
             {% endif %}
           </td>
         </tr>

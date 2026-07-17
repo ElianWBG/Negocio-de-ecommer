@@ -37,7 +37,7 @@ ROLES = {
         'view_supplier', 'add_supplier', 'change_supplier', 'delete_supplier',
         'view_product', 'add_product', 'change_product', 'delete_product',
         # Compras a proveedores
-        'view_purchase', 'add_purchase', 'delete_purchase',
+        'view_purchase', 'add_purchase', 'change_purchase', 'delete_purchase',
         # Generar el cronograma de cuotas de una compra a crédito
         'view_cuotacompra', 'add_cuotacompra',
         # Exportar/descargar (Excel, PDF)

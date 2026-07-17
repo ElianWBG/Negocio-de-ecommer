@@ -281,6 +281,10 @@
 </head>
 <body>
 
+<!-- Token CSRF global: lo leen los fetch() de modales AJAX (ej. "Seleccionar
+     columnas") que no viven dentro de un <form> propio. -->
+{% csrf_token %}
+
 <!-- Overlay móvil -->
 <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 

@@ -8,14 +8,18 @@
     <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#columnSelectModal">
       <i class="bi bi-sliders"></i> Seleccionar columnas
     </button>
+    {% if perms.billing.export_product %}
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=pdf"
        class="btn btn-outline-danger">Listado PDF</a>
     <a href="?{{ search_params }}{% if search_params %}&{% endif %}export=excel"
        class="btn btn-outline-success">Listado Excel</a>
+    {% endif %}
+    {% if perms.billing.add_product %}
     <a href="{% url 'billing:product_create' %}" class="btn btn-primary">+ Nuevo producto</a>
     <a href="{% url 'billing:product_import' %}" class="btn btn-success ms-2">
       <i class="bi bi-file-earmark-arrow-up"></i> Importar Excel
     </a>
+    {% endif %}
   </div>
 </div>
 
@@ -191,8 +195,12 @@
             {% endfor %}
             <td class="column-actions text-end text-nowrap">
               <a href="{% url 'billing:product_detail' item.pk %}" class="btn btn-sm btn-info text-white"><i class="bi bi-file-text"></i> Ver Detalles</a>
+              {% if perms.billing.change_product %}
               <a href="{% url 'billing:product_update' item.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Editar</a>
+              {% endif %}
+              {% if perms.billing.delete_product %}
               <a href="{% url 'billing:product_delete' item.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

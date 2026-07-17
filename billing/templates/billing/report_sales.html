@@ -5,9 +5,12 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
   <h2 style="margin:0;">Reporte de ventas</h2>
   <div style="display:flex;gap:.5rem;">
+    {% if perms.billing.view_product or perms.billing.descargar_reportes_financieros %}
     <a href="{% url 'billing:report_stock' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-boxes"></i> Ver stock
     </a>
+    {% endif %}
+    {% if perms.billing.descargar_reportes_financieros %}
     <a href="{% url 'billing:report_sales_excel' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
        class="btn btn-success btn-sm">
       <i class="bi bi-file-earmark-excel"></i> Excel
@@ -16,6 +19,7 @@
        class="btn btn-danger btn-sm">
       <i class="bi bi-file-earmark-pdf"></i> PDF
     </a>
+    {% endif %}
   </div>
 </div>
 

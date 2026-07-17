@@ -46,7 +46,9 @@
           <td>${{ c.total }}</td>
           <td><strong>${{ c.saldo }}</strong></td>
           <td class="text-end">
+            {% if perms.pagos.add_pagocompra %}
             <a href="{% url 'pagos:pago_create' c.id %}" class="btn btn-sm btn-success">Registrar pago</a>
+            {% endif %}
             <a href="{% url 'pagos:payment_history' c.id %}" class="btn btn-sm btn-outline-secondary">Historial</a>
           </td>
         </tr>

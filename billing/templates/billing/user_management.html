@@ -14,9 +14,11 @@
     <a href="{% url 'billing:report_sales' %}" class="um-btn um-btn-ghost">
       <i class="bi bi-bar-chart"></i> Reportes
     </a>
+    {% if perms.auth.add_user %}
     <button class="um-btn um-btn-gold" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
       <i class="bi bi-plus-lg"></i> Nuevo usuario
     </button>
+    {% endif %}
   </div>
 </div>
 
@@ -72,6 +74,7 @@
       {% if u.is_superuser %}
         <span class="um-locked"><i class="bi bi-lock-fill"></i> Protegido</span>
       {% else %}
+        {% if perms.auth.change_user %}
         <form method="post" class="um-role-form">
           {% csrf_token %}
           <input type="hidden" name="action" value="set_group">
@@ -86,7 +89,8 @@
             <i class="bi bi-check-lg"></i> Guardar
           </button>
         </form>
-        {% if u.pk != request.user.pk %}
+        {% endif %}
+        {% if perms.auth.delete_user and u.pk != request.user.pk %}
         <a href="{% url 'billing:delete_user' u.pk %}" class="um-btn-del" title="Eliminar usuario">
           <i class="bi bi-trash"></i>
         </a>

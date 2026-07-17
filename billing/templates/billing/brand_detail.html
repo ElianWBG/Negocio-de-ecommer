@@ -91,8 +91,12 @@
         </div>
 
         <div class="mt-5 pt-4 border-top d-flex gap-2">
+          {% if perms.billing.change_brand %}
           <a href="{% url 'billing:brand_update' brand.pk %}" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Editar</a>
+          {% endif %}
+          {% if perms.billing.delete_brand %}
           <a href="{% url 'billing:brand_delete' brand.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+          {% endif %}
           <a href="{% url 'billing:brand_list' %}" class="btn btn-outline-secondary"><i class="bi bi-list"></i> Ver Listado</a>
         </div>
       </div>

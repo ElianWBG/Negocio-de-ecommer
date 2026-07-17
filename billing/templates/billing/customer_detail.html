@@ -178,12 +178,16 @@
 
         <!-- Botones de acción -->
         <div class="mt-5 pt-4 border-top d-flex gap-2">
+          {% if perms.billing.change_customer %}
           <a href="{% url 'billing:customer_update' customer.pk %}" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Editar Cliente
           </a>
+          {% endif %}
+          {% if perms.billing.delete_customer %}
           <a href="{% url 'billing:customer_delete' customer.pk %}" class="btn btn-danger">
             <i class="bi bi-trash"></i> Eliminar
           </a>
+          {% endif %}
           <a href="{% url 'billing:customer_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-list"></i> Ver Listado
           </a>

@@ -85,8 +85,12 @@
         </div>
 
         <div class="mt-5 pt-4 border-top d-flex gap-2">
+          {% if perms.billing.change_productgroup %}
           <a href="{% url 'billing:productgroup_update' group.pk %}" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Editar</a>
+          {% endif %}
+          {% if perms.billing.delete_productgroup %}
           <a href="{% url 'billing:productgroup_delete' group.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> Eliminar</a>
+          {% endif %}
           <a href="{% url 'billing:productgroup_list' %}" class="btn btn-outline-secondary"><i class="bi bi-list"></i> Ver Listado</a>
         </div>
       </div>

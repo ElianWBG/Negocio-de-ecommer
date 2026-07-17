@@ -5,13 +5,17 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
   <h2 style="margin:0;">Estado del inventario</h2>
   <div style="display:flex;gap:.5rem;">
+    {% if perms.billing.view_invoice or perms.billing.descargar_reportes_financieros %}
     <a href="{% url 'billing:report_sales' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-bar-chart"></i> Ver ventas
     </a>
+    {% endif %}
+    {% if perms.billing.descargar_reportes_financieros %}
     <a href="{% url 'billing:report_stock_excel' %}?q={{ query }}&low={% if low_only %}1{% endif %}"
        class="btn btn-success btn-sm">
       <i class="bi bi-file-earmark-excel"></i> Excel
     </a>
+    {% endif %}
   </div>
 </div>
 
@@ -88,7 +92,9 @@
             {% endif %}
           </td>
           <td>
+            {% if perms.billing.change_product %}
             <a href="{% url 'billing:product_update' p.pk %}" class="btn btn-outline-secondary btn-sm py-0">Editar</a>
+            {% endif %}
           </td>
         </tr>
         {% empty %}

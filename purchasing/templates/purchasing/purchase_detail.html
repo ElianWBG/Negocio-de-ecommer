@@ -68,20 +68,28 @@
             <strong style="font-size: 1.1rem;">${{ purchase.saldo }}</strong>
           </div>
           {% if tiene_cuotas %}
+            {% if perms.creditos_compras.view_cuotacompra %}
             <a href="{% url 'creditos_compras:cuota_list' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
               <i class="bi bi-calendar3"></i> Ver cuotas
             </a>
+            {% endif %}
           {% elif tiene_pagos_libres %}
+            {% if perms.pagos.view_pagocompra %}
             <a href="{% url 'pagos:payment_history' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
               <i class="bi bi-cash-stack"></i> Ver pagos
             </a>
+            {% endif %}
           {% elif purchase.estado == 'pendiente' %}
+            {% if perms.creditos_compras.add_cuotacompra %}
             <a href="{% url 'creditos_compras:generar_cuotas' purchase.id %}" class="btn btn-warning w-100 mb-2">
               <i class="bi bi-calendar-plus"></i> Generar Cuotas
             </a>
+            {% endif %}
+            {% if perms.pagos.add_pagocompra %}
             <a href="{% url 'pagos:pago_create' purchase.id %}" class="btn btn-outline-primary w-100 mb-2">
               <i class="bi bi-cash-stack"></i> Registrar pago libre
             </a>
+            {% endif %}
           {% endif %}
           {% endif %}
         </div>
@@ -216,12 +224,21 @@
 
         <!-- Botones de acción -->
         <div class="mt-5 pt-4 border-top d-flex gap-2">
+          {% if perms.purchasing.change_purchase %}
+          <a href="{% url 'purchasing:purchase_update' purchase.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar Compra
+          </a>
+          {% endif %}
+          {% if perms.purchasing.delete_purchase %}
           <a href="{% url 'purchasing:purchase_delete' purchase.pk %}" class="btn btn-danger">
             <i class="bi bi-trash"></i> Eliminar Compra
           </a>
+          {% endif %}
+          {% if perms.purchasing.add_purchase %}
           <a href="{% url 'purchasing:purchase_create' %}" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Nueva Compra
           </a>
+          {% endif %}
           <a href="{% url 'purchasing:purchase_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-list"></i> Ver Listado
           </a>
