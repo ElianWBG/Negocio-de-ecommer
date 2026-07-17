@@ -1,4 +1,4 @@
-# Negocio de Ecommerce (SALES_A2)
+# Negocio de Ecommerce (SALES__A2)
 
 Plataforma Django de gestión de ventas y tienda online, desarrollada por **ELIAN VLADIMIR GALEAS,  JHOAN CEVALLOS VILLAVICENCIO,JOSE ANTONIO TORRES, JONATHAN BELFOR CASTRO, JEAN JIMENEZ BAJAÑA**.
 
