@@ -57,11 +57,11 @@ def pago_create(request, compra_id):
     if request.method == 'POST':
         form = PagoCompraForm(request.POST, compra=compra)
         if form.is_valid():
+            pago = form.save(commit=False)
             with transaction.atomic():
-                pago = form.save(commit=False)
                 compra = Purchase.objects.select_for_update().get(pk=compra_id)
                 if pago.valor > compra.saldo:
-                    messages.error(request, f'El monto (${pago.valor}) supera el saldo actual (${compra.saldo}). Otro pago pudo haberse registrado simultáneamente.')
+                    messages.error(request, f'El monto (${pago.valor}) supera el saldo actual (${compra.saldo}).')
                     return redirect('pagos:pago_create', compra_id=compra_id)
                 pago.save()
                 compra.saldo = compra.saldo - pago.valor
@@ -112,7 +112,7 @@ def pago_update(request, pk):
                 compra = Purchase.objects.select_for_update().get(pk=compra.pk)
                 nuevo_saldo = compra.saldo + valor_anterior - pago_actualizado.valor
                 if nuevo_saldo < 0:
-                    messages.error(request, f'El nuevo monto (${pago_actualizado.valor}) excede el saldo disponible. Otro pago pudo haber sido registrado simultáneamente.')
+                    messages.error(request, f'El nuevo monto (${pago_actualizado.valor}) excede el saldo disponible.')
                     return redirect('pagos:pago_update', pk=pago_actualizado.pk)
                 compra.saldo = nuevo_saldo
                 if compra.saldo <= 0:

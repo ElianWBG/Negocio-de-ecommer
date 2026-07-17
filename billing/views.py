@@ -1323,7 +1323,7 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = Invoice.objects.select_related('customer')
+        qs = Invoice.objects.select_related('customer').prefetch_related('details')
         g = self.request.GET
         if customer := g.get('customer', '').strip():
             qs = qs.filter(
@@ -1365,7 +1365,7 @@ class InvoiceListView(PermissionRequiredAnyMixin, ExportListMixin, ListView):
         elif col_key == 'invoice_date':
             return obj.invoice_date.strftime('%d/%m/%Y %H:%M') if obj.invoice_date else '-'
         elif col_key == 'num_items':
-            return obj.details.count()
+            return len(obj.details.all())
         elif col_key == 'subtotal':
             return f'{obj.subtotal:.2f}'
         elif col_key == 'tax':
@@ -1673,6 +1673,10 @@ def invoice_void(request, pk):
 
     if request.method == 'POST':
         with transaction.atomic():
+            invoice = Invoice.objects.select_for_update().get(pk=pk)
+            if invoice.estado == 'anulada':
+                messages.warning(request, 'Esta factura ya está anulada.')
+                return redirect('billing:invoice_detail', pk=pk)
             for detail in invoice.details.select_related('product').all():
                 Product.objects.filter(pk=detail.product_id).update(
                     stock=F('stock') + detail.quantity

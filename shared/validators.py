@@ -122,5 +122,4 @@ def validate_cedula_ec(value):
             code='invalid_third'
         )
 
-    # Si llegamos aquí, la cédula/RUC es válida
     return value

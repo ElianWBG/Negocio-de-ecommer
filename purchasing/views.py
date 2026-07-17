@@ -40,7 +40,7 @@ def _get_export_value(obj, col_key):
     elif col_key == 'purchase_date':
         return obj.purchase_date.strftime('%d/%m/%Y %H:%M') if obj.purchase_date else '-'
     elif col_key == 'num_items':
-        return obj.details.count()
+        return len(obj.details.all())
     elif col_key == 'subtotal':
         return obj.subtotal
     elif col_key == 'tax':
@@ -62,7 +62,7 @@ def _get_export_value(obj, col_key):
 @audit_action('LIST_PURCHASES')
 def purchase_list(request):
     """Lista todas las compras con su proveedor y total."""
-    purchases = Purchase.objects.select_related('supplier').all()
+    purchases = Purchase.objects.select_related('supplier').prefetch_related('details').all()
     g = request.GET
 
     if (supplier := g.get('supplier', '')) and supplier.isdigit():
@@ -298,6 +298,7 @@ def purchase_delete(request, pk):
 
     if request.method == 'POST':
         purchase_id = purchase.id
+<<<<<<< HEAD
         try:
             with transaction.atomic():
                 # Restar el stock que se sumó al crear la compra. Greatest evita
@@ -315,6 +316,15 @@ def purchase_delete(request, pk):
             )
             return redirect('purchasing:purchase_detail', pk=purchase_id)
         messages.success(request, f'Compra #{purchase_id} eliminada y stock revertido.')
+=======
+        with transaction.atomic():
+            for detail in purchase.details.all():
+                Product.objects.filter(pk=detail.product_id).update(
+                    stock=F('stock') - detail.quantity
+                )
+            purchase.delete()
+        messages.success(request, f'Compra #{purchase_id} eliminada.')
+>>>>>>> fc7acf6 (fix(bugs): 7 correcciones de race conditions, lógica y validación)
         return redirect('purchasing:purchase_list')
 
     return render(request, 'purchasing/purchase_confirm_delete.html', {'object': purchase})
