@@ -260,6 +260,22 @@
 
     /* Header de página: alinear con más aire */
     .main-wrap .page-header { margin-bottom: 1.5rem !important; }
+
+    /* ── Stat tile (acento lateral + icono) ──
+       Mismo componente del dashboard principal (home.html), movido aquí
+       para poder reusarlo en cualquier página del panel (reportes, cuotas,
+       etc.) sin duplicar CSS. */
+    .stat-tile { display: flex; align-items: center; gap: 1rem; background: #fff; border-radius: 18px; padding: 1.15rem 1.25rem; text-decoration: none; position: relative; overflow: hidden; box-shadow: 0 2px 14px rgba(26,18,9,.05); transition: transform .15s ease, box-shadow .15s ease; }
+    .stat-tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--accent, var(--navy)); }
+    a.stat-tile:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.5rem rgba(26,18,9,.10); }
+    .stat-tile-ic { width: 54px; height: 54px; border-radius: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--accent, var(--navy)); background: color-mix(in srgb, var(--accent, var(--navy)) 14%, #fff); }
+    .stat-tile-label { color: #8B8AA3; font-size: .82rem; font-weight: 500; }
+    .stat-tile-value { color: #2E2A4A; font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+
+    /* ── Empty state (listados vacíos) ── */
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: #94A0B5; }
+    .empty-state i { font-size: 2rem; display: block; margin-bottom: .5rem; color: #C7CEDB; }
+    .empty-state span { font-size: .875rem; }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
