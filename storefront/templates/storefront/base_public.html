@@ -5,6 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ config.nombre_tienda }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{% firstof config.slogan config.nombre_tienda %}{% endblock %}">
+  <meta property="og:site_name" content="{{ config.nombre_tienda }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}{{ config.nombre_tienda }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% firstof config.slogan config.nombre_tienda %}{% endblock %}">
+  {% block og_image %}{% if config.logo %}<meta property="og:image" content="{% absolute_media_url config.logo.url %}">{% endif %}{% endblock %}
   {% if config.logo %}<link rel="icon" href="{{ config.logo.url }}">{% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -215,7 +221,7 @@
     /* ── FOOTER ── */
     .site-footer { background: var(--espresso); color: rgba(255,255,255,.6); padding: 0 1.5rem; margin-top: 3rem; }
     .site-footer .footer-inner { max-width: 1200px; margin: 0 auto; }
-    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; padding: 3rem 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2.5rem; padding: 3rem 0; border-bottom: 1px solid rgba(255,255,255,.08); }
     .footer-col-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem; }
     .footer-brand-name { font-family: var(--font-head); font-size: 1.5rem; color: #fff; margin-bottom: .45rem; line-height: 1.2; }
     .footer-brand-slogan { font-size: .875rem; color: rgba(255,255,255,.45); margin-bottom: 1.35rem; line-height: 1.55; }
@@ -497,6 +503,16 @@
           <li><a href="{% url 'storefront:customer_login' %}"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
           <li><a href="{% url 'storefront:customer_register' %}"><i class="bi bi-person-plus"></i> Registrarse</a></li>
           {% endif %}
+        </ul>
+      </div>
+
+      <!-- Legal -->
+      <div>
+        <p class="footer-col-title">Legal</p>
+        <ul class="footer-links">
+          <li><a href="{% url 'storefront:legal_terms' %}"><i class="bi bi-file-text"></i> Términos y condiciones</a></li>
+          <li><a href="{% url 'storefront:legal_privacy' %}"><i class="bi bi-shield-lock"></i> Política de privacidad</a></li>
+          <li><a href="{% url 'storefront:legal_returns' %}"><i class="bi bi-arrow-return-left"></i> Devoluciones</a></li>
         </ul>
       </div>
 

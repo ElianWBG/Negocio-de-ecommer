@@ -1,9 +1,15 @@
 from django.urls import path
+from django.views.generic import TemplateView
 from . import views
 
 app_name = 'storefront'
 
 urlpatterns = [
+    # Páginas legales
+    path('terminos-y-condiciones/', TemplateView.as_view(template_name='storefront/legal_terms.html'), name='legal_terms'),
+    path('privacidad/', TemplateView.as_view(template_name='storefront/legal_privacy.html'), name='legal_privacy'),
+    path('politica-de-devoluciones/', TemplateView.as_view(template_name='storefront/legal_returns.html'), name='legal_returns'),
+
     # Auth de clientes
     path('registro/', views.customer_register, name='customer_register'),
     path('login/', views.customer_login, name='customer_login'),

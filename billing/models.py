@@ -177,6 +177,11 @@ class Customer(models.Model):
         verbose_name='Acepta recibir promociones',
         help_text='Si está marcado, el cliente recibirá correos de promociones y ofertas.',
     )
+    terms_accepted_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name='Términos y privacidad aceptados el',
+        help_text='Fecha en la que el cliente aceptó los Términos y Condiciones y la Política de Privacidad al registrarse.',
+    )
     is_active = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

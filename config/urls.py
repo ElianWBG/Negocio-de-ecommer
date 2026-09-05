@@ -4,6 +4,10 @@ from django.shortcuts import redirect
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+
+from shared.seo import robots_txt, sitemap_xml
+
+
 def logout_view(request):
     auth_logout(request)
     return redirect(settings.LOGOUT_REDIRECT_URL)
@@ -11,6 +15,8 @@ def logout_view(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('robots.txt', robots_txt, name='robots_txt'),
+    path('sitemap.xml', sitemap_xml, name='sitemap_xml'),
     path('accounts/logout/', logout_view, name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('panel/purchases/', include('purchasing.urls')),

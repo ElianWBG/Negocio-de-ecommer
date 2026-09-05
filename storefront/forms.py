@@ -18,6 +18,12 @@ class CustomerRegistrationForm(forms.Form):
         initial=True,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
+    accepts_terms = forms.BooleanField(
+        label='He leído y acepto los Términos y Condiciones y la Política de Privacidad',
+        required=True,
+        error_messages={'required': 'Debes aceptar los términos y la política de privacidad para crear una cuenta.'},
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
     password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
     password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 

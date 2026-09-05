@@ -1,6 +1,10 @@
 {% extends 'storefront/base_public.html' %}
 {% load storefront_extras %}
-{% block title %}{{ product.name }}{% endblock %}
+{% block title %}{{ product.name }} — {{ config.nombre_tienda }}{% endblock %}
+{% block meta_description %}{% firstof product.description product.name as pdmetadesc %}{{ pdmetadesc|truncatechars:160 }}{% endblock %}
+{% block og_title %}{{ product.name }}{% endblock %}
+{% block og_description %}{% firstof product.description product.name as pdogdesc %}{{ pdogdesc|truncatechars:160 }}{% endblock %}
+{% block og_image %}{% if product.image %}<meta property="og:image" content="{% absolute_media_url product.image.url %}">{% elif config.logo %}<meta property="og:image" content="{% absolute_media_url config.logo.url %}">{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>

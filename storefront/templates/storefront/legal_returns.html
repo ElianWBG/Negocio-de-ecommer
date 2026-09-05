@@ -1,0 +1,47 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Política de Devoluciones — {{ config.nombre_tienda }}{% endblock %}
+{% block extra_css %}
+<style>
+  .legal-doc { max-width: 760px; margin: 0 auto; }
+  .legal-doc h1 { font-family: var(--font-head); font-size: 1.9rem; margin-bottom: .25rem; }
+  .legal-doc .legal-updated { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+  .legal-doc h2 { font-family: var(--font-head); font-size: 1.15rem; margin: 1.75rem 0 .6rem; }
+  .legal-doc p, .legal-doc li { color: var(--text); line-height: 1.7; font-size: .92rem; }
+  .legal-doc ul { padding-left: 1.25rem; margin-bottom: .75rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="legal-doc">
+  <h1>Política de Devoluciones y Cancelaciones</h1>
+  <p class="legal-updated">{{ config.nombre_tienda }}{% if config.ruc %} — RUC {{ config.ruc }}{% endif %}</p>
+
+  <h2>1. Derecho de retracto</h2>
+  <p>Conforme a la Ley Orgánica de Defensa del Consumidor de Ecuador, tienes derecho a solicitar la devolución de un producto dentro de los <strong>siguientes días hábiles a la entrega</strong>, siempre que el producto no haya sido usado y conserve su empaque original.</p>
+
+  <h2>2. Cancelación antes del envío</h2>
+  <p>Puedes cancelar tu pedido sin costo mientras su estado sea "pendiente" (aún no confirmado/enviado), desde la sección "Mis pedidos" de tu cuenta.</p>
+
+  <h2>3. Productos no elegibles para devolución</h2>
+  <ul>
+    <li>Productos usados, dañados por mal uso, o sin su empaque/accesorios originales.</li>
+    <li>Productos personalizados o hechos a pedido.</li>
+    <li>Productos cuyo precinto de seguridad haya sido roto (cuando aplique).</li>
+  </ul>
+
+  <h2>4. Cómo solicitar una devolución</h2>
+  <p>Escríbenos {% if config.whatsapp %}por WhatsApp{% endif %}{% if config.email_contacto %}{% if config.whatsapp %} o {% endif %}a {{ config.email_contacto }}{% endif %} indicando el número de pedido y el motivo de la devolución. Te confirmaremos el procedimiento de retiro/entrega del producto.</p>
+
+  <h2>5. Reembolsos</h2>
+  <p>Una vez recibido y verificado el producto devuelto, el reembolso se procesa por el mismo método de pago original en un plazo de hasta 10 días hábiles. Si la compra fue a crédito, se ajusta el saldo/cuotas pendientes en lugar de un reembolso en efectivo.</p>
+
+  <h2>6. Productos con falla</h2>
+  <p>Si el producto llega con una falla de fábrica o defecto no atribuible al uso, la devolución o cambio no tiene costo para ti, incluyendo el costo de envío de retorno cuando aplique.</p>
+
+  <h2>7. Contacto</h2>
+  <p>
+    {% if config.email_contacto %}Correo: {{ config.email_contacto }}<br>{% endif %}
+    {% if config.telefono %}Teléfono: {{ config.telefono }}<br>{% endif %}
+    {% if config.whatsapp %}WhatsApp: {{ config.whatsapp }}{% endif %}
+  </p>
+</div>
+{% endblock %}

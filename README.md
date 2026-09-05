@@ -1,8 +1,10 @@
-# Negocio de Ecommerce (SALES__A2)
+# Negocio de Ecommerce
 
-Plataforma Django de gestión de ventas y tienda online, desarrollada por **ELIAN VLADIMIR GALEAS,  JHOAN CEVALLOS VILLAVICENCIO,JOSE ANTONIO TORRES, JONATHAN BELFOR CASTRO, JEAN JIMENEZ BAJAÑA**.
+Plataforma Django de gestión de ventas y tienda online.
 
 Combina un **panel administrativo** (catálogo, ventas, compras, cobros, pagos, reportes, roles) con una **tienda pública** donde los clientes se registran, arman un carrito, solicitan compras y pagan online.
+
+> Créditos: proyecto originalmente desarrollado por Elian Galeas, Jhoan Cevallos, José Torres, Jonathan Castro y Jean Jiménez.
 
 ## Índice
 
@@ -125,9 +127,15 @@ Todo lo visual de la tienda y el panel sale de un único registro `ConfigNegocio
 - Secciones opcionales "Sobre nosotros" / "Por qué elegirnos" y banner promocional.
 - Datos de contacto (RUC, email, teléfono, WhatsApp, dirección) y redes sociales.
 
-## Microservicio de facturación SRI (opcional)
+## Microservicio de facturación SRI (pendiente de reincorporar)
 
-`sri_microservicio/` es un servicio **independiente** (Django + DRF + Celery + Redis) que sí implementa facturación electrónica real ante el SRI Ecuador: genera la clave de acceso (módulo 11), firma XAdES-BES con un certificado `.p12`, envía la factura por SOAP (recepción/autorización), genera el RIDE en PDF con QR y envía el correo al cliente. No está conectado automáticamente al proyecto principal — es un componente aparte pensado para integrarse cuando se necesite facturación electrónica válida. Tiene su propio `README.md`, `requirements.txt` y modo simulado (`SRI_SIMULADO=True`) para probar el flujo completo sin certificado ni Redis. Ver [`sri_microservicio/README.md`](sri_microservicio/README.md).
+El proyecto en algún momento tuvo un microservicio **independiente** (Django + DRF + Celery + Redis) que implementaba facturación electrónica real ante el SRI Ecuador: generación de la clave de acceso (módulo 11), firma XAdES-BES con un certificado `.p12`, envío por SOAP (recepción/autorización), RIDE en PDF con QR y correo al cliente.
+
+**Ese código ya no está en este repositorio** (se eliminó en el commit `887c401`). Lo único que queda son comprobantes de prueba sueltos, sin el servicio que los generó — por eso `billing/xml_utils.py` sigue generando un XML "inspirado" en el esquema del SRI **solo con fines educativos, no válido fiscalmente**.
+
+**Recuperación**: el microservicio sigue en el historial de git, a partir del commit `7f1ff0d` (`git show 7f1ff0d --stat` para ver qué archivos incluía). Se retomará cuando haya un negocio real con **firma electrónica (.p12)** vigente ante el SRI, momento en el que factura electrónica válida deja de ser opcional para operar. Mientras tanto, la app funciona con comprobantes internos (PDF tipo factura, sin validez fiscal ante el SRI).
+
+Una vez reincorporado, se conecta al proyecto principal vía `SRI_MICRO_URL` / `SRI_MICRO_API_KEY` (ya soportados en `config/settings.py`), sin tocar el resto del código.
 
 ## Stack técnico
 
@@ -205,6 +213,7 @@ Definidas en `.env` (ver `.env.example` completo):
 | `SENDGRID_API_KEY` | Envío de correo vía SendGrid (proveedor usado en producción, `config/email_backend.py`). |
 | `ADMIN_NOTIFICATION_EMAIL` | Correo que recibe alertas de pedidos nuevos. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Almacenamiento de imágenes en producción. |
+| `SENTRY_DSN` | Monitoreo de errores en producción (sentry.io). Vacío = desactivado. |
 
 ## Despliegue
 

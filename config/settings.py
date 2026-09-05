@@ -104,6 +104,33 @@ NOTIF_MICRO_URL = env('NOTIF_MICRO_URL', default='')
 NOTIF_MICRO_API_KEY = env('NOTIF_MICRO_API_KEY', default='')
 NOTIF_MICRO_TIMEOUT = env.int('NOTIF_MICRO_TIMEOUT', default=10)
 
+# Monitoreo de errores (Sentry) — dejar SENTRY_DSN vacío para desactivarlo
+# por completo (por ejemplo en desarrollo local).
+SENTRY_DSN = env('SENTRY_DSN', default='')
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment='production' if not DEBUG else 'development',
+        # No enviar cuerpos de request/response completos: pueden traer
+        # contraseñas, tokens de pago o datos personales de clientes.
+        send_default_pii=False,
+        traces_sample_rate=0.1,
+    )
+
+# Vista amigable cuando django-ratelimit bloquea un endpoint (login,
+# registro, checkout, pagos) por exceso de intentos desde la misma IP.
+RATELIMIT_VIEW = 'shared.ratelimit.ratelimited_view'
+
+# Desactivado durante `manage.py test`: los tests reutilizan la misma IP de
+# cliente en decenas de peticiones seguidas y activarían el límite sin que
+# eso tenga relación con lo que se está probando.
+import sys as _sys
+RATELIMIT_ENABLE = 'test' not in _sys.argv
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -139,6 +166,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'shared.middleware.NoCachePanelMiddleware',
+    'django_ratelimit.middleware.RatelimitMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

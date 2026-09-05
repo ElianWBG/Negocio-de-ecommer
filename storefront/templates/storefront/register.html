@@ -197,6 +197,14 @@
             {{ form.accepts_promotions.label }}
           </label>
         </div>
+        <div class="form-group" style="margin-top:.25rem; display:flex; align-items:flex-start; gap:.5rem;">
+          {{ form.accepts_terms }}
+          <label class="form-label" for="{{ form.accepts_terms.id_for_label }}" style="margin-bottom:0; font-weight:400; cursor:pointer;">
+            He leído y acepto los <a href="{% url 'storefront:legal_terms' %}" target="_blank" style="color:var(--rust);">Términos y Condiciones</a>
+            y la <a href="{% url 'storefront:legal_privacy' %}" target="_blank" style="color:var(--rust);">Política de Privacidad</a>
+          </label>
+        </div>
+        {% if form.accepts_terms.errors %}<p class="field-error">{{ form.accepts_terms.errors|striptags }}</p>{% endif %}
         <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">
           Crear cuenta <i class="bi bi-arrow-right"></i>
         </button>

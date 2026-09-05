@@ -1,5 +1,6 @@
 {% extends 'storefront/base_public.html' %}
 {% block title %}Catálogo — {{ config.nombre_tienda|default:"Tiendas asociadas" }}{% endblock %}
+{% block meta_description %}Explora el catálogo de {{ config.nombre_tienda }}{% if config.slogan %}: {{ config.slogan }}{% endif %}.{% endblock %}
 
 {% block extra_css %}
 <style>

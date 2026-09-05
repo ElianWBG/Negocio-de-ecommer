@@ -21,6 +21,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from billing.models import Product, ProductGroup, Customer, Brand, Review, ReviewImage
 from . import payphone
@@ -71,6 +72,7 @@ def _owns_request(user, purchase_request):
 # Registro, verificación de email y login de clientes
 # ---------------------------------------------------------------------
 
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
 def customer_register(request):
     if _is_customer(request.user):
         return redirect('storefront:catalog_list')
@@ -101,6 +103,7 @@ def customer_register(request):
                         'phone': d.get('phone', ''),
                         'address': d.get('address', ''),
                         'accepts_promotions': d.get('accepts_promotions', True),
+                        'terms_accepted_at': timezone.now(),
                         'user': user,
                     }
                 )
@@ -240,6 +243,7 @@ def verify_email(request, token):
     return redirect(next_url or 'storefront:catalog_list')
 
 
+@ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def customer_login(request):
     if _is_customer(request.user):
         return redirect('storefront:catalog_list')
@@ -535,6 +539,7 @@ def cart_view(request):
 # Checkout (requiere login de cliente)
 # ---------------------------------------------------------------------
 
+@ratelimit(key='ip', rate='20/m', method='POST', block=True)
 def checkout(request):
     # Si no está autenticado como cliente, guardamos la intención y lo
     # mandamos a login.
@@ -974,6 +979,7 @@ def payment_choice(request, pk):
     })
 
 
+@ratelimit(key='ip', rate='20/m', method='POST', block=True)
 def pay_manual(request, pk):
     purchase_request, redir = _owned_pending_pr(request, pk)
     if redir:
@@ -1183,6 +1189,7 @@ def pay_with_paypal(request, pk):
 
 
 @require_POST
+@ratelimit(key='ip', rate='20/m', method='POST', block=True)
 def paypal_create_order(request, pk):
     """Crea una orden en PayPal server-side y devuelve el order ID."""
     import json
@@ -1218,6 +1225,7 @@ def paypal_create_order(request, pk):
         return JsonResponse({'error': 'No se pudo iniciar el pago. Intenta de nuevo.'}, status=502)
 
 
+@ratelimit(key='ip', rate='20/m', method='POST', block=True)
 def paypal_capture(request, pk):
     """Captura el pago después de que PayPal lo aprueba."""
     import json

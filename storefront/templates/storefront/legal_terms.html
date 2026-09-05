@@ -1,0 +1,55 @@
+{% extends 'storefront/base_public.html' %}
+{% block title %}Términos y Condiciones — {{ config.nombre_tienda }}{% endblock %}
+{% block extra_css %}
+<style>
+  .legal-doc { max-width: 760px; margin: 0 auto; }
+  .legal-doc h1 { font-family: var(--font-head); font-size: 1.9rem; margin-bottom: .25rem; }
+  .legal-doc .legal-updated { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+  .legal-doc h2 { font-family: var(--font-head); font-size: 1.15rem; margin: 1.75rem 0 .6rem; }
+  .legal-doc p, .legal-doc li { color: var(--text); line-height: 1.7; font-size: .92rem; }
+  .legal-doc ul { padding-left: 1.25rem; margin-bottom: .75rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="legal-doc">
+  <h1>Términos y Condiciones</h1>
+  <p class="legal-updated">{{ config.nombre_tienda }}{% if config.ruc %} — RUC {{ config.ruc }}{% endif %}</p>
+
+  <h2>1. Objeto</h2>
+  <p>Estos Términos y Condiciones regulan el uso de la tienda en línea de <strong>{{ config.nombre_tienda }}</strong> y la compra de los productos que en ella se ofrecen. Al crear una cuenta o realizar un pedido, aceptas estos términos en su totalidad.</p>
+
+  <h2>2. Registro de cuenta</h2>
+  <p>Para comprar necesitas registrarte con datos verídicos (nombre, cédula/RUC, correo y dirección de contacto). Eres responsable de mantener la confidencialidad de tu contraseña y de toda actividad realizada desde tu cuenta.</p>
+
+  <h2>3. Precios y disponibilidad</h2>
+  <p>Los precios se muestran en dólares estadounidenses (USD) e incluyen los impuestos aplicables salvo que se indique lo contrario. El stock mostrado en el catálogo se actualiza en tiempo real, pero puede agotarse entre que armas tu carrito y confirmas la compra; en ese caso te lo notificaremos antes de procesar el pago.</p>
+
+  <h2>4. Proceso de compra</h2>
+  <p>Una solicitud de compra queda registrada al finalizar el checkout. Dependiendo del método de pago elegido, la confirmación es inmediata (tarjeta, PayPal) o queda sujeta a revisión manual (transferencia/pago manual, crédito). Te notificaremos por correo o en tu panel de "Mis pedidos" el estado de cada solicitud.</p>
+
+  <h2>5. Métodos de pago</h2>
+  <p>Aceptamos pago con tarjeta, PayPal, transferencia bancaria (con comprobante) y, cuando corresponda, crédito directo con cuotas. El procesamiento de pagos con tarjeta y PayPal lo realizan proveedores externos (PayPhone, PayPal); no almacenamos los datos de tu tarjeta en nuestros servidores.</p>
+
+  <h2>6. Comprobante de compra</h2>
+  <p>Al confirmarse tu pedido recibes un comprobante en PDF con el detalle de tu compra. <strong>Este comprobante no constituye una factura electrónica válida ante el SRI</strong> mientras el negocio no cuente con facturación electrónica autorizada; en ese caso se te informará expresamente antes de comprar.</p>
+
+  <h2>7. Cancelaciones</h2>
+  <p>Puedes cancelar una solicitud de compra mientras esté en estado "pendiente" desde tu panel de pedidos. Una vez confirmada y facturada, la cancelación se rige por nuestra <a href="{% url 'storefront:legal_returns' %}">Política de Devoluciones</a>.</p>
+
+  <h2>8. Cuentas de crédito</h2>
+  <p>Si tu compra se realiza a crédito, aceptas el cronograma de cuotas generado al confirmarse la compra y te comprometes a cumplir las fechas de pago acordadas. El incumplimiento puede afectar tu elegibilidad para nuevas compras a crédito.</p>
+
+  <h2>9. Reseñas de producto</h2>
+  <p>Las reseñas que publiques deben reflejar tu experiencia real con el producto. Nos reservamos el derecho de moderar o eliminar reseñas ofensivas, falsas o que infrinjan derechos de terceros.</p>
+
+  <h2>10. Modificaciones</h2>
+  <p>Podemos actualizar estos términos en cualquier momento; los cambios aplican desde su publicación en esta página. Si tienes una cuenta activa y el cambio es sustancial, te lo notificaremos por correo.</p>
+
+  <h2>11. Contacto</h2>
+  <p>
+    {% if config.email_contacto %}Correo: {{ config.email_contacto }}<br>{% endif %}
+    {% if config.telefono %}Teléfono: {{ config.telefono }}<br>{% endif %}
+    {% if config.direccion %}Dirección: {{ config.direccion }}{% endif %}
+  </p>
+</div>
+{% endblock %}
