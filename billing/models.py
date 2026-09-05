@@ -64,7 +64,7 @@ class Product(models.Model):
     suppliers = models.ManyToManyField(Supplier, related_name='products', blank=True, verbose_name='Proveedores')
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Precio unitario')
     stock = models.IntegerField(default=0, verbose_name='Stock')
-    image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name='Imagen del producto')
+    image = models.ImageField(upload_to='products/', blank=True, null=True, max_length=500, verbose_name='Imagen del producto')
     is_active = models.BooleanField(default=True, verbose_name='Activo')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
