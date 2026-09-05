@@ -3,6 +3,42 @@ import datetime
 from django.core.exceptions import ValidationError
 
 
+def validate_uploaded_image(uploaded_file, max_size=5 * 1024 * 1024):
+    """Valida que un archivo subido sea realmente una imagen decodificable
+    y no supere el tamaño máximo, sin depender del header `content_type`
+    (que el navegador/cliente puede mandar mal o directamente falsear).
+
+    Antes, varias vistas asignaban `request.FILES[...]` a un ImageField y
+    llamaban `.save()` directo (o `Model.objects.create(...)`), saltándose
+    la validación de Django/Pillow que solo corre en `Form.is_valid()` /
+    `full_clean()`. Un archivo corrupto o de formato no soportado pasaba
+    intacto hasta el storage (Cloudinary en producción), que lo rechazaba
+    con una excepción sin capturar -> 500 y la página se caía.
+
+    Lanza ValidationError con un mensaje apto para mostrar al usuario si
+    el archivo no es válido. No modifica el archivo; el llamador debe
+    hacer `uploaded_file.seek(0)` antes de usarlo si lo vuelve a leer.
+    """
+    if uploaded_file.size > max_size:
+        raise ValidationError(
+            f'"{uploaded_file.name}" supera el tamaño máximo de '
+            f'{max_size // (1024 * 1024)}MB.'
+        )
+
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        image = Image.open(uploaded_file)
+        image.verify()
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise ValidationError(
+            f'"{uploaded_file.name}" no es una imagen válida o su formato '
+            f'no es compatible. Use JPG, PNG, GIF o WebP.'
+        )
+    finally:
+        uploaded_file.seek(0)
+
+
 def parse_date_param(value):
     """Convierte un parámetro de fecha de un ?date_from=/date_to= de GET
     (formato YYYY-MM-DD) a un date, o None si viene vacío o mal formado.

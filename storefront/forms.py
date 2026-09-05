@@ -87,7 +87,6 @@ class CustomerRequestForm(forms.ModelForm):
         pass
 
 
-REVIEW_IMAGE_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024
 REVIEW_IMAGE_MAX_COUNT = 5
 
@@ -119,12 +118,18 @@ class ReviewForm(forms.ModelForm):
 def clean_review_images(files):
     """Valida la lista de imágenes subidas para una reseña (tamaño, tipo y
     cantidad). Se usa en la vista porque las imágenes viven en un modelo
-    aparte (ReviewImage), no como campo del ReviewForm."""
+    aparte (ReviewImage), no como campo del ReviewForm.
+
+    Las imágenes de reseña se guardan luego con `ReviewImage.objects.create(...)`,
+    que no pasa por `full_clean()` ni valida el contenido real del archivo
+    con Pillow. Antes solo se chequeaba el header `content_type` (falseable
+    por el cliente), así que un archivo corrupto o no soportado llegaba
+    intacto al storage y lo rechazaba con un 500 sin capturar.
+    """
+    from shared.validators import validate_uploaded_image
+
     if len(files) > REVIEW_IMAGE_MAX_COUNT:
         raise forms.ValidationError(f'Puedes subir un máximo de {REVIEW_IMAGE_MAX_COUNT} imágenes.')
     for f in files:
-        if f.size > REVIEW_IMAGE_MAX_SIZE:
-            raise forms.ValidationError(f'"{f.name}" supera el máximo de 5MB.')
-        if hasattr(f, 'content_type') and f.content_type not in REVIEW_IMAGE_ALLOWED_TYPES:
-            raise forms.ValidationError(f'"{f.name}" no es un formato permitido. Use JPG, PNG, GIF o WebP.')
+        validate_uploaded_image(f, max_size=REVIEW_IMAGE_MAX_SIZE)
     return files

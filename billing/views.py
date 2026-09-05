@@ -44,7 +44,8 @@ from .invoice_column_config import (
     validate_invoice_visible_columns, INVOICE_DEFAULT_VISIBLE_COLUMNS
 )
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
-from shared.validators import parse_date_param
+from django.core.exceptions import ValidationError
+from shared.validators import parse_date_param, validate_uploaded_image
 
 
 # === HOME / DASHBOARD ===
@@ -884,8 +885,12 @@ class ProductCreateView(PermissionRequiredAnyMixin, CreateView):
     def form_valid(self, form):
         response = super().form_valid(form)
         for f in self.request.FILES.getlist('extra_images'):
-            if f.size <= 5 * 1024 * 1024:
-                ProductImage.objects.create(product=self.object, image=f)
+            try:
+                validate_uploaded_image(f)
+            except ValidationError as e:
+                messages.warning(self.request, e.messages[0])
+                continue
+            ProductImage.objects.create(product=self.object, image=f)
         log_action(self.request, 'created', 'Product', self.object.pk, f'Producto creado: {self.object.name}')
         return response
 
@@ -900,8 +905,12 @@ class ProductUpdateView(PermissionRequiredAnyMixin, UpdateView):
         for pk in self.request.POST.getlist('delete_image'):
             ProductImage.objects.filter(pk=pk, product=self.object).delete()
         for f in self.request.FILES.getlist('extra_images'):
-            if f.size <= 5 * 1024 * 1024:
-                ProductImage.objects.create(product=self.object, image=f)
+            try:
+                validate_uploaded_image(f)
+            except ValidationError as e:
+                messages.warning(self.request, e.messages[0])
+                continue
+            ProductImage.objects.create(product=self.object, image=f)
         log_action(self.request, 'updated', 'Product', self.object.pk, f'Producto actualizado: {self.object.name}')
         return response
 
@@ -939,16 +948,12 @@ def product_update_image(request, pk):
         return JsonResponse({'success': False, 'error': 'No se envió imagen'}, status=400)
     
     image_file = request.FILES['image']
-    
-    # Validar tipo de archivo
-    valid_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    if image_file.content_type not in valid_types:
-        return JsonResponse({'success': False, 'error': 'Tipo de archivo no válido'}, status=400)
-    
-    # Validar tamaño (5MB)
-    if image_file.size > 5 * 1024 * 1024:
-        return JsonResponse({'success': False, 'error': 'Archivo muy grande (máx: 5MB)'}, status=400)
-    
+
+    try:
+        validate_uploaded_image(image_file)
+    except ValidationError as e:
+        return JsonResponse({'success': False, 'error': e.messages[0]}, status=400)
+
     try:
         product.image = image_file
         product.save()
@@ -2578,13 +2583,22 @@ def config_negocio_edit(request):
         config.color_navbar     = request.POST.get('color_navbar', '#231A10').strip()[:7]
         config.color_texto      = request.POST.get('color_texto', '#231A10').strip()[:7]
         config.hero_titulo      = request.POST.get('hero_titulo', '').strip()[:100]
+        image_errors = []
         if 'hero_imagen' in request.FILES:
-            config.hero_imagen  = request.FILES['hero_imagen']
+            try:
+                validate_uploaded_image(request.FILES['hero_imagen'])
+                config.hero_imagen = request.FILES['hero_imagen']
+            except ValidationError as e:
+                image_errors.append(e.messages[0])
         config.sobre_activo     = 'sobre_activo' in request.POST
         config.sobre_titulo     = request.POST.get('sobre_titulo', '').strip()
         config.sobre_texto      = request.POST.get('sobre_texto', '').strip()
         if 'sobre_imagen' in request.FILES:
-            config.sobre_imagen = request.FILES['sobre_imagen']
+            try:
+                validate_uploaded_image(request.FILES['sobre_imagen'])
+                config.sobre_imagen = request.FILES['sobre_imagen']
+            except ValidationError as e:
+                image_errors.append(e.messages[0])
         config.porque_activo    = 'porque_activo' in request.POST
         config.porque_titulo    = request.POST.get('porque_titulo', '').strip()
         config.porque_1_icono   = request.POST.get('porque_1_icono', '').strip()
@@ -2617,7 +2631,11 @@ def config_negocio_edit(request):
         config.contribuyente_especial = request.POST.get('contribuyente_especial', '').strip()[:10]
 
         if 'logo' in request.FILES:
-            config.logo = request.FILES['logo']
+            try:
+                validate_uploaded_image(request.FILES['logo'])
+                config.logo = request.FILES['logo']
+            except ValidationError as e:
+                image_errors.append(e.messages[0])
         elif 'logo_clear' in request.POST:
             config.logo = None
 
@@ -2629,6 +2647,8 @@ def config_negocio_edit(request):
 
         config.save()
         log_action(request, 'config_saved', 'ConfigNegocio', 1, 'Configuración del negocio guardada')
+        for error in image_errors:
+            messages.warning(request, error)
         messages.success(request, 'Configuración guardada correctamente.')
         return redirect('billing:config_negocio')
 
