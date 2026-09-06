@@ -211,16 +211,27 @@ class SignUpView(PermissionRequiredAnyMixin, CreateView):
         self.object.set_unusable_password()
         self.object.save()
         from billing.services import _send_panel_verification_code
-        _send_panel_verification_code(self.object, request=self.request)
+        sent = _send_panel_verification_code(self.object, request=self.request)
         verify_url = reverse_lazy('billing:verify_panel_code')
         from django.utils.html import format_html
-        messages.success(
-            self.request,
-            format_html(
-                'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{}</strong>',
-                self.object.username,
+        if sent:
+            messages.success(
+                self.request,
+                format_html(
+                    'Cuenta creada. Revisa tu correo para el código de verificación. Tu usuario es: <strong>{}</strong>',
+                    self.object.username,
+                )
             )
-        )
+        else:
+            messages.warning(
+                self.request,
+                format_html(
+                    'Cuenta creada (usuario <strong>{}</strong>), pero no se pudo enviar el correo con '
+                    'el código. Usa "reenviar código" en la pantalla de verificación o revisa la '
+                    'configuración de correo.',
+                    self.object.username,
+                )
+            )
         return redirect(verify_url)
 
 # === BRAND (FBV) ===
@@ -2763,8 +2774,10 @@ def user_management(request):
                     except Group.DoesNotExist:
                         pass
                 from billing.services import _send_panel_verification_code
-                _send_panel_verification_code(u, request=request)
-                messages.success(request, f'Usuario {username} creado. Se ha enviado un enlace de verificación a {email}.')
+                if _send_panel_verification_code(u, request=request):
+                    messages.success(request, f'Usuario {username} creado. Se ha enviado un enlace de verificación a {email}.')
+                else:
+                    messages.warning(request, f'Usuario {username} creado, pero no se pudo enviar el correo de verificación a {email}. Puede reenviarse el código desde la pantalla de verificación.')
 
         return redirect('billing:user_management')
 

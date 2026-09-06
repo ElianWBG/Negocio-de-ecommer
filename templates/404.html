@@ -1,0 +1,39 @@
+<!-- Página 404 autocontenida: HTML puro, sin herencia de plantillas ni
+     etiquetas que toquen la BD, para que se renderice siempre. -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada</title>
+    <style>
+        :root { color-scheme: light; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f4f5; color: #27272a; padding: 24px;
+        }
+        .card {
+            background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08);
+            max-width: 480px; width: 100%; padding: 48px 32px; text-align: center;
+        }
+        .code { font-size: 72px; font-weight: 800; line-height: 1; color: #d84315; margin: 0; }
+        h1 { font-size: 22px; margin: 16px 0 8px; }
+        p { color: #52525b; line-height: 1.6; margin: 0 0 28px; }
+        .btn {
+            display: inline-block; background: #d84315; color: #fff; text-decoration: none;
+            padding: 14px 28px; border-radius: 8px; font-weight: 600;
+        }
+        .btn:hover { background: #bf360c; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <p class="code">404</p>
+        <h1>No encontramos esta página</h1>
+        <p>El enlace puede estar roto o la página fue movida o eliminada.</p>
+        <a class="btn" href="/">Volver al inicio</a>
+    </div>
+</body>
+</html>

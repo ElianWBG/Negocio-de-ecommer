@@ -1,4 +1,8 @@
+import logging
+
 from billing.models import AuditLog
+
+logger = logging.getLogger(__name__)
 
 
 def log_action(request, action, model_name, object_id=None, description=''):
@@ -17,4 +21,9 @@ def log_action(request, action, model_name, object_id=None, description=''):
             ip_address=ip,
         )
     except Exception:
-        pass
+        # No rompe la request, pero el fallo SÍ queda registrado: la auditoría
+        # es un control de seguridad y un fallo silencioso sería un punto ciego.
+        logger.exception(
+            'No se pudo registrar el evento de auditoría (action=%s, model=%s, object_id=%s)',
+            action, model_name, object_id,
+        )

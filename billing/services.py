@@ -1,3 +1,4 @@
+import logging
 import secrets
 from decimal import Decimal
 from django.db import transaction
@@ -7,6 +8,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from .models import PanelVerificationCode
+
+logger = logging.getLogger(__name__)
 
 
 def _clave_acceso_demo(invoice, config):
@@ -317,6 +320,12 @@ def _generate_verification_code():
 
 
 def _send_panel_verification_code(user, request=None):
+    """Crea y envía el código de verificación del panel.
+
+    Devuelve el PanelVerificationCode si el correo se envió correctamente, o
+    None si el usuario no tiene email o si el envío falló (el fallo se registra
+    en el log). El código queda creado en BD igualmente, así que un envío
+    fallido se puede reintentar con "reenviar" sin recrear nada."""
     if not user.email:
         return None
     PanelVerificationCode.objects.filter(user=user).delete()
@@ -346,5 +355,11 @@ def _send_panel_verification_code(user, request=None):
     try:
         msg.send(fail_silently=False)
     except Exception:
-        pass
+        # No rompe la creación del usuario (el código ya existe y se puede
+        # reenviar), pero el fallo queda visible en el log y se le comunica al
+        # que devuelve None para que la vista no afirme falsamente "correo enviado".
+        logger.exception(
+            'No se pudo enviar el código de verificación del panel a %s', user.email
+        )
+        return None
     return code_obj
