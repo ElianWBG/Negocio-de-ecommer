@@ -6,6 +6,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from shared.seo import robots_txt, sitemap_xml
+from shared.auth_views import (
+    RateLimitedLoginView,
+    RateLimitedPasswordResetView,
+    RateLimitedPasswordResetConfirmView,
+)
 
 
 def logout_view(request):
@@ -18,6 +23,14 @@ urlpatterns = [
     path('robots.txt', robots_txt, name='robots_txt'),
     path('sitemap.xml', sitemap_xml, name='sitemap_xml'),
     path('accounts/logout/', logout_view, name='logout'),
+    # Debe ir ANTES del include de auth.urls: Django usa el primer patrón que
+    # coincide, así nuestra vista con rate limiting reemplaza el login por
+    # defecto (que no protege contra fuerza bruta) conservando name='login'.
+    path('accounts/login/', RateLimitedLoginView.as_view(), name='login'),
+    # Mismo motivo: reemplazan las vistas de reset por defecto (sin rate limit)
+    # conservando los nombres 'password_reset' y 'password_reset_confirm'.
+    path('accounts/password_reset/', RateLimitedPasswordResetView.as_view(), name='password_reset'),
+    path('accounts/reset/<uidb64>/<token>/', RateLimitedPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('panel/purchases/', include('purchasing.urls')),
     path('panel/cobros/', include('cobros.urls')),

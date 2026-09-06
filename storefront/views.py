@@ -845,8 +845,13 @@ def customer_invoice_pdf(request, pk):
     return response
 
 
+@ratelimit(key='user', rate='5/m', method='POST', block=True)
 def change_password(request):
-    """Permite al cliente cambiar su contraseña desde el perfil."""
+    """Permite al cliente cambiar su contraseña desde el perfil.
+
+    Rate limit por usuario: aunque el endpoint exige la contraseña actual,
+    limitar los POST frena que, desde una sesión abierta en un equipo ajeno,
+    alguien pruebe muchas contraseñas actuales para tomar la cuenta."""
     if not _is_customer(request.user):
         request.session['next_after_login'] = reverse('storefront:change_password')
         return redirect('storefront:customer_login')

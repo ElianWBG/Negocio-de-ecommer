@@ -2704,19 +2704,42 @@ def user_management(request):
         elif action == 'create_user' and not (request.user.is_superuser or request.user.has_perm('auth.add_user')):
             messages.error(request, 'No tienes permiso para crear usuarios.')
         elif action == 'set_group':
+            from security.views import PROTECTED_GROUP_NAME
             user_id = request.POST.get('user_id')
             group_name = request.POST.get('group_name', '')
             try:
                 u = User.objects.get(pk=user_id)
+            except User.DoesNotExist:
+                messages.error(request, 'Usuario no encontrado.')
+                return redirect('billing:user_management')
+
+            # Guardias contra escalada de privilegios. Un no-superusuario puede
+            # llegar aquí solo si un superusuario le concedió auth.change_user,
+            # pero aun así no debe poder crear más "Administradores" ni tocar
+            # cuentas de superusuario (eso equivaldría a auto-ascenderse o a
+            # neutralizar a otro admin). El superusuario no tiene estos límites.
+            if not request.user.is_superuser:
+                if u.is_superuser:
+                    messages.error(request, 'No puedes modificar el rol de un superusuario.')
+                    return redirect('billing:user_management')
+                if group_name == PROTECTED_GROUP_NAME:
+                    messages.error(request, f'Solo un superusuario puede asignar el rol "{PROTECTED_GROUP_NAME}".')
+                    return redirect('billing:user_management')
+                if u.groups.filter(name=PROTECTED_GROUP_NAME).exists():
+                    messages.error(request, f'Solo un superusuario puede cambiar el rol de un "{PROTECTED_GROUP_NAME}".')
+                    return redirect('billing:user_management')
+
+            try:
                 u.groups.clear()
                 if group_name:
                     g = Group.objects.get(name=group_name)
                     u.groups.add(g)
                 messages.success(request, f'Rol de {u.username} actualizado.')
-            except (User.DoesNotExist, Group.DoesNotExist):
-                messages.error(request, 'Usuario o grupo no encontrado.')
+            except Group.DoesNotExist:
+                messages.error(request, 'Grupo no encontrado.')
 
         elif action == 'create_user':
+            from security.views import PROTECTED_GROUP_NAME
             username = request.POST.get('username', '').strip()
             email = request.POST.get('email', '').strip()
             group_name = request.POST.get('group_name', '')
@@ -2728,6 +2751,8 @@ def user_management(request):
                 messages.error(request, 'El correo electrónico es obligatorio para crear un usuario.')
             elif User.objects.filter(email=email).exists():
                 messages.error(request, f'El correo "{email}" ya está en uso por otro usuario.')
+            elif group_name == PROTECTED_GROUP_NAME and not request.user.is_superuser:
+                messages.error(request, f'Solo un superusuario puede crear usuarios con el rol "{PROTECTED_GROUP_NAME}".')
             else:
                 u = User.objects.create_user(username=username, email=email, is_active=False)
                 u.set_unusable_password()
