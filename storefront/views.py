@@ -329,15 +329,8 @@ def catalog_list(request):
     if not has_filter:
         products = products[:10]
 
-    # Novedades: últimos 4 productos con stock, solo en la vista principal
-    novedades = []
     recommended = []
     if not has_filter:
-        novedades = list(
-            Product.objects.filter(is_active=True, stock__gt=0)
-            .select_related('brand', 'group')
-            .order_by('-id')[:4]
-        )
         # "Recomendados para ti": muestra aleatoria sin ORDER BY RANDOM()
         import random as _random
         _ids = list(Product.objects.filter(is_active=True).values_list('id', flat=True))
@@ -387,7 +380,6 @@ def catalog_list(request):
         'cart_count': cart_count,
         'cart_items': cart_items,
         'cart_subtotal': cart_subtotal,
-        'novedades': novedades,
         'recommended': recommended,
         'sidebar_brands': sidebar_brands,
         'featured_rotation': featured_rotation,

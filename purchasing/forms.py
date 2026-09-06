@@ -32,20 +32,43 @@ class PurchaseForm(forms.ModelForm):
         return cleaned_data
 
 
+class PurchaseDetailForm(forms.ModelForm):
+    """Línea de producto de una compra. Los `min` de los widgets son solo del
+    lado cliente (un POST manipulado los salta), así que la cantidad y el costo
+    se validan también aquí en el servidor: quantity es PositiveIntegerField
+    (aceptaría 0) y unit_cost es DecimalField sin validador (aceptaría negativo)."""
+
+    class Meta:
+        model = PurchaseDetail
+        fields = ['product', 'quantity', 'unit_cost']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'unit_cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
+        }
+
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None and quantity < 1:
+            raise forms.ValidationError('La cantidad debe ser mayor a cero.')
+        return quantity
+
+    def clean_unit_cost(self):
+        unit_cost = self.cleaned_data.get('unit_cost')
+        if unit_cost is not None and unit_cost < 0:
+            raise forms.ValidationError('El costo unitario no puede ser negativo.')
+        return unit_cost
+
+
 # Formset: permite agregar MÚLTIPLES líneas de producto dentro de UNA compra.
 # extra=3: muestra 3 filas vacías para agregar productos.
 # can_delete=True: permite eliminar filas.
 PurchaseDetailFormSet = inlineformset_factory(
-    Purchase,           # Modelo padre
-    PurchaseDetail,     # Modelo hijo
-    fields=['product', 'quantity', 'unit_cost'],
+    Purchase,               # Modelo padre
+    PurchaseDetail,         # Modelo hijo
+    form=PurchaseDetailForm,
     extra=3,
     can_delete=True,
     min_num=1,
     validate_min=True,
-    widgets={
-        'product': forms.Select(attrs={'class': 'form-select'}),
-        'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-        'unit_cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
-    }
 )
