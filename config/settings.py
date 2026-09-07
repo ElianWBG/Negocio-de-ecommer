@@ -163,7 +163,11 @@ else:
 AXES_ENABLED = not _TESTING
 AXES_FAILURE_LIMIT = 5                       # intentos fallidos antes de bloquear
 AXES_COOLOFF_TIME = timedelta(minutes=30)    # duración del bloqueo
-AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # bloquea por cuenta O por IP
+# Bloqueo por COMBINACIÓN (usuario Y IP): axes solo bloquea "ese usuario desde
+# esa IP". Así un atacante que conoce un usuario no puede bloquear la cuenta
+# globalmente (DoS inverso) — la víctima entra normal desde su propia IP. La
+# fuerza bruta rápida sigue frenada por el rate limit por IP (django-ratelimit).
+AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
 AXES_RESET_ON_SUCCESS = True                 # un login correcto limpia el contador
 AXES_HTTP_RESPONSE_CODE = 429                # mismo código que el rate limit (429)
 
