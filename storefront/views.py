@@ -1,6 +1,6 @@
 import logging
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 logger = logging.getLogger(__name__)
 from billing.audit import log_action
@@ -1068,6 +1068,27 @@ def payphone_response(request):
         return render(request, 'storefront/payment_error.html', {'purchase_request': purchase_request})
 
     if result.get('statusCode') == payphone.STATUS_APPROVED:
+        # Cinturón extra: verificar que el monto REALMENTE cobrado por PayPhone
+        # (en centavos) coincide con el total del pedido. Si no cuadra, no se
+        # confirma nada — puede indicar manipulación o un desajuste. Defensivo:
+        # si PayPhone no devuelve el monto, no se bloquea (queda la protección
+        # del amarre client_transaction_id ↔ pedido).
+        expected_cents = int(round(purchase_request.total_estimado * 100))
+        try:
+            paid_cents = int(result.get('amount'))
+        except (TypeError, ValueError):
+            paid_cents = None
+        if paid_cents is not None and paid_cents != expected_cents:
+            logger.error(
+                'PayPhone: monto cobrado (%s¢) != esperado (%s¢) para el pedido #%s',
+                paid_cents, expected_cents, purchase_request.pk,
+            )
+            purchase_request.notes = (purchase_request.notes or '') + (
+                f'\n[ATENCIÓN] Monto PayPhone {paid_cents}¢ != esperado {expected_cents}¢. '
+                f'Pago NO confirmado; revisar manualmente.'
+            )
+            purchase_request.save()
+            return render(request, 'storefront/payment_error.html', {'purchase_request': purchase_request})
         purchase_request.payphone_transaction_id = result.get('transactionId')
         try:
             confirm_purchase_request(purchase_request)
@@ -1274,6 +1295,27 @@ def paypal_capture(request, pk):
         return JsonResponse({'error': 'No se pudo procesar el pago. Intenta de nuevo.'}, status=502)
 
     if capture_data.get('status') == 'COMPLETED':
+        # Cinturón extra: el monto capturado por PayPal debe coincidir con el
+        # total del pedido. Defensivo: si no se puede leer, no se bloquea (queda
+        # el amarre orderID ↔ pedido, que ya impide pagar la orden de otro).
+        try:
+            captured = Decimal(
+                capture_data['purchase_units'][0]['payments']['captures'][0]['amount']['value']
+            )
+        except (KeyError, IndexError, TypeError, InvalidOperation):
+            captured = None
+        expected = purchase_request.total_estimado.quantize(Decimal('0.01'))
+        if captured is not None and captured != expected:
+            logger.error(
+                'PayPal: monto capturado (%s) != esperado (%s) para el pedido #%s (orden %s)',
+                captured, expected, purchase_request.pk, order_id,
+            )
+            purchase_request.notes = (purchase_request.notes or '') + (
+                f'\n[ATENCIÓN] Monto PayPal {captured} != esperado {expected} (orden {order_id}). '
+                f'Pago NO confirmado; revisar manualmente.'
+            )
+            purchase_request.save(update_fields=['notes'])
+            return JsonResponse({'error': 'El monto del pago no coincide con el pedido.'}, status=400)
         purchase_request.payment_method = 'tarjeta'
         purchase_request.paypal_order_id = order_id
         purchase_request.save(update_fields=['payment_method', 'paypal_order_id'])
