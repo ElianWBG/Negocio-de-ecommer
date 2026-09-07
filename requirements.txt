@@ -31,3 +31,6 @@ sentry-sdk==2.19.0
 
 # Rate limiting en endpoints públicos (login, registro, checkout, pagos)
 django-ratelimit==4.1.0
+
+# Bloqueo de login por cuenta tras varios intentos fallidos (fuerza bruta)
+django-axes==8.3.1

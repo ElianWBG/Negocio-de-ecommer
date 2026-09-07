@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 import environ
 from django.core.exceptions import ImproperlyConfigured
 
@@ -129,7 +130,42 @@ RATELIMIT_VIEW = 'shared.ratelimit.ratelimited_view'
 # cliente en decenas de peticiones seguidas y activarían el límite sin que
 # eso tenga relación con lo que se está probando.
 import sys as _sys
-RATELIMIT_ENABLE = 'test' not in _sys.argv
+_TESTING = 'test' in _sys.argv
+RATELIMIT_ENABLE = not _TESTING
+
+# ─────────────────────────────────────────────────────────────
+# Caché compartido para los contadores de rate limiting (django-ratelimit).
+# En producción gunicorn corre varios workers, cada uno en su propio proceso:
+# con el LocMemCache por defecto cada worker tendría su propio contador y el
+# límite se multiplicaría (y se borraría en cada deploy). DatabaseCache guarda
+# los contadores en una tabla de Postgres que todos los workers comparten.
+# Durante los tests se usa memoria local (más rápido y sin depender de que la
+# tabla de caché exista en la base de datos de test).
+# ─────────────────────────────────────────────────────────────
+if _TESTING:
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'ratelimit_cache_table',
+        }
+    }
+
+# ─────────────────────────────────────────────────────────────
+# Bloqueo de login por CUENTA (django-axes). El rate limit por IP frena un
+# ataque desde una sola IP; axes cuenta los fallos por cuenta/IP y bloquea tras
+# varios intentos, defendiendo también contra fuerza bruta DISTRIBUIDA (muchas
+# IPs contra una misma cuenta). Desactivado durante los tests para no interferir
+# con el resto de la suite; se prueba aparte con @override_settings(AXES_ENABLED=True).
+# Para desbloquear manualmente: python manage.py axes_reset
+# ─────────────────────────────────────────────────────────────
+AXES_ENABLED = not _TESTING
+AXES_FAILURE_LIMIT = 5                       # intentos fallidos antes de bloquear
+AXES_COOLOFF_TIME = timedelta(minutes=30)    # duración del bloqueo
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # bloquea por cuenta O por IP
+AXES_RESET_ON_SUCCESS = True                 # un login correcto limpia el contador
+AXES_HTTP_RESPONSE_CODE = 429                # mismo código que el rate limit (429)
 
 # Application definition
 
@@ -154,6 +190,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'cloudinary_storage',
     'cloudinary',
+    'axes',
 ]
 
 MIDDLEWARE = [
@@ -167,6 +204,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'shared.middleware.NoCachePanelMiddleware',
     'django_ratelimit.middleware.RatelimitMiddleware',
+    # AxesMiddleware debe ir al final: procesa la respuesta del login para
+    # registrar el intento y devolver el bloqueo cuando corresponde.
+    'axes.middleware.AxesMiddleware',
+]
+
+# django-axes intercepta la autenticación mediante su backend. AxesStandaloneBackend
+# no valida credenciales (eso lo hace ModelBackend), solo aplica el bloqueo.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 ROOT_URLCONF = 'config.urls'
