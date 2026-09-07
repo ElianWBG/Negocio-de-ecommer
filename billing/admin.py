@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import *
+from .models import (
+    Brand, Customer, CustomerProfile, Invoice, InvoiceDetail, Product,
+    ProductGroup, ProductImage, Review, ReviewImage, Supplier,
+)
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):

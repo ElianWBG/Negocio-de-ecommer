@@ -94,16 +94,6 @@ class Product(models.Model):
                 urls.append(extra.image.url)
         return urls
 
-    @property
-    def average_rating(self):
-        from django.db.models import Avg
-        result = self.reviews.aggregate(avg=Avg('rating'))['avg']
-        return round(result, 1) if result is not None else None
-
-    @property
-    def review_count(self):
-        return self.reviews.count()
-
 
 class ProductImage(models.Model):
     """Imágenes adicionales de un producto (galería / carrusel)."""

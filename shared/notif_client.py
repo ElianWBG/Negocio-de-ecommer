@@ -102,7 +102,6 @@ def notificar_pedido_nuevo(email_admin: str, telefono_admin: str, purchase_reque
 
 
 def notificar_pedido_confirmado(invoice, purchase_request, store_name: str, color: str = '#B5441B'):
-    from django.utils import timezone
     customer = invoice.customer
     if not customer.email:
         return None

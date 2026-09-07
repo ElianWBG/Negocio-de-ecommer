@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from billing.models import Customer, Invoice
-from .models import CuotaVenta, PayPalCuotaOrder
+from .models import PayPalCuotaOrder
 from .services import generar_cuotas, registrar_pago_cuota
 
 
@@ -185,7 +185,9 @@ class PaypalCapturaCuotasTodoONadaTestCase(TestCase):
 
     def test_cliente_ajeno_no_puede_capturar(self):
         otro = User.objects.create_user(username='otro', password='x')
-        otro_customer = Customer.objects.create(dni='1700000001', first_name='Luis', last_name='Ruiz', user=otro)
+        # Crear el perfil Customer hace que `otro` cuente como cliente (el
+        # objeto no se reutiliza; importa el efecto de creación).
+        Customer.objects.create(dni='1700000001', first_name='Luis', last_name='Ruiz', user=otro)
         self.client.force_login(otro)
         response = self.client.post(
             self._capture_url(), data=json.dumps({'orderID': 'ORDER123'}), content_type='application/json',

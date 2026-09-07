@@ -9,7 +9,11 @@ from django.db import transaction
 from django.db.models import Sum, Count, F
 from django.db.models.functions import TruncMonth
 from datetime import timedelta, date
-from .models import *
+from .models import (
+    Brand, Customer, CustomerProfile, Invoice,
+    InvoiceDetail, Product, ProductGroup, ProductImage,
+    Review, Supplier,
+)
 from .forms import (
     SignUpForm, BrandForm, ProductGroupForm, SupplierForm,
     CustomerForm, InvoiceForm, InvoiceDetailFormSet, InvoicePaymentForm
