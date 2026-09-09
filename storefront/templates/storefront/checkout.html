@@ -160,10 +160,21 @@
           <span class="ck-section-title">Datos personales</span>
         </div>
 
+        {% if is_guest %}
+        <div class="float-field">
+          {% render_field form.dni placeholder=" " class="form-control" %}
+          <label>Cédula / RUC</label>
+          {% if form.dni.errors %}<p class="field-error">{{ form.dni.errors|striptags }}</p>{% endif %}
+        </div>
+        <p style="font-size:.8rem;color:var(--muted);margin:-.5rem 0 1rem;">
+          ¿Ya tienes cuenta? <a href="{% url 'storefront:customer_login' %}">Inicia sesión</a> para agilizar tu compra.
+        </p>
+        {% else %}
         <div class="float-field">
           <input type="text" class="form-control" value="{{ form.instance.dni }}" readonly disabled>
           <label>Cédula / RUC</label>
         </div>
+        {% endif %}
 
         <div class="form-row-2">
           <div class="float-field">
@@ -230,6 +241,18 @@
         <textarea name="notes" class="form-control" rows="2"
           placeholder="Ej: Horario de entrega preferido, instrucciones especiales..."></textarea>
       </div>
+
+      {% if is_guest %}
+      <div class="ck-section">
+        <div class="form-check">
+          {% render_field form.accepts_terms class="form-check-input" %}
+          <label class="form-check-label" for="{{ form.accepts_terms.id_for_label }}" style="font-size:.85rem;">
+            {{ form.accepts_terms.label }}
+          </label>
+          {% if form.accepts_terms.errors %}<p class="field-error">{{ form.accepts_terms.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Barra de acción -->
       <div class="ck-action">

@@ -87,6 +87,56 @@ class CustomerRequestForm(forms.ModelForm):
         pass
 
 
+class GuestCheckoutForm(CustomerRequestForm):
+    """Checkout para compradores sin cuenta: además de los datos de envío,
+    pide la cédula/RUC (necesaria para la factura) y la aceptación de
+    términos, porque al confirmar el pedido se crea una cuenta silenciosa
+    para poder darle seguimiento (ver/pagar el pedido) sin pedirle login."""
+    dni = forms.CharField(
+        label='Cédula / RUC', max_length=13,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1710034065'}),
+    )
+    accepts_terms = forms.BooleanField(
+        label='He leído y acepto los Términos y Condiciones y la Política de Privacidad',
+        required=True,
+        error_messages={'required': 'Debes aceptar los términos y la política de privacidad para continuar.'},
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
+    class Meta(CustomerRequestForm.Meta):
+        fields = ['dni', 'first_name', 'last_name', 'email', 'phone', 'address']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El modelo permite email en blanco (clientes creados desde el panel
+        # interno), pero aquí es obligatorio: se usa como username de la
+        # cuenta silenciosa que se crea al confirmar la compra.
+        self.fields['email'].required = True
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                'Ya existe una cuenta con este correo. Inicia sesión para continuar.'
+            )
+        return email
+
+    def clean_dni(self):
+        from shared.validators import validate_cedula_ec
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        dni = self.cleaned_data['dni']
+        try:
+            validate_cedula_ec(dni)
+        except DjangoValidationError as e:
+            raise forms.ValidationError(e.message)
+        existing = Customer.objects.filter(dni=dni).first()
+        if existing and existing.user_id:
+            raise forms.ValidationError(
+                'Esta cédula ya tiene una cuenta asociada. Inicia sesión para continuar.'
+            )
+        return dni
+
+
 REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024
 REVIEW_IMAGE_MAX_COUNT = 5
 

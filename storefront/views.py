@@ -1,4 +1,5 @@
 import logging
+import secrets
 import uuid
 from decimal import Decimal, InvalidOperation
 
@@ -25,10 +26,15 @@ from django_ratelimit.decorators import ratelimit
 
 from billing.models import Product, ProductGroup, Customer, Brand, Review, ReviewImage
 from . import payphone
-from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, ReviewForm, clean_review_images
+from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerRequestForm, GuestCheckoutForm, ReviewForm, clean_review_images
 from .models import PurchaseRequest, PurchaseRequestDetail, EmailVerificationToken
 from .services import confirm_purchase_request, confirm_purchase_request_credito, InsufficientStockError
 CART_SESSION_KEY = 'storefront_cart'
+# Backend explícito para login() tras crear un User por código (sin pasar por
+# authenticate()): con varios AUTHENTICATION_BACKENDS configurados (axes +
+# ModelBackend), el user recién creado no trae `.backend` y login() explota
+# si no se lo indicamos.
+AUTH_BACKEND = 'django.contrib.auth.backends.ModelBackend'
 
 
 # ---------------------------------------------------------------------
@@ -112,7 +118,7 @@ def customer_register(request):
                 return render(request, 'storefront/register.html', {'form': form})
             _send_welcome_email(user)
             cart_snapshot = request.session.get(CART_SESSION_KEY)
-            login(request, user)
+            login(request, user, backend=AUTH_BACKEND)
             if cart_snapshot:
                 request.session[CART_SESSION_KEY] = cart_snapshot
                 request.session.modified = True
@@ -234,7 +240,7 @@ def verify_email(request, token):
     verification.delete()
 
     cart_snapshot = request.session.get(CART_SESSION_KEY)
-    login(request, user)
+    login(request, user, backend=AUTH_BACKEND)
     if cart_snapshot:
         request.session[CART_SESSION_KEY] = cart_snapshot
         request.session.modified = True
@@ -528,29 +534,112 @@ def cart_view(request):
 
 
 # ---------------------------------------------------------------------
-# Checkout (requiere login de cliente)
+# Checkout (con o sin cuenta)
 # ---------------------------------------------------------------------
+
+def _create_guest_account(data):
+    """Crea la cuenta 'silenciosa' de un comprador invitado: un User con
+    contraseña aleatoria (que nunca se le muestra) y su Customer, para poder
+    reutilizar las mismas comprobaciones de propiedad (_is_customer/
+    _owns_request) durante el resto del flujo de pago sin pedirle login.
+    Si la cédula ya pertenece a un Customer sin cuenta (p. ej. creado desde
+    el panel interno), se reutiliza ese registro en vez de duplicarlo."""
+    user = User.objects.create_user(
+        username=data['email'],
+        email=data['email'],
+        password=secrets.token_urlsafe(32),
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        is_active=True,
+    )
+    customer, _created = Customer.objects.update_or_create(
+        dni=data['dni'],
+        defaults={
+            'first_name': data['first_name'],
+            'last_name': data['last_name'],
+            'email': data['email'],
+            'phone': data.get('phone', ''),
+            'address': data.get('address', ''),
+            'terms_accepted_at': timezone.now(),
+            'user': user,
+        }
+    )
+    _send_guest_account_email(user)
+    return customer, user
+
+
+def _send_guest_account_email(user):
+    """Avisa al invitado que le creamos una cuenta para poder ver/gestionar
+    su pedido, y cómo ponerle contraseña si quiere iniciar sesión más tarde.
+    Si falla el envío, no interrumpe la compra (fail_silently)."""
+    if not user.email:
+        return
+    site_url = getattr(settings, 'SITE_URL', 'https://web-production-667ad.up.railway.app')
+    reset_url = f'{site_url.rstrip("/")}{reverse("password_reset")}'
+    try:
+        send_mail(
+            subject='Tu pedido y tu cuenta',
+            message=(
+                f'¡Gracias por tu compra!\n\n'
+                f'Para que puedas ver el estado de tu pedido cuando quieras, '
+                f'creamos una cuenta con tu correo ({user.email}).\n\n'
+                f'Si en el futuro quieres iniciar sesión, define una contraseña aquí:\n{reset_url}'
+            ),
+            from_email=None,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        logger.exception('Error sending guest account email to %s', user.email)
+
 
 @ratelimit(key='ip', rate='20/m', method='POST', block=True)
 def checkout(request):
-    # Si no está autenticado como cliente, guardamos la intención y lo
-    # mandamos a login.
-    if not _is_customer(request.user):
-        request.session['next_after_login'] = reverse('storefront:checkout')
-        messages.info(request, 'Inicia sesión o regístrate para continuar con tu compra.')
-        return redirect('storefront:customer_login')
-
     items, total = _cart_items(request)
     if not items:
         messages.info(request, 'Tu carrito está vacío.')
         return redirect('storefront:catalog_list')
 
-    customer = request.user.customer_profile
+    # Un usuario logueado sin perfil de cliente (p. ej. una cuenta de staff)
+    # no puede comprar como invitado ni como cliente: lo mandamos a login.
+    if request.user.is_authenticated and not _is_customer(request.user):
+        request.session['next_after_login'] = reverse('storefront:checkout')
+        return redirect('storefront:customer_login')
+
+    is_guest = not request.user.is_authenticated
+
+    if is_guest:
+        form_class, form_kwargs = GuestCheckoutForm, {}
+    else:
+        form_class, form_kwargs = CustomerRequestForm, {'instance': request.user.customer_profile}
 
     if request.method == 'POST':
-        form = CustomerRequestForm(request.POST, instance=customer)
+        form = form_class(request.POST, **form_kwargs)
         if form.is_valid():
-            customer = form.save()
+            if is_guest:
+                try:
+                    customer, user = _create_guest_account(form.cleaned_data)
+                except IntegrityError:
+                    messages.error(
+                        request,
+                        'Ya existe una cuenta con ese correo o cédula. Inicia sesión para continuar.'
+                    )
+                    return render(request, 'storefront/checkout.html', {
+                        'form': form, 'items': items, 'total': total, 'is_guest': is_guest,
+                    })
+                cart_snapshot = request.session.get(CART_SESSION_KEY)
+                login(request, user, backend=AUTH_BACKEND)
+                if cart_snapshot:
+                    request.session[CART_SESSION_KEY] = cart_snapshot
+                    request.session.modified = True
+                messages.info(
+                    request,
+                    'Creamos una cuenta con tu correo para que puedas ver el estado de tu '
+                    'pedido. Si quieres, luego puedes definir una contraseña con '
+                    '"¿Olvidaste tu contraseña?" en la pantalla de inicio de sesión.'
+                )
+            else:
+                customer = form.save()
             purchase_request = PurchaseRequest.objects.create(
                 customer=customer,
                 notes=request.POST.get('notes', '').strip(),
@@ -570,10 +659,10 @@ def checkout(request):
 
             return redirect('storefront:payment_choice', pk=purchase_request.pk)
     else:
-        form = CustomerRequestForm(instance=customer)
+        form = form_class(**form_kwargs)
 
     return render(request, 'storefront/checkout.html', {
-        'form': form, 'items': items, 'total': total,
+        'form': form, 'items': items, 'total': total, 'is_guest': is_guest,
     })
 
 
