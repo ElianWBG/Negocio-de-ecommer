@@ -57,7 +57,19 @@ from shared.validators import parse_date_param, validate_uploaded_image
 @audit_action('VIEW_HOME')
 def home(request):
     """Panel principal: tarjetas resumen, gráficos, accesos rápidos,
-    actividad reciente y alertas del sistema."""
+    actividad reciente y alertas del sistema.
+
+    A diferencia del resto de vistas del panel, esta no exige un permiso
+    puntual (billing.view_x) porque es el destino al que todas ellas
+    redirigen cuando a alguien le falta un permiso — pedir uno aquí también
+    generaría un loop. Lo único que sí debe quedar afuera es una cuenta de
+    cliente de la tienda (incluida la que se crea sola al comprar como
+    invitado): nunca se le asigna rol/permiso alguno, así que sin este check
+    vería igual el dashboard completo de ventas solo por estar logueada."""
+    if not request.user.is_superuser and hasattr(request.user, 'customer_profile'):
+        messages.error(request, 'No tienes acceso al panel administrativo.')
+        return redirect('storefront:catalog_list')
+
     User = get_user_model()
     today = timezone.localdate()
     week_ago = today - timedelta(days=7)
