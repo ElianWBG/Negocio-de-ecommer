@@ -4,7 +4,7 @@ Plataforma Django de gestión de ventas y tienda online.
 
 Combina un **panel administrativo** (catálogo, ventas, compras, cobros, pagos, reportes, roles) con una **tienda pública** donde los clientes se registran, arman un carrito, solicitan compras y pagan online.
 
-> Créditos: proyecto originalmente desarrollado por Elian Galeas, Jhoan Cevallos, José Torres, Jonathan Castro y Jean Jiménez.
+> Créditos: proyecto desarrollado por Jonathan Castro y Elian Galeas.
 
 ## Índice
 

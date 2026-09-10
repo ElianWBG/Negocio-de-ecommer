@@ -10,13 +10,12 @@
   .recap-totals { margin-top: .75rem; padding-top: .75rem; border-top: 2px solid var(--border); }
   .recap-totals .row { display: flex; justify-content: space-between; font-size: .9rem; padding: .2rem 0; }
   .recap-totals .total { font-weight: 700; font-size: 1.1rem; color: var(--rust); }
-  .payment-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+  .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
   .pay-option { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 1.75rem; display: flex; flex-direction: column; transition: border-color var(--transition), box-shadow var(--transition); }
   .pay-option.featured { border-color: var(--rust); }
   .pay-option .icon { font-size: 2rem; margin-bottom: .75rem; }
   .pay-option h3 { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: .5rem; }
   .pay-option p { color: var(--muted); font-size: .875rem; flex: 1; margin-bottom: 1.25rem; line-height: 1.6; }
-  @media (max-width: 900px) { .payment-options { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 560px) { .payment-options { grid-template-columns: 1fr; } }
   .credit-cuota-estimate { font-size: .95rem; font-weight: 700; color: var(--rust); margin: .5rem 0 1rem; }
 </style>
@@ -45,16 +44,6 @@
 
   <div class="payment-options">
     <div class="pay-option featured">
-      <div class="icon" style="color:#003087;">
-        <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style="height:40px;">
-      </div>
-      <h3>Pagar con PayPal</h3>
-      <p>Paga de forma segura con tu cuenta PayPal o con tarjeta de crédito/débito. Tu compra se confirma al instante.</p>
-      <a href="{% url 'storefront:pay_with_paypal' purchase_request.pk %}" class="btn btn-primary btn-full">
-        Pagar ${{ purchase_request.total_estimado }} con PayPal
-      </a>
-    </div>
-    <div class="pay-option">
       <div class="icon" style="color:var(--rust);"><i class="bi bi-calendar3"></i></div>
       <h3>Pagar a crédito</h3>
       <p>Tu pedido se confirma de inmediato como factura a crédito, con un cronograma de cuotas mensuales.</p>
