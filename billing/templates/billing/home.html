@@ -59,7 +59,7 @@
         <strong><i class="bi bi-bar-chart-line"></i> Ventas por mes</strong>
         <span class="text-muted small">Últimos 6 meses</span>
       </div>
-      <div class="dash-panel-body"><canvas id="chartSalesByMonth" height="120"></canvas></div>
+      <div class="dash-panel-body"><div class="chart-box"><canvas id="chartSalesByMonth"></canvas></div></div>
     </div>
   </div>
   <div class="col-lg-4">
@@ -172,7 +172,7 @@
   <div class="col-lg-4">
     <div class="dash-panel h-100">
       <div class="dash-panel-head"><strong><i class="bi bi-pie-chart"></i> Distribución de categorías</strong></div>
-      <div class="dash-panel-body"><canvas id="chartCategories" height="180"></canvas></div>
+      <div class="dash-panel-body"><div class="chart-box"><canvas id="chartCategories"></canvas></div></div>
     </div>
   </div>
   <div class="col-lg-8">
@@ -277,6 +277,14 @@
   .dash-panel-head i { color: var(--rust); }
   .dash-panel-body { padding: 1.25rem; }
 
+  /* Alto fijo + position:relative para el <canvas> de Chart.js. Sin esto,
+     "responsive:true" mide el contenedor, el contenedor mide el canvas y
+     entran en un bucle de resize -> el gráfico se re-renderiza sin parar
+     (se ve como si la animación de entrada quedara en loop). Se nota sobre
+     todo en mobile, donde la barra de direcciones del navegador cambia el
+     alto del viewport al hacer scroll y dispara el bucle una y otra vez. */
+  .chart-box { position: relative; height: 260px; }
+
   /* .stat-tile vive ahora en billing/base.html (reusable en todo el panel) */
 
   /* Anillos KPI (conic-gradient, sin JS) */
@@ -327,6 +335,7 @@
   @media (max-width: 575px) {
     .podium { grid-template-columns: 1fr; }
     .kpi-rings { gap: 1.25rem; }
+    .chart-box { height: 220px; }
   }
 </style>
 
@@ -347,14 +356,14 @@ document.addEventListener('DOMContentLoaded', function () {
       labels: get('monthLabels'),
       datasets: [{ label: 'Ventas ($)', data: get('monthTotals'), backgroundColor: '#6D5DEA', borderRadius: 8, maxBarThickness: 46 }]
     },
-    options: { responsive: true, plugins: { legend: { display: false } },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { y: { beginAtZero: true, grid: { color: '#F1EEE9' } }, x: { grid: { display: false } } } }
   });
 
   new Chart(document.getElementById('chartCategories'), {
     type: 'doughnut',
     data: { labels: get('categoryLabels'), datasets: [{ data: get('categoryData'), backgroundColor: palette, borderWidth: 0 }] },
-    options: { responsive: true, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
   });
 
   // ── Mini calendario (mes actual, resalta hoy) ──
